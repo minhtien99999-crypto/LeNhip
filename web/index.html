@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f1f9fb"><meta name="description" content="LeNhip — trợ lý cá nhân của LeDB: sức khỏe trên điện thoại, khung giờ riêng trong lịch công việc, đèn tại site.">
+<title>LeNhip · Nhịp sống của bạn</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Đến nội dung chính</a>
+<div class="shell">
+<aside class="sidebar" aria-label="Không gian LeNhip">
+<a href="#home" class="wordmark">LeNhip<span>by LeTRON</span></a>
+<p class="sidebar-caption">KHÔNG GIAN CỦA BẠN</p>
+<nav id="desktop-nav" class="desktop-nav" aria-label="Điều hướng chính"></nav>
+<div class="sidebar-bottom"><div class="small-orbit"></div><strong>Một ngày đúng nhịp.</strong><p>Giao diện theo cách của bạn.</p><button class="button quiet" data-action="settings">Cá nhân hóa giao diện</button><span class="demo-label" id="build-label">Bản tham chiếu · Dữ liệu tổng hợp</span></div>
+</aside>
+<div class="workspace">
+<header class="topbar"><div class="mobile-brand">LeNhip<span>by LeTRON</span></div><span class="desktop-label">Trợ lý cá nhân</span><div class="top-actions"><span class="privacy-chip" id="privacy-chip"></span><button class="icon-button" data-action="settings" aria-label="Mở cá nhân hóa" title="Cá nhân hóa" id="settings-button"></button><button class="avatar" data-action="profiles" aria-label="Tài khoản" id="profile-button">··</button></div></header>
+<div id="banner" class="banner" role="status" hidden></div>
+<div class="content-grid"><main id="main" tabindex="-1"></main><aside class="design-panel" aria-label="Chọn phong cách"><div class="panel-heading"><span class="eyebrow">CÁ NHÂN HÓA</span><span class="tiny-pill">5 phong cách</span></div><h2>Cùng bạn, khác biệt.</h2><p>Chọn một không gian phù hợp với nhịp sống của bạn.</p><div id="theme-options"></div><div class="panel-note"><span id="note-icon"></span><p>Tùy chọn giao diện lưu theo tài khoản trên trình duyệt này.</p></div><button class="button secondary full" data-action="settings">Tinh chỉnh của bạn <span aria-hidden="true">↗</span></button></aside></div>
+<footer class="workspace-footer">LeNhip <span>•</span> Thiết kế bởi LeDB <span>•</span> <span id="footer-build">Bản tham chiếu 0.1.0 theo LNH-SRS-001 V1.1</span></footer>
+</div>
+</div>
+<nav id="mobile-nav" class="mobile-nav" aria-label="Điều hướng điện thoại"></nav>
+<dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title"><div class="dialog-top"><div><span class="eyebrow">KHÔNG GIAN RIÊNG</span><h2 id="settings-title">Theo nhịp của bạn</h2></div><button class="icon-button" data-action="close-settings" aria-label="Đóng cá nhân hóa">✕</button></div><form id="settings-form"><div id="settings-fields"></div><div class="dialog-actions"><button type="button" class="button secondary" data-action="reset-settings">Khôi phục mặc định</button><button class="button primary" type="submit">Lưu tùy chọn</button></div></form><div id="privacy-settings"></div><div class="settings-tools"><button class="text-button" data-action="export">Xuất tùy chọn</button><label class="text-button import-label">Nhập tùy chọn<input id="import-file" type="file" accept=".json,application/json" hidden></label><button class="text-button" data-action="profiles">Tài khoản</button></div><p class="fine-print">Tệp xuất/nhập chỉ chứa tùy chọn giao diện, không có lịch, hội thoại hay dữ liệu sức khỏe.</p></dialog>
+<dialog id="action-dialog" class="action-dialog" aria-labelledby="action-title"><div class="dialog-top"><h2 id="action-title" tabindex="-1">LeNhip</h2><button class="icon-button" data-action="close-action" aria-label="Đóng hộp thoại">✕</button></div><div id="action-body"></div></dialog>
+<div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+<script type="module" src="./app.js"></script>
+</body></html>
