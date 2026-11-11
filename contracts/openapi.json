@@ -1,0 +1,523 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LeNhip API",
+    "version": "1.1.0-ref.1",
+    "description": "Hợp đồng API /v1 của LeNhip theo LNH-SRS-001 V1.1 mục 14–17. JSON UTF-8, OIDC bearer có audience của miền, thời điểm RFC 3339 UTC, múi IANA riêng. Mọi POST bắt buộc Idempotency-Key. Thân tác vụ additionalProperties=false. EXECUTION_UNKNOWN nằm trong tài nguyên action, không là lỗi HTTP."
+  },
+  "servers": [{ "url": "/" }],
+  "security": [{ "oidc": [] }],
+  "paths": {
+    "/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+        "responses": { "200": { "$ref": "#/components/responses/Me" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/plans": {
+      "post": {
+        "operationId": "createPlan",
+        "description": "Tạo và submit plan nguyên tử. Nội dung preview đã chuẩn hóa là nội dung cần hiển thị, chưa cấp quyền phát.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanInput" } } } },
+        "responses": { "201": { "description": "PENDING_APPROVAL", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Plan" } } } }, "400": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/plans/{plan_id}": {
+      "get": {
+        "operationId": "getPlan",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/PlanId" }],
+        "responses": { "200": { "description": "Plan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Plan" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/plans/{plan_id}/approve": {
+      "post": {
+        "operationId": "approvePlan",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/PlanId" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApproveRequest" } } } },
+        "responses": { "202": { "description": "AUTHORIZED", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApproveAccepted" } } } }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" }, "410": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/plans/{plan_id}/deny": {
+      "post": {
+        "operationId": "denyPlan",
+        "description": "LNH-T03: cạnh PENDING_APPROVAL/deny của bảng trạng thái chưa có endpoint trong SRS mục 15.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/PlanId" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
+        "responses": { "200": { "description": "REJECTED", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Plan" } } } }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/plans/{plan_id}/cancel": {
+      "post": {
+        "operationId": "cancelPlan",
+        "description": "LNH-T03: cạnh PENDING_APPROVAL/cancel.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/PlanId" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
+        "responses": { "200": { "description": "CANCELED", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Plan" } } } }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/actions": {
+      "get": {
+        "operationId": "listActions",
+        "description": "Tác vụ gần đây của chính người gọi (tối đa 50).",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+        "responses": { "200": { "description": "Danh sách", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ActionList" } } } } }
+      }
+    },
+    "/v1/actions/{action_id}": {
+      "get": {
+        "operationId": "getAction",
+        "description": "Không có quyền thì 404 để hạn chế lộ tài nguyên.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/ActionId" }],
+        "responses": { "200": { "description": "Action", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Action" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/actions/{action_id}/cancel": {
+      "post": {
+        "operationId": "cancelAction",
+        "description": "Trước dispatch lease: hủy nguyên tử (CANCELED). Sau đó: trả action hiện hành với cancel_requested=true, tiếp tục đối soát.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/ActionId" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
+        "responses": { "200": { "description": "Action", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Action" } } } }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/calendar/availability": {
+      "get": {
+        "operationId": "getAvailability",
+        "description": "Khoảng bận/trống trong chính lịch được cấp; không trả tiêu đề hoặc khách. Cửa sổ tối đa 14 ngày.",
+        "parameters": [
+          { "$ref": "#/components/parameters/Workspace" },
+          { "name": "start", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time-utc" } },
+          { "name": "end", "in": "query", "required": true, "schema": { "type": "string", "format": "date-time-utc" } }
+        ],
+        "responses": { "200": { "description": "Availability", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Availability" } } } }, "400": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "429": { "$ref": "#/components/responses/Error" }, "503": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "site", "in": "query", "required": true, "schema": { "type": "string", "pattern": "^site_[a-z0-9_]{1,40}$" } }],
+        "responses": { "200": { "description": "Thiết bị", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceList" } } } }, "403": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/grants/{grant_id}/revoke": {
+      "post": {
+        "operationId": "revokeGrant",
+        "description": "Ghi control event bền, tăng authz_version, vô hiệu snapshot. Retry cùng khóa không tăng lần nữa.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "grant_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^gr_[A-Za-z0-9_-]{6,64}$" } }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
+        "responses": { "200": { "description": "Đã thu hồi", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GrantRevoked" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/consents": {
+      "get": {
+        "operationId": "listConsents",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+        "responses": { "200": { "description": "Biên nhận phía máy chủ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentList" } } } } }
+      },
+      "post": {
+        "operationId": "recordConsent",
+        "description": "Chỉ các mục đích có xử lý phía máy chủ. health_local lưu biên nhận trên điện thoại, máy chủ trả 422 HEALTH_LOCAL_ONLY.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentCreate" } } } },
+        "responses": { "201": { "description": "Biên nhận", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentReceipt" } } } }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/consents/{purpose_id}/withdraw": {
+      "post": {
+        "operationId": "withdrawConsent",
+        "description": "Ngắt và chặn phát mới ở phạm vi đã rút, hủy plan chờ duyệt của mục đích đó.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "purpose_id", "in": "path", "required": true, "schema": { "type": "string", "enum": ["calendar_link", "home_control", "beta_telemetry"] } }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
+        "responses": { "200": { "description": "Đã rút", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentReceipt" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/privacy/requests": {
+      "post": {
+        "operationId": "createPrivacyRequest",
+        "description": "Trả request_id, type và các hạn. EXPORT và DELETE cần xác thực lại (auth_time trong 5 phút).",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PrivacyRequestCreate" } } } },
+        "responses": { "202": { "description": "Đã nhận", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PrivacyRequest" } } } }, "401": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/privacy/requests/{request_id}": {
+      "get": {
+        "operationId": "getPrivacyRequest",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "request_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^pr_[A-Za-z0-9_-]{6,64}$" } }],
+        "responses": { "200": { "description": "Trạng thái", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PrivacyRequest" } } } }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/privacy/exports/{token}": {
+      "get": {
+        "operationId": "downloadExport",
+        "description": "Liên kết một lần, hết hạn 24 giờ; tệp xóa sau khi tải hoặc hết hạn.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "token", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" } }],
+        "responses": { "200": { "description": "Tệp JSON", "content": { "application/json": { "schema": { "type": "object" } } } }, "404": { "$ref": "#/components/responses/Error" }, "410": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/lele/proposals": {
+      "post": {
+        "operationId": "proposeIntent",
+        "description": "LeLe chỉ đề xuất IntentProposal hoặc nội dung; người dùng xác nhận qua plan. Không gọi tool, không phát lệnh.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LeLeRequest" } } } },
+        "responses": { "200": { "description": "Đề xuất", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LeLeResult" } } } } }
+      }
+    },
+    "/v1/ops/unknown": {
+      "get": {
+        "operationId": "listUnknown",
+        "description": "Vai LEDB_OPERATOR: tác vụ chưa xác minh, tuổi, ticket và mã hỗ trợ.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+        "responses": { "200": { "description": "Danh sách", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnknownList" } } } }, "403": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/tickets/{ticket_id}/ack": {
+      "post": {
+        "operationId": "ackTicket",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "ticket_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^tk_[A-Za-z0-9_-]{6,64}$" } }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
+        "responses": { "200": { "description": "Đã nhận", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ticket" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/actions/{action_id}/evidence": {
+      "post": {
+        "operationId": "recordEvidence",
+        "description": "Operator ghi nguồn, thời gian, kết quả đối soát và cấp bằng chứng. Không có cấp 'operator xác nhận' riêng (LNH-T12).",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/ActionId" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EvidenceCreate" } } } },
+        "responses": { "200": { "description": "Action", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Action" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/flags": {
+      "get": {
+        "operationId": "getFlags",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+        "responses": { "200": { "description": "Cờ mô-đun và trạng thái phát", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Flags" } } } }, "403": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "operationId": "setFlag",
+        "description": "Bật/tắt mô-đun theo mô-đun hoặc site (kill switch).",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FlagUpdate" } } } },
+        "responses": { "200": { "description": "Cờ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Flags" } } } }, "403": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/metrics": {
+      "get": {
+        "operationId": "getMetrics",
+        "description": "Số liệu vận hành không gắn user/action ID.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }],
+        "responses": { "200": { "description": "Metrics", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Metrics" } } } }, "403": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/devices/{device_ref}/reset": {
+      "post": {
+        "operationId": "quarantineDevice",
+        "description": "Reset hoặc firmware đổi: quarantine, tăng binding_version, chặn mọi permit cũ.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/DeviceRef" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceOp" } } } },
+        "responses": { "200": { "description": "Thiết bị", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/devices/{device_ref}/recommission": {
+      "post": {
+        "operationId": "recommissionDevice",
+        "description": "Phê duyệt lại cấu hình sau reset: binding mới, giữ tombstone binding cũ.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/DeviceRef" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceOp" } } } },
+        "responses": { "200": { "description": "Thiết bị", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/v1/ops/devices/{device_ref}/decommission": {
+      "post": {
+        "operationId": "decommissionDevice",
+        "description": "Rời site: thu hồi registry, ACL, credential; đọc và lệnh đều bị chặn.",
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "$ref": "#/components/parameters/DeviceRef" }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeviceOp" } } } },
+        "responses": { "200": { "description": "Thiết bị", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Device" } } } }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oidc": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Token OIDC (code + PKCE ở app) do IAM của LeASO cấp; iss, aud, exp được kiểm. Bản tham chiếu có issuer phát triển khi LENHIP_DEV=1." }
+    },
+    "parameters": {
+      "Workspace": { "name": "X-LeNhip-Workspace", "in": "header", "required": true, "schema": { "type": "string", "pattern": "^ws_[a-z0-9_]{1,40}$" } },
+      "IdempotencyKey": { "name": "Idempotency-Key", "in": "header", "required": true, "description": "ASCII ngẫu nhiên ≥128 bit (khuyến nghị 32 byte base64url). LNH-T05: 22–128 ký tự [A-Za-z0-9_-].", "schema": { "type": "string", "pattern": "^[A-Za-z0-9_-]{22,128}$" } },
+      "PlanId": { "name": "plan_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^pl_[A-Za-z0-9_-]{6,64}$" } },
+      "ActionId": { "name": "action_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" } },
+      "DeviceRef": { "name": "device_ref", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^dev_[a-z0-9_]{1,40}$" } }
+    },
+    "responses": {
+      "Error": { "description": "Lỗi chuẩn", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Me": { "description": "Người dùng hiện tại", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Me" } } } }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object", "additionalProperties": false, "required": ["code", "message", "request_id", "retryable"],
+        "properties": {
+          "code": { "type": "string" }, "message": { "type": "string" }, "request_id": { "type": "string" }, "retryable": { "type": "boolean" },
+          "resource_id": { "type": "string" }, "state": { "type": "string" }, "issues": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "Empty": { "type": "object", "additionalProperties": false, "properties": {} },
+      "WorkspaceRef": { "type": "string", "pattern": "^ws_[a-z0-9_]{1,40}$" },
+      "Digest": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+      "UtcTime": { "type": "string", "format": "date-time-utc" },
+      "PlanInput": {
+        "oneOf": [{ "$ref": "#/components/schemas/CalendarBlockInput" }, { "$ref": "#/components/schemas/DeviceSetPowerInput" }, { "$ref": "#/components/schemas/RobotSimulateInput" }],
+        "discriminator": { "propertyName": "kind", "mapping": { "calendar.block": "#/components/schemas/CalendarBlockInput", "device.set_power": "#/components/schemas/DeviceSetPowerInput", "robot.simulate": "#/components/schemas/RobotSimulateInput" } }
+      },
+      "CalendarBlockInput": {
+        "type": "object", "additionalProperties": false, "required": ["kind", "schema_version", "workspace_ref", "args"],
+        "properties": {
+          "kind": { "const": "calendar.block" }, "schema_version": { "const": 1 }, "workspace_ref": { "$ref": "#/components/schemas/WorkspaceRef" },
+          "args": {
+            "type": "object", "additionalProperties": false, "required": ["calendar_ref", "start", "end", "zone", "title_code", "visibility"],
+            "properties": {
+              "calendar_ref": { "const": "primary" }, "start": { "$ref": "#/components/schemas/UtcTime" }, "end": { "$ref": "#/components/schemas/UtcTime" },
+              "zone": { "type": "string", "format": "iana-zone" }, "title_code": { "const": "PERSONAL_TIME" }, "visibility": { "const": "private" }
+            }
+          }
+        }
+      },
+      "DeviceSetPowerInput": {
+        "type": "object", "additionalProperties": false, "required": ["kind", "schema_version", "workspace_ref", "args"],
+        "properties": {
+          "kind": { "const": "device.set_power" }, "schema_version": { "const": 1 }, "workspace_ref": { "$ref": "#/components/schemas/WorkspaceRef" },
+          "args": {
+            "type": "object", "additionalProperties": false, "required": ["site", "device_ref", "command"],
+            "properties": { "site": { "type": "string", "pattern": "^site_[a-z0-9_]{1,40}$" }, "device_ref": { "type": "string", "pattern": "^dev_[a-z0-9_]{1,40}$" }, "command": { "enum": ["SET_ON", "SET_OFF"] } }
+          }
+        }
+      },
+      "RobotSimulateInput": {
+        "type": "object", "additionalProperties": false, "required": ["kind", "schema_version", "workspace_ref", "args"],
+        "properties": {
+          "kind": { "const": "robot.simulate" }, "schema_version": { "const": 1 }, "workspace_ref": { "$ref": "#/components/schemas/WorkspaceRef" },
+          "args": { "type": "object", "additionalProperties": false, "required": ["scenario"], "properties": { "scenario": { "enum": ["DELIVER_DOCUMENT"] } } }
+        }
+      },
+      "ActionPayload": {
+        "oneOf": [{ "$ref": "#/components/schemas/CalendarPayload" }, { "$ref": "#/components/schemas/DevicePayload" }, { "$ref": "#/components/schemas/RobotPayload" }],
+        "discriminator": { "propertyName": "kind", "mapping": { "calendar.block": "#/components/schemas/CalendarPayload", "device.set_power": "#/components/schemas/DevicePayload", "robot.simulate": "#/components/schemas/RobotPayload" } }
+      },
+      "CalendarPayload": {
+        "type": "object", "additionalProperties": false,
+        "required": ["kind", "schema_version", "workspace_id", "target", "start", "end", "zone", "title_code", "visibility", "show_as", "target_binding_version"],
+        "properties": {
+          "kind": { "const": "calendar.block" }, "schema_version": { "const": 1 }, "workspace_id": { "$ref": "#/components/schemas/WorkspaceRef" },
+          "target": { "type": "object", "additionalProperties": false, "required": ["type", "calendar_ref", "account"], "properties": { "type": { "const": "calendar" }, "calendar_ref": { "const": "primary" }, "account": { "type": "string", "pattern": "^cal_[A-Za-z0-9_-]{4,64}$" } } },
+          "start": { "$ref": "#/components/schemas/UtcTime" }, "end": { "$ref": "#/components/schemas/UtcTime" }, "zone": { "type": "string", "format": "iana-zone" },
+          "title_code": { "const": "PERSONAL_TIME" }, "visibility": { "const": "private" }, "show_as": { "const": "busy" }, "target_binding_version": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "DevicePayload": {
+        "type": "object", "additionalProperties": false, "required": ["kind", "schema_version", "workspace_id", "target", "command", "target_binding_version"],
+        "properties": {
+          "kind": { "const": "device.set_power" }, "schema_version": { "const": 1 }, "workspace_id": { "$ref": "#/components/schemas/WorkspaceRef" },
+          "target": { "type": "object", "additionalProperties": false, "required": ["type", "site", "device_ref"], "properties": { "type": { "const": "device" }, "site": { "type": "string" }, "device_ref": { "type": "string" } } },
+          "command": { "enum": ["SET_ON", "SET_OFF"] }, "target_binding_version": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "RobotPayload": {
+        "type": "object", "additionalProperties": false, "required": ["kind", "schema_version", "workspace_id", "target", "scenario", "target_binding_version"],
+        "properties": {
+          "kind": { "const": "robot.simulate" }, "schema_version": { "const": 1 }, "workspace_id": { "$ref": "#/components/schemas/WorkspaceRef" },
+          "target": { "type": "object", "additionalProperties": false, "required": ["type", "namespace"], "properties": { "type": { "const": "robot-sim" }, "namespace": { "const": "sim" } } },
+          "scenario": { "enum": ["DELIVER_DOCUMENT"] }, "target_binding_version": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "Versions": {
+        "type": "object", "additionalProperties": false, "required": ["authz_version", "export_policy_digest", "target_binding_version"],
+        "properties": { "authz_version": { "type": "integer", "minimum": 1 }, "export_policy_digest": { "$ref": "#/components/schemas/Digest" }, "target_binding_version": { "type": "integer", "minimum": 1 } }
+      },
+      "Plan": {
+        "type": "object", "additionalProperties": false,
+        "required": ["plan_id", "kind", "state", "plan_version", "payload_digest", "preview", "approval_deadline", "versions", "action_id", "reason"],
+        "properties": {
+          "plan_id": { "type": "string" }, "kind": { "enum": ["calendar.block", "device.set_power", "robot.simulate"] },
+          "state": { "enum": ["DRAFT", "PENDING_APPROVAL", "AUTHORIZED", "DISPATCHING", "ACKED", "UNKNOWN", "VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED"] },
+          "plan_version": { "type": "integer", "minimum": 1 }, "payload_digest": { "$ref": "#/components/schemas/Digest" }, "preview": { "$ref": "#/components/schemas/ActionPayload" },
+          "approval_deadline": { "$ref": "#/components/schemas/UtcTime" }, "versions": { "$ref": "#/components/schemas/Versions" },
+          "action_id": { "type": ["string", "null"] }, "reason": { "type": ["string", "null"] }
+        }
+      },
+      "ApproveRequest": {
+        "type": "object", "additionalProperties": false, "required": ["plan_version", "approved_digest"],
+        "properties": { "plan_version": { "type": "integer", "minimum": 1 }, "approved_digest": { "$ref": "#/components/schemas/Digest" } }
+      },
+      "ApproveAccepted": {
+        "type": "object", "additionalProperties": false, "required": ["action_id", "plan_id", "state", "dispatch_deadline"],
+        "properties": { "action_id": { "type": "string" }, "plan_id": { "type": "string" }, "state": { "const": "AUTHORIZED" }, "dispatch_deadline": { "$ref": "#/components/schemas/UtcTime" } }
+      },
+      "Action": {
+        "type": "object", "additionalProperties": false,
+        "required": ["action_id", "plan_id", "kind", "status", "revision", "outcome", "evidence_grade", "dispatch_state", "reconciliation_status", "cancel_requested", "reason", "event_created", "support_code", "deadlines", "times", "preview", "locked_resource"],
+        "properties": {
+          "action_id": { "type": "string" }, "plan_id": { "type": "string" }, "kind": { "enum": ["calendar.block", "device.set_power", "robot.simulate"] },
+          "status": { "enum": ["AUTHORIZED", "DISPATCHING", "ACKED", "UNKNOWN", "VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED"] },
+          "revision": { "type": "integer", "minimum": 1 },
+          "outcome": { "type": ["string", "null"], "enum": ["APPLIED", "ALREADY_IN_STATE", "EVENT_CREATED", "SIMULATED", "BUSY_BEFORE_CREATE", "OVERLAP_AFTER_CREATE", "EVENT_CHANGED", "NO_EFFECT", null] },
+          "evidence_grade": { "type": ["string", "null"], "enum": ["PROVIDER_READBACK", "DEVICE_REPORTED", "PHYSICAL_OBSERVED", "SIMULATED", null] },
+          "dispatch_state": { "enum": ["NOT_CLAIMED", "CLAIMED", "SENT", "NOT_SENT"] },
+          "reconciliation_status": { "type": ["string", "null"], "enum": ["AUTO", "TICKET_OPEN", "ESCALATED", "MANUAL_REQUIRED", "RESOLVED", null] },
+          "cancel_requested": { "type": "boolean" }, "reason": { "type": ["string", "null"] }, "event_created": { "type": ["boolean", "null"] },
+          "support_code": { "type": ["string", "null"] },
+          "deadlines": {
+            "type": "object", "additionalProperties": false, "required": ["approval", "dispatch", "unknown_after", "next_check"],
+            "properties": { "approval": { "type": ["string", "null"] }, "dispatch": { "type": ["string", "null"] }, "unknown_after": { "type": ["string", "null"] }, "next_check": { "type": ["string", "null"] } }
+          },
+          "times": {
+            "type": "object", "additionalProperties": false, "required": ["authorized_at", "dispatch_claimed_at", "first_io_at", "last_observed_at", "last_check_at", "unknown_since", "terminal_at"],
+            "properties": {
+              "authorized_at": { "type": ["string", "null"] }, "dispatch_claimed_at": { "type": ["string", "null"] }, "first_io_at": { "type": ["string", "null"] },
+              "last_observed_at": { "type": ["string", "null"] }, "last_check_at": { "type": ["string", "null"] }, "unknown_since": { "type": ["string", "null"] }, "terminal_at": { "type": ["string", "null"] }
+            }
+          },
+          "preview": { "$ref": "#/components/schemas/ActionPayload" },
+          "locked_resource": { "type": "boolean" }
+        }
+      },
+      "ActionList": { "type": "object", "additionalProperties": false, "required": ["items"], "properties": { "items": { "type": "array", "maxItems": 50, "items": { "$ref": "#/components/schemas/Action" } } } },
+      "Interval": { "type": "object", "additionalProperties": false, "required": ["start", "end"], "properties": { "start": { "$ref": "#/components/schemas/UtcTime" }, "end": { "$ref": "#/components/schemas/UtcTime" } } },
+      "Availability": {
+        "type": "object", "additionalProperties": false, "required": ["calendar_ref", "window", "busy", "free", "lenhip_blocks"],
+        "properties": {
+          "calendar_ref": { "const": "primary" }, "window": { "$ref": "#/components/schemas/Interval" },
+          "busy": { "type": "array", "items": { "$ref": "#/components/schemas/Interval" } }, "free": { "type": "array", "items": { "$ref": "#/components/schemas/Interval" } },
+          "lenhip_blocks": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["start", "end", "action_id", "status"], "properties": { "start": { "$ref": "#/components/schemas/UtcTime" }, "end": { "$ref": "#/components/schemas/UtcTime" }, "action_id": { "type": "string" }, "status": { "type": "string" } } } }
+        }
+      },
+      "Device": {
+        "type": "object", "additionalProperties": false, "required": ["device_ref", "name", "site", "binding_version", "capabilities", "status", "state", "locked"],
+        "properties": {
+          "device_ref": { "type": "string" }, "name": { "type": "string" }, "site": { "type": "string" }, "binding_version": { "type": "integer", "minimum": 1 },
+          "capabilities": { "type": "array", "items": { "enum": ["SET_POWER"] } }, "status": { "enum": ["ACTIVE", "QUARANTINED", "DECOMMISSIONED"] },
+          "state": {
+            "type": ["object", "null"], "additionalProperties": false, "required": ["power", "observed_at", "age_ms", "stale"],
+            "properties": { "power": { "enum": ["ON", "OFF"] }, "observed_at": { "$ref": "#/components/schemas/UtcTime" }, "age_ms": { "type": "integer", "minimum": 0 }, "stale": { "type": "boolean" } }
+          },
+          "locked": { "type": "boolean" }
+        }
+      },
+      "DeviceList": { "type": "object", "additionalProperties": false, "required": ["site", "devices"], "properties": { "site": { "type": "string" }, "devices": { "type": "array", "items": { "$ref": "#/components/schemas/Device" } } } },
+      "DeviceOp": { "type": "object", "additionalProperties": false, "required": ["reason"], "properties": { "reason": { "type": "string", "minLength": 3, "maxLength": 300 }, "firmware": { "type": "string", "maxLength": 40 } } },
+      "GrantRevoked": {
+        "type": "object", "additionalProperties": false, "required": ["grant_id", "status", "authz_version", "effective_at", "already_revoked"],
+        "properties": { "grant_id": { "type": "string" }, "status": { "const": "REVOKED" }, "authz_version": { "type": "integer", "minimum": 1 }, "effective_at": { "$ref": "#/components/schemas/UtcTime" }, "already_revoked": { "type": "boolean" } }
+      },
+      "ConsentCreate": {
+        "type": "object", "additionalProperties": false, "required": ["purpose_id", "text_version", "text_hash", "choice"],
+        "properties": {
+          "purpose_id": { "enum": ["calendar_link", "home_control", "beta_telemetry", "health_local"] }, "text_version": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$" },
+          "text_hash": { "$ref": "#/components/schemas/Digest" }, "choice": { "enum": ["GRANTED", "DECLINED"] }
+        }
+      },
+      "ConsentReceipt": {
+        "type": "object", "additionalProperties": false, "required": ["id", "purpose_id", "text_version", "text_hash", "choice", "at", "withdrawn_at"],
+        "properties": {
+          "id": { "type": "string" }, "purpose_id": { "type": "string" }, "text_version": { "type": "string" }, "text_hash": { "type": "string" },
+          "choice": { "enum": ["GRANTED", "DECLINED"] }, "at": { "$ref": "#/components/schemas/UtcTime" }, "withdrawn_at": { "type": ["string", "null"] }
+        }
+      },
+      "ConsentList": { "type": "object", "additionalProperties": false, "required": ["items"], "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/ConsentReceipt" } } } },
+      "PrivacyRequestCreate": {
+        "type": "object", "additionalProperties": false, "required": ["type"],
+        "properties": { "type": { "enum": ["ACCESS", "CORRECT", "RESTRICT", "WITHDRAW", "DELETE", "EXPORT"] }, "note": { "type": "string", "maxLength": 500 } }
+      },
+      "PrivacyRequest": {
+        "type": "object", "additionalProperties": false, "required": ["request_id", "type", "status", "received_at", "ack_due_at", "target_due_at", "legal_due_at", "export"],
+        "properties": {
+          "request_id": { "type": "string" }, "type": { "type": "string" }, "status": { "enum": ["RECEIVED", "IN_PROGRESS", "COMPLETED", "REJECTED"] },
+          "received_at": { "$ref": "#/components/schemas/UtcTime" }, "ack_due_at": { "$ref": "#/components/schemas/UtcTime" }, "target_due_at": { "$ref": "#/components/schemas/UtcTime" }, "legal_due_at": { "$ref": "#/components/schemas/UtcTime" },
+          "export": { "type": ["object", "null"], "additionalProperties": false, "required": ["path", "expires_at"], "properties": { "path": { "type": "string" }, "expires_at": { "$ref": "#/components/schemas/UtcTime" } } }
+        }
+      },
+      "LeLeRequest": {
+        "type": "object", "additionalProperties": false, "required": ["text", "context", "zone"],
+        "properties": { "text": { "type": "string", "minLength": 1, "maxLength": 4000 }, "context": { "enum": ["work", "home"] }, "zone": { "type": "string", "format": "iana-zone" } }
+      },
+      "IntentProposal": {
+        "type": "object", "additionalProperties": false, "required": ["kind", "args", "summary"],
+        "properties": { "kind": { "enum": ["calendar.block", "device.set_power"] }, "args": { "type": "object" }, "summary": { "type": "string", "maxLength": 300 } }
+      },
+      "LeLeResult": {
+        "type": "object", "additionalProperties": false, "required": ["type", "engine", "ai_generated", "proposal", "answer", "fallback"],
+        "properties": {
+          "type": { "enum": ["PROPOSAL", "ANSWER", "FORM"] }, "engine": { "type": "string" }, "ai_generated": { "type": "boolean" },
+          "proposal": { "oneOf": [{ "$ref": "#/components/schemas/IntentProposal" }, { "type": "null" }] }, "answer": { "type": ["string", "null"] },
+          "fallback": { "type": ["string", "null"], "enum": ["calendar.block", "device.set_power", "NONE", null] }
+        }
+      },
+      "Me": {
+        "type": "object", "additionalProperties": false, "required": ["user", "workspace", "roles", "grants", "consents", "calendar", "sites", "modules", "dispatch_open"],
+        "properties": {
+          "user": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } },
+          "workspace": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } },
+          "roles": { "type": "array", "items": { "type": "string" } },
+          "grants": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "scope", "resource", "status"], "properties": { "id": { "type": "string" }, "scope": { "type": "string" }, "resource": { "type": ["string", "null"] }, "status": { "enum": ["ACTIVE", "REVOKED"] } } } },
+          "consents": { "type": "array", "items": { "$ref": "#/components/schemas/ConsentReceipt" } },
+          "calendar": { "type": "object", "additionalProperties": false, "required": ["linked", "account"], "properties": { "linked": { "type": "boolean" }, "account": { "type": ["string", "null"] } } },
+          "sites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } } },
+          "modules": { "type": "object", "additionalProperties": false, "required": ["calendar", "home", "robot", "lele"], "properties": { "calendar": { "type": "boolean" }, "home": { "type": "boolean" }, "robot": { "type": "boolean" }, "lele": { "type": "boolean" } } },
+          "dispatch_open": { "type": "boolean" }
+        }
+      },
+      "EvidenceCreate": {
+        "type": "object", "additionalProperties": false, "required": ["grade", "result", "source", "observed_at", "note"],
+        "properties": {
+          "grade": { "enum": ["PROVIDER_READBACK", "DEVICE_REPORTED", "PHYSICAL_OBSERVED"] }, "result": { "enum": ["MATCH", "CONFLICT", "NO_EFFECT"] },
+          "source": { "type": "string", "minLength": 3, "maxLength": 200 }, "observed_at": { "$ref": "#/components/schemas/UtcTime" }, "note": { "type": "string", "minLength": 3, "maxLength": 1000 }
+        }
+      },
+      "Ticket": {
+        "type": "object", "additionalProperties": false, "required": ["id", "action_id", "kind", "status", "support_code", "opened_at", "ack_due_at", "acknowledged_at", "escalated_at", "manual_required_at", "closed_at"],
+        "properties": {
+          "id": { "type": "string" }, "action_id": { "type": "string" }, "kind": { "enum": ["UNKNOWN_SLA", "DISCREPANCY", "RECOVERY"] },
+          "status": { "enum": ["OPEN", "ACKNOWLEDGED", "ESCALATED", "MANUAL_REQUIRED", "CLOSED"] }, "support_code": { "type": "string" },
+          "opened_at": { "type": "string" }, "ack_due_at": { "type": ["string", "null"] }, "acknowledged_at": { "type": ["string", "null"] },
+          "escalated_at": { "type": ["string", "null"] }, "manual_required_at": { "type": ["string", "null"] }, "closed_at": { "type": ["string", "null"] }
+        }
+      },
+      "UnknownList": {
+        "type": "object", "additionalProperties": false, "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false, "required": ["action_id", "kind", "status", "age_seconds", "reconciliation_status", "support_code", "ticket", "last_observed_at", "next_check"],
+              "properties": {
+                "action_id": { "type": "string" }, "kind": { "type": "string" }, "status": { "type": "string" }, "age_seconds": { "type": "integer", "minimum": 0 },
+                "reconciliation_status": { "type": ["string", "null"] }, "support_code": { "type": ["string", "null"] }, "ticket": { "oneOf": [{ "$ref": "#/components/schemas/Ticket" }, { "type": "null" }] },
+                "last_observed_at": { "type": ["string", "null"] }, "next_check": { "type": ["string", "null"] }
+              }
+            }
+          }
+        }
+      },
+      "FlagUpdate": {
+        "type": "object", "additionalProperties": false, "required": ["module", "enabled", "reason"],
+        "properties": { "module": { "enum": ["calendar", "home", "robot", "lele"] }, "site": { "type": "string", "pattern": "^site_[a-z0-9_]{1,40}$" }, "enabled": { "type": "boolean" }, "reason": { "type": "string", "minLength": 3, "maxLength": 300 } }
+      },
+      "Flags": {
+        "type": "object", "additionalProperties": false, "required": ["modules", "sites", "dispatch"],
+        "properties": {
+          "modules": { "type": "object", "additionalProperties": { "type": "boolean" } }, "sites": { "type": "object", "additionalProperties": { "type": "boolean" } },
+          "dispatch": { "type": "object", "additionalProperties": false, "required": ["open", "locked_reason", "recovery_epoch"], "properties": { "open": { "type": "boolean" }, "locked_reason": { "type": ["string", "null"] }, "recovery_epoch": { "type": "integer", "minimum": 1 } } }
+        }
+      },
+      "Metrics": {
+        "type": "object", "additionalProperties": false, "required": ["requests", "errors_5m", "dispatch_count", "oldest_outbox_seconds", "unknown_max_age_seconds", "unknown_open", "policy_denials", "readback", "dispatch_open"],
+        "properties": {
+          "requests": { "type": "integer" }, "errors_5m": { "type": "object" }, "dispatch_count": { "type": "integer" }, "oldest_outbox_seconds": { "type": "integer" },
+          "unknown_max_age_seconds": { "type": "integer" }, "unknown_open": { "type": "integer" }, "policy_denials": { "type": "integer" }, "readback": { "type": "object" }, "dispatch_open": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

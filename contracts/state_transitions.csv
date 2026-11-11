@@ -1,0 +1,34 @@
+from,event,actor,to,guard,deadline,ref
+DRAFT,submit,API,PENDING_APPROVAL,schema hợp lệ; quyền đọc target; snapshot và preview đã ghi bền,,SRS 19
+PENDING_APPROVAL,approve,API,AUTHORIZED,cùng plan_version và digest; còn trong 120 giây; quyền và policy hiện hành,approval_deadline = submit + 120 s,SRS 19
+PENDING_APPROVAL,deny,USER,REJECTED,đúng chủ thể của plan; chưa claim,,SRS 19
+PENDING_APPROVAL,cancel,USER,CANCELED,đúng chủ thể của plan; chưa claim,,SRS 19
+PENDING_APPROVAL,deadline,SCHEDULER,EXPIRED,hết approval window mà chưa duyệt,approval_deadline,SRS 19
+PENDING_APPROVAL,invalidate,AUTHORITY,REJECTED,policy/quyền/binding/đồng ý thay đổi trước claim,,SRS 19
+AUTHORIZED,invalidate,AUTHORITY,REJECTED,policy/quyền/binding/đồng ý thay đổi trước claim,,SRS 19
+AUTHORIZED,claim,RECEIVER,DISPATCHING,permit hợp lệ; snapshot hiện hành; jti tiêu thụ bền cùng giao dịch,,SRS 17 và 19
+AUTHORIZED,cancel,API,CANCELED,hủy nguyên tử cạnh tranh trên cùng hàng claim,,SRS 19
+AUTHORIZED,lease_deadline,SCHEDULER,EXPIRED,chưa claim khi hết dispatch window,dispatch_deadline = authorize + 120 s,SRS 19
+DISPATCHING,ack,ADAPTER,ACKED,identity/action/binding đúng; receipt ghi bền,"ACK: 10 s lịch, 3 s đèn",SRS 19
+DISPATCHING,no_effect_failure,VERIFIER,FAILED,bằng chứng authoritative chưa I/O hoặc bị chặn,,SRS 19
+DISPATCHING,already_in_state,VERIFIER,VERIFIED,đọc mới đáp ứng mục tiêu trước I/O; outcome ALREADY_IN_STATE; dispatch_state NOT_SENT,,SRS 18 và 19
+DISPATCHING,precheck_conflict,VERIFIER,CONFLICT,lịch bận khi kiểm ngay trước ghi; chưa tạo event; dispatch_state NOT_SENT,,SRS 22 bước 2 (LNH-T01)
+DISPATCHING,timeout,RECONCILER,UNKNOWN,"hết 10 s đèn hoặc 30 s lịch, còn mơ hồ","unknown_after: 10 s đèn, 30 s lịch",SRS 19
+ACKED,timeout,RECONCILER,UNKNOWN,"hết 10 s đèn hoặc 30 s lịch, còn mơ hồ","unknown_after: 10 s đèn, 30 s lịch",SRS 19
+ACKED,verified,VERIFIER,VERIFIED,bằng chứng đúng target và cửa sổ quan sát,,SRS 19
+UNKNOWN,verified,VERIFIER,VERIFIED,bằng chứng đúng target và cửa sổ quan sát,,SRS 19
+ACKED,confirmed_conflict,VERIFIER,CONFLICT,bằng chứng lỗi hoặc trùng lịch thực tế,,SRS 19
+UNKNOWN,confirmed_conflict,VERIFIER,CONFLICT,bằng chứng lỗi hoặc trùng lịch thực tế,,SRS 19
+UNKNOWN,confirmed_no_effect,VERIFIER,FAILED,nguồn authoritative xác nhận chưa tác động,,SRS 19
+DISPATCHING,cancel_request,API,DISPATCHING,hủy best effort sau claim: chỉ đặt cancel_requested,,SRS 19
+ACKED,cancel_request,API,ACKED,hủy best effort sau claim: chỉ đặt cancel_requested,,SRS 19
+UNKNOWN,cancel_request,API,UNKNOWN,hủy best effort sau claim: chỉ đặt cancel_requested,,SRS 19
+PENDING_APPROVAL,recovery_import,RECONCILER,UNKNOWN,khôi phục: barrier sau checkpoint cho thấy action đã được claim; nhập UNKNOWN chưa có quyền I/O,,SRS 21 bước 3 (LNH-T13)
+AUTHORIZED,recovery_import,RECONCILER,UNKNOWN,khôi phục: barrier sau checkpoint cho thấy action đã được claim; nhập UNKNOWN chưa có quyền I/O,,SRS 21 bước 3 (LNH-T13)
+UNKNOWN,sla,RECONCILER,UNKNOWN,"đổi reconciliation_status theo tuổi: 5 phút ticket, 1 giờ escalate, 24 giờ MANUAL_REQUIRED",,SRS 20
+VERIFIED,late_evidence,VERIFIER,VERIFIED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
+FAILED,late_evidence,VERIFIER,FAILED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
+CONFLICT,late_evidence,VERIFIER,CONFLICT,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
+REJECTED,late_evidence,VERIFIER,REJECTED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
+EXPIRED,late_evidence,VERIFIER,EXPIRED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
+CANCELED,late_evidence,VERIFIER,CANCELED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
