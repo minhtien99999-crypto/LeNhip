@@ -1,0 +1,350 @@
+{
+  "id": "S05",
+  "algorithm_version": "LNH-SLEEP-1",
+  "title": "Đổi analysis_zone và xóa một đoạn nguồn",
+  "srs": "Tính lại ngày/episode, tăng revision, loại cache cũ.",
+  "cases": [
+    {
+      "input": {
+        "analysis_zone": "Asia/Ho_Chi_Minh",
+        "now": "2026-11-11T03:00:00.000Z",
+        "selected_source": "watch",
+        "source_revision": 4,
+        "records": [
+          {
+            "id": "a1",
+            "source": "watch",
+            "platform": "ios",
+            "value": "asleepCore",
+            "start": "2026-11-08T15:00:00.000Z",
+            "end": "2026-11-08T22:00:00.000Z"
+          },
+          {
+            "id": "n1",
+            "source": "watch",
+            "platform": "ios",
+            "value": "asleepCore",
+            "start": "2026-11-09T15:00:00.000Z",
+            "end": "2026-11-09T16:30:00.000Z"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "day": "2026-11-09",
+          "sleep_seconds": 25200
+        },
+        {
+          "episodes_on": "2026-11-09",
+          "roles": [
+            {
+              "role": "MAIN",
+              "asleep_seconds": 25200
+            },
+            {
+              "role": "SECONDARY",
+              "asleep_seconds": 5400
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "algorithm_version": "LNH-SLEEP-1",
+        "analysis_zone": "Asia/Ho_Chi_Minh",
+        "computed_at": "2026-11-11T03:00:00.000Z",
+        "source_revision": 4,
+        "source": {
+          "id": "watch",
+          "selection": "USER"
+        },
+        "cache_key": "LNH-SLEEP-1|Asia/Ho_Chi_Minh|watch|4|2026-11-11",
+        "days": [
+          {
+            "local_date": "2026-11-04",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-05",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-06",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-07",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-08",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-09",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "OBSERVED",
+            "steps": null,
+            "sleep_seconds": 25200,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-10",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-11",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 4,
+            "complete": false
+          }
+        ],
+        "episodes": [
+          {
+            "local_date": "2026-11-09",
+            "role": "MAIN",
+            "start": "2026-11-08T15:00:00.000Z",
+            "end": "2026-11-08T22:00:00.000Z",
+            "asleep_seconds": 25200,
+            "error": null
+          },
+          {
+            "local_date": "2026-11-09",
+            "role": "SECONDARY",
+            "start": "2026-11-09T15:00:00.000Z",
+            "end": "2026-11-09T16:30:00.000Z",
+            "asleep_seconds": 5400,
+            "error": null
+          }
+        ],
+        "summary": {
+          "today": "2026-11-11",
+          "completed_days": 7,
+          "sleep_observed_days": 1,
+          "sleep_average_seconds": null,
+          "steps_observed_days": 0,
+          "steps_average": null
+        },
+        "flags": []
+      }
+    },
+    {
+      "input": {
+        "analysis_zone": "Asia/Tokyo",
+        "now": "2026-11-11T03:00:00.000Z",
+        "selected_source": "watch",
+        "source_revision": 5,
+        "records": [
+          {
+            "id": "n1",
+            "source": "watch",
+            "platform": "ios",
+            "value": "asleepCore",
+            "start": "2026-11-09T15:00:00.000Z",
+            "end": "2026-11-09T16:30:00.000Z"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "day": "2026-11-09",
+          "sleep_seconds": null,
+          "source_status": "MISSING"
+        },
+        {
+          "day": "2026-11-10",
+          "sleep_seconds": 5400,
+          "source_status": "OBSERVED"
+        },
+        {
+          "cache_key_differs_from_case": 0
+        }
+      ],
+      "expected": {
+        "algorithm_version": "LNH-SLEEP-1",
+        "analysis_zone": "Asia/Tokyo",
+        "computed_at": "2026-11-11T03:00:00.000Z",
+        "source_revision": 5,
+        "source": {
+          "id": "watch",
+          "selection": "USER"
+        },
+        "cache_key": "LNH-SLEEP-1|Asia/Tokyo|watch|5|2026-11-11",
+        "days": [
+          {
+            "local_date": "2026-11-04",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-05",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-06",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-07",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-08",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-09",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-10",
+            "zone": "Asia/Tokyo",
+            "source_status": "OBSERVED",
+            "steps": null,
+            "sleep_seconds": 5400,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-11",
+            "zone": "Asia/Tokyo",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 5,
+            "complete": false
+          }
+        ],
+        "episodes": [
+          {
+            "local_date": "2026-11-10",
+            "role": "MAIN",
+            "start": "2026-11-09T15:00:00.000Z",
+            "end": "2026-11-09T16:30:00.000Z",
+            "asleep_seconds": 5400,
+            "error": null
+          }
+        ],
+        "summary": {
+          "today": "2026-11-11",
+          "completed_days": 7,
+          "sleep_observed_days": 1,
+          "sleep_average_seconds": null,
+          "steps_observed_days": 0,
+          "steps_average": null
+        },
+        "flags": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+node_modules/
+/data/
+/.lenhip/
+*.log
+.DS_Store
+/test-results/
+/android/core/build/
+/android/core/.gradle/
+/android/.gradle/
+/android/build/

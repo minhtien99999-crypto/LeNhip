@@ -1,0 +1,160 @@
+{
+  "id": "S06",
+  "algorithm_version": "LNH-SLEEP-1",
+  "title": "Đêm chuyển giờ mùa hè (Europe/Berlin, 29/03/2026)",
+  "srs": "Gói kỹ thuật: S06 DST.",
+  "cases": [
+    {
+      "input": {
+        "analysis_zone": "Europe/Berlin",
+        "now": "2026-03-30T10:00:00.000Z",
+        "selected_source": "watch",
+        "source_revision": 1,
+        "records": [
+          {
+            "id": "a1",
+            "source": "watch",
+            "platform": "ios",
+            "value": "asleepCore",
+            "start": "2026-03-28T22:00:00.000Z",
+            "end": "2026-03-29T05:00:00.000Z"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "day": "2026-03-29",
+          "sleep_seconds": 25200
+        }
+      ],
+      "expected": {
+        "algorithm_version": "LNH-SLEEP-1",
+        "analysis_zone": "Europe/Berlin",
+        "computed_at": "2026-03-30T10:00:00.000Z",
+        "source_revision": 1,
+        "source": {
+          "id": "watch",
+          "selection": "USER"
+        },
+        "cache_key": "LNH-SLEEP-1|Europe/Berlin|watch|1|2026-03-30",
+        "days": [
+          {
+            "local_date": "2026-03-23",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-24",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-25",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-26",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-27",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-28",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-29",
+            "zone": "Europe/Berlin",
+            "source_status": "OBSERVED",
+            "steps": null,
+            "sleep_seconds": 25200,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-03-30",
+            "zone": "Europe/Berlin",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-03-30T10:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": false
+          }
+        ],
+        "episodes": [
+          {
+            "local_date": "2026-03-29",
+            "role": "MAIN",
+            "start": "2026-03-28T22:00:00.000Z",
+            "end": "2026-03-29T05:00:00.000Z",
+            "asleep_seconds": 25200,
+            "error": null
+          }
+        ],
+        "summary": {
+          "today": "2026-03-30",
+          "completed_days": 7,
+          "sleep_observed_days": 1,
+          "sleep_average_seconds": null,
+          "steps_observed_days": 0,
+          "steps_average": null
+        },
+        "flags": []
+      }
+    }
+  ]
+}

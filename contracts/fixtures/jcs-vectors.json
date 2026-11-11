@@ -1,0 +1,48 @@
+{
+  "scheme": "RFC 8785",
+  "digest": "SHA-256, base64url không padding",
+  "vectors": [
+    {
+      "name": "rfc8785-3.2.2",
+      "note": "Ví dụ của RFC 8785 mục 3.2.2: số theo ECMAScript, chuỗi theo JSON.stringify, khóa xếp theo UTF-16",
+      "input_json": "{\n  \"numbers\": [333333333.33333329, 1E30, 4.50, 2e-3, 0.000000000000000000000000001],\n  \"string\": \"\\u20ac$\\u000F\\u000aA'\\u0042\\u0022\\u005c\\\\\\\"\\/\",\n  \"literals\": [null, true, false]\n}",
+      "canonical": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}",
+      "sha256_b64url": "LV4BoxjQ8IeatWjEviicix9k74khpTxid9XgaZeLqss"
+    },
+    {
+      "name": "rfc8785-3.2.3-sorting",
+      "note": "Thứ tự khóa theo đơn vị mã UTF-16 (RFC 8785 mục 3.2.3)",
+      "input_json": "{\n  \"\\u20ac\": \"Euro Sign\",\n  \"\\r\": \"Carriage Return\",\n  \"\\ufb33\": \"Hebrew Letter Dalet With Dagesh\",\n  \"1\": \"One\",\n  \"\\ud83d\\ude00\": \"Emoji: Grinning Face\",\n  \"\\u0080\": \"Control\",\n  \"\\u00f6\": \"Latin Small Letter O With Diaeresis\"\n}",
+      "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+      "sha256_b64url": "XjIVVtIgGKllaZGp6U937BdfoZPlKiQp0xL4QZ7IsIw"
+    },
+    {
+      "name": "numbers-edge",
+      "note": "-0 in là 0; 1e21 in dạng mũ; 1e-7 in dạng mũ; số nguyên lớn an toàn giữ nguyên",
+      "input_json": "[-0, 0.0, 1e21, 1e20, 1e-7, 0.000001, 9007199254740991, -1.5e-10, 100]",
+      "canonical": "[0,0,1e+21,100000000000000000000,1e-7,0.000001,9007199254740991,-1.5e-10,100]",
+      "sha256_b64url": "OWnYiU4wycIMlhRWNPzFCloh1_XNwBA8jTae6KTdTx4"
+    },
+    {
+      "name": "nested-unicode",
+      "note": "Chuỗi tiếng Việt có dấu giữ nguyên byte UTF-8, không thoát; khóa lồng nhau xếp ở mọi tầng",
+      "input_json": "{\"z\":{\"b\":[1,{\"y\":\"Thời gian cá nhân\",\"x\":true}],\"a\":\"Đèn bàn\"},\"a\":null}",
+      "canonical": "{\"a\":null,\"z\":{\"a\":\"Đèn bàn\",\"b\":[1,{\"x\":true,\"y\":\"Thời gian cá nhân\"}]}}",
+      "sha256_b64url": "N2b8dKnMjfDqwFS6J-ewa9Y2NTTyUi3A-mN0d83-5io"
+    },
+    {
+      "name": "calendar-payload",
+      "note": "ActionPayload của calendar.block: chỉ phần preview được băm (SRS mục 14)",
+      "input_json": "{\"kind\":\"calendar.block\",\"schema_version\":1,\"workspace_id\":\"ws_demo\",\"target\":{\"type\":\"calendar\",\"calendar_ref\":\"primary\",\"account\":\"cal_7d2c\"},\"start\":\"2026-11-11T08:00:00.000Z\",\"end\":\"2026-11-11T08:30:00.000Z\",\"zone\":\"Asia/Ho_Chi_Minh\",\"title_code\":\"PERSONAL_TIME\",\"visibility\":\"private\",\"show_as\":\"busy\",\"target_binding_version\":1}",
+      "canonical": "{\"end\":\"2026-11-11T08:30:00.000Z\",\"kind\":\"calendar.block\",\"schema_version\":1,\"show_as\":\"busy\",\"start\":\"2026-11-11T08:00:00.000Z\",\"target\":{\"account\":\"cal_7d2c\",\"calendar_ref\":\"primary\",\"type\":\"calendar\"},\"target_binding_version\":1,\"title_code\":\"PERSONAL_TIME\",\"visibility\":\"private\",\"workspace_id\":\"ws_demo\",\"zone\":\"Asia/Ho_Chi_Minh\"}",
+      "sha256_b64url": "gZ9lbIiVoV-kXJuBP3z7O4Vf5IDS9YR9l5PtINaAjDs"
+    },
+    {
+      "name": "device-payload",
+      "note": "ActionPayload của device.set_power: site, target_binding_version và command",
+      "input_json": "{\"kind\":\"device.set_power\",\"schema_version\":1,\"workspace_id\":\"ws_demo\",\"target\":{\"type\":\"device\",\"site\":\"site_hn01\",\"device_ref\":\"dev_lamp_01\"},\"command\":\"SET_ON\",\"target_binding_version\":3}",
+      "canonical": "{\"command\":\"SET_ON\",\"kind\":\"device.set_power\",\"schema_version\":1,\"target\":{\"device_ref\":\"dev_lamp_01\",\"site\":\"site_hn01\",\"type\":\"device\"},\"target_binding_version\":3,\"workspace_id\":\"ws_demo\"}",
+      "sha256_b64url": "oH0uuC0zDgJNjG9jOasRpWhVb0HE-dxOsCUeMap3ueg"
+    }
+  ]
+}

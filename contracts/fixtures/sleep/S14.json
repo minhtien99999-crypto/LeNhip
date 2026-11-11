@@ -1,0 +1,192 @@
+{
+  "id": "S14",
+  "algorithm_version": "LNH-SLEEP-1",
+  "title": "Bước chân: null khác 0",
+  "srs": "Mục 06: null/không sample là thiếu; 0 có provenance hợp lệ là 0 quan sát.",
+  "cases": [
+    {
+      "input": {
+        "analysis_zone": "Asia/Ho_Chi_Minh",
+        "now": "2026-11-11T03:00:00.000Z",
+        "selected_source": "watch",
+        "source_revision": 1,
+        "records": [],
+        "steps": [
+          {
+            "local_date": "2026-11-05",
+            "count": 0,
+            "provenance": "PLATFORM_AGGREGATE"
+          },
+          {
+            "local_date": "2026-11-06",
+            "count": null,
+            "provenance": "PLATFORM_AGGREGATE"
+          },
+          {
+            "local_date": "2026-11-07",
+            "count": 0,
+            "provenance": null
+          },
+          {
+            "local_date": "2026-11-08",
+            "count": 5000,
+            "provenance": "PLATFORM_AGGREGATE"
+          },
+          {
+            "local_date": "2026-11-09",
+            "count": 4200,
+            "provenance": "PLATFORM_AGGREGATE"
+          },
+          {
+            "local_date": "2026-11-10",
+            "count": 6100,
+            "provenance": "PLATFORM_AGGREGATE"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "day": "2026-11-05",
+          "steps": 0
+        },
+        {
+          "day": "2026-11-06",
+          "steps": null
+        },
+        {
+          "day": "2026-11-07",
+          "steps": null
+        },
+        {
+          "day": "2026-11-04",
+          "steps": null
+        },
+        {
+          "summary": {
+            "steps_observed_days": 4,
+            "steps_average": 3825
+          }
+        }
+      ],
+      "expected": {
+        "algorithm_version": "LNH-SLEEP-1",
+        "analysis_zone": "Asia/Ho_Chi_Minh",
+        "computed_at": "2026-11-11T03:00:00.000Z",
+        "source_revision": 1,
+        "source": {
+          "id": "watch",
+          "selection": "USER"
+        },
+        "cache_key": "LNH-SLEEP-1|Asia/Ho_Chi_Minh|watch|1|2026-11-11",
+        "days": [
+          {
+            "local_date": "2026-11-04",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-05",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": 0,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-06",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-07",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-08",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": 5000,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-09",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": 4200,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-10",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": 6100,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-11",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 0,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": false
+          }
+        ],
+        "episodes": [],
+        "summary": {
+          "today": "2026-11-11",
+          "completed_days": 7,
+          "sleep_observed_days": 0,
+          "sleep_average_seconds": null,
+          "steps_observed_days": 4,
+          "steps_average": 3825
+        },
+        "flags": []
+      }
+    }
+  ]
+}

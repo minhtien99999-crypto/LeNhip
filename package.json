@@ -1,0 +1,24 @@
+{
+  "name": "lenhip",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LeNhip (LeDB): hợp đồng dùng chung, máy chủ tham chiếu và giao diện web theo LNH-SRS-001 V1.1",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "dev": "LENHIP_DEV=1 node src/main.ts",
+    "test": "node --test --test-concurrency=1 \"tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "check": "node scripts/check-contracts.ts",
+    "e2e": "node scripts/e2e.mjs",
+    "fixtures": "node scripts/make-fixtures.ts",
+    "verify": "npm run typecheck && npm test && npm run check"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "typescript": "5.9.3"
+  }
+}

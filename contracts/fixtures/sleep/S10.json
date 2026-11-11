@@ -1,0 +1,201 @@
+{
+  "id": "S10",
+  "algorithm_version": "LNH-SLEEP-1",
+  "title": "Phiên Android có stage, có thức và rời giường",
+  "srs": "Quy tắc 2–3: chỉ stage asleep, trừ AWAKE/OUT_OF_BED.",
+  "cases": [
+    {
+      "input": {
+        "analysis_zone": "Asia/Ho_Chi_Minh",
+        "now": "2026-11-11T03:00:00.000Z",
+        "selected_source": "band",
+        "source_revision": 1,
+        "records": [
+          {
+            "id": "s1",
+            "source": "band",
+            "platform": "android",
+            "type": "session",
+            "start": "2026-11-09T16:00:00.000Z",
+            "end": "2026-11-09T23:30:00.000Z",
+            "stages": [
+              {
+                "stage": "LIGHT",
+                "start": "2026-11-09T16:00:00.000Z",
+                "end": "2026-11-09T18:00:00.000Z"
+              },
+              {
+                "stage": "AWAKE",
+                "start": "2026-11-09T18:00:00.000Z",
+                "end": "2026-11-09T18:20:00.000Z"
+              },
+              {
+                "stage": "DEEP",
+                "start": "2026-11-09T18:20:00.000Z",
+                "end": "2026-11-09T20:00:00.000Z"
+              },
+              {
+                "stage": "REM",
+                "start": "2026-11-09T20:00:00.000Z",
+                "end": "2026-11-09T21:00:00.000Z"
+              },
+              {
+                "stage": "OUT_OF_BED",
+                "start": "2026-11-09T21:00:00.000Z",
+                "end": "2026-11-09T21:10:00.000Z"
+              },
+              {
+                "stage": "LIGHT",
+                "start": "2026-11-09T21:10:00.000Z",
+                "end": "2026-11-09T23:30:00.000Z"
+              }
+            ]
+          }
+        ]
+      },
+      "checks": [
+        {
+          "day": "2026-11-10",
+          "sleep_seconds": 25200
+        },
+        {
+          "episodes_on": "2026-11-10",
+          "roles": [
+            {
+              "role": "MAIN",
+              "asleep_seconds": 25200
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "algorithm_version": "LNH-SLEEP-1",
+        "analysis_zone": "Asia/Ho_Chi_Minh",
+        "computed_at": "2026-11-11T03:00:00.000Z",
+        "source_revision": 1,
+        "source": {
+          "id": "band",
+          "selection": "USER"
+        },
+        "cache_key": "LNH-SLEEP-1|Asia/Ho_Chi_Minh|band|1|2026-11-11",
+        "days": [
+          {
+            "local_date": "2026-11-04",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-05",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-06",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-07",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-08",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-09",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-10",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "OBSERVED",
+            "steps": null,
+            "sleep_seconds": 25200,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": true
+          },
+          {
+            "local_date": "2026-11-11",
+            "zone": "Asia/Ho_Chi_Minh",
+            "source_status": "MISSING",
+            "steps": null,
+            "sleep_seconds": null,
+            "coverage_days": 1,
+            "computed_at": "2026-11-11T03:00:00.000Z",
+            "algorithm_version": "LNH-SLEEP-1",
+            "source_revision": 1,
+            "complete": false
+          }
+        ],
+        "episodes": [
+          {
+            "local_date": "2026-11-10",
+            "role": "MAIN",
+            "start": "2026-11-09T16:00:00.000Z",
+            "end": "2026-11-09T23:30:00.000Z",
+            "asleep_seconds": 25200,
+            "error": null
+          }
+        ],
+        "summary": {
+          "today": "2026-11-11",
+          "completed_days": 7,
+          "sleep_observed_days": 1,
+          "sleep_average_seconds": null,
+          "steps_observed_days": 0,
+          "steps_average": null
+        },
+        "flags": []
+      }
+    }
+  ]
+}
