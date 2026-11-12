@@ -63,7 +63,7 @@ import de from "./lele-lex-de.js";
  */
 
 /** Phiên bản của bộ quy tắc và bảng từ. Đổi quy tắc khớp hoặc một mục từ thì đổi phiên bản. */
-export const LELE_RULES_VERSION = "lele-rules-1.2026-11-11";
+export const LELE_RULES_VERSION = "lele-rules-2.2026-11-12";
 
 /** 13 bảng từ theo đúng thứ tự LOCALES. @type {readonly LeleLexicon[]} */
 export const LEXICONS = Object.freeze(/** @type {LeleLexicon[]} */ ([vi, en, fr, zhHans, ko, ja, es, ptBR, it, zhHant, id, ru, de]));

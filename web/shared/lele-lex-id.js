@@ -1,17 +1,18 @@
 export default {
   "tag": "id",
   "draft": true,
-  "on": ["nyalakan", "hidupkan", "menyalakan", "nyalain", "hidupin"],
-  "off": ["matikan", "padamkan", "mematikan", "matiin"],
-  "lamp": ["lampu"],
-  "block": ["blokir", "sisihkan", "pesan", "jadwalkan", "luangkan", "sediakan", "fokus", "waktu pribadi"],
+  "on": ["nyalakan", "hidupkan", "menyalakan", "menghidupkan", "dinyalakan", "dihidupkan", "nyalain", "hidupin", "idupin", "aktifkan", "mengaktifkan"],
+  "off": ["matikan", "padamkan", "mematikan", "memadamkan", "dimatikan", "dipadamkan", "matiin", "padamin", "nonaktifkan", "menonaktifkan"],
+  "lamp": ["lampu*", "bohlam"],
+  "block": ["blokir", "memblokir", "blok", "block", "sisihkan", "menyisihkan", "sisakan", "pesan", "jadwalkan", "menjadwalkan", "luangkan", "meluangkan", "sediakan", "kosongkan", "alokasikan", "reservasi", "booking", "fokus", "istirahat", "rehat", "jeda", "waktu pribadi", "waktu sendiri", "me time"],
   "minute": ["menit", "mnt"],
   "hour": ["jam"],
-  "at": ["pukul", "jam", "pada"],
+  "at": ["pukul", "pkl", "jam", "pada", "mulai", "dari"],
   "oclock": [],
-  "pm": ["sore", "malam", "siang"],
-  "tomorrow": ["besok", "esok"],
-  "ui": ["tema", "gaya", "warna", "ukuran teks", "ukuran huruf", "tampilan", "personalisasi", "bahasa"],
-  "health": ["tidur", "insomnia", "mengantuk", "langkah kaki", "jumlah langkah", "detak jantung", "jantung", "denyut nadi", "tekanan darah", "tensi", "berat badan", "gula darah", "diabetes", "kolesterol", "sakit", "penyakit", "nyeri", "demam", "batuk", "pusing", "mual", "gejala", "obat", "dokter", "rumah sakit", "klinik", "diagnosis", "terapi", "operasi", "vaksin*", "alergi", "asma", "kanker", "hamil", "haid", "menstruasi", "kesehatan", "sehat", "stres", "cemas", "depresi", "mental", "lelah", "capek", "kalori", "diet"],
-  "pii": ["ktp", "nik", "paspor", "kata sandi", "sandi", "kartu kredit", "nomor kartu", "rekening", "tanggal lahir", "alamat rumah", "nomor telepon", "nomor hp"]
+  "pm": ["sore", "malam", "siang", "petang"],
+  "tomorrow": ["besok", "esok", "bsk"],
+  "ignore": ["makan siang", "makan malam", "selamat pagi", "selamat siang", "selamat sore", "selamat malam"],
+  "ui": ["tema", "gaya", "warna", "ukuran teks", "ukuran huruf", "font", "tampilan", "antarmuka", "mode gelap", "personalisasi", "kustomisasi", "bahasa"],
+  "health": ["*tidur*", "insomnia", "mengantuk", "ngantuk", "kantuk", "begadang", "mendengkur", "ngorok", "mimpi buruk", "langkah kaki", "jumlah langkah", "hitungan langkah", "berapa langkah", "langkah saya", "langkahku", "langkah hari ini", "jantung*", "denyut*", "nadi", "darah", "berdarah", "pendarahan", "perdarahan", "tensi", "tensinya", "tensimeter", "hipertensi", "hipotensi", "saturasi oksigen", "spo2", "suhu badan", "suhu tubuh", "termometer", "berat badan", "tinggi badan", "lingkar perut", "timbangan", "obesitas", "kegemukan", "gemuk", "kurus", "imt", "kalori", "diet", "gizi", "nutrisi", "diabetes", "kencing manis", "kadar gula", "kolesterol", "asam urat", "maag", "lambung", "gerd", "ginjal", "paru-paru", "usus buntu", "hepatitis", "tbc", "tuberkulosis", "tipes", "tifus", "dbd", "malaria", "cacar", "campak", "covid*", "hiv", "epilepsi", "vertigo", "anemia", "stroke", "katarak", "wasir", "ambeien", "rematik", "encok", "*sakit*", "nyeri*", "pegal*", "linu", "kram perut", "kram otot", "demam*", "meriang", "masuk angin", "panas dalam", "badan panas", "batuk*", "pilek", "flu", "bersin", "sesak", "napas", "nafas", "pusing*", "migrain*", "mual*", "muntah*", "diare", "mencret", "sembelit", "sariawan", "gatal*", "ruam", "radang", "bengkak", "infeksi*", "luka", "terluka", "cedera", "patah tulang", "keseleo", "terkilir", "pingsan", "lemas", "lelah", "kelelahan", "capek*", "letih", "lesu", "gejala*", "obat*", "berobat", "pengobatan", "mengobati", "diobati", "dosis", "pil", "kapsul", "antibiotik", "vitamin", "suplemen", "jamu", "suntik*", "infus", "vaksin*", "imunisasi", "apotek*", "apotik", "dokter*", "perawat", "bidan", "rsud", "puskesmas", "klinik*", "igd", "ugd", "icu", "rawat inap", "rawat jalan", "opname", "rontgen", "usg", "check up", "checkup", "medis", "diagnosis", "diagnosa", "didiagnosis", "terapi*", "fisioterapi", "kemoterapi", "kemo", "operasi", "dioperasi", "bedah", "cuci darah", "bpjs", "alergi*", "asma", "kanker", "tumor", "hamil", "hamilnya", "kehamilan", "bumil", "promil", "janin", "melahirkan", "persalinan", "bersalin", "keguguran", "menyusui", "haid", "menstruasi", "datang bulan", "pms", "menopause", "kontrasepsi", "pil kb", "*sehat*", "stres*", "cemas*", "kecemasan", "gelisah", "depresi*", "mental", "kejiwaan", "gangguan jiwa", "psikolog*", "psikiater", "psikiatri", "konseling", "trauma*", "panik", "bunuh diri", "burnout", "bipolar", "skizofrenia", "adhd", "autis*", "kecanduan", "narkoba"],
+  "pii": ["ktp", "e-ktp", "nik", "nomor induk", "kartu keluarga", "akta kelahiran", "surat izin mengemudi", "nomor sim", "paspor", "npwp", "nomor bpjs", "nomor identitas", "kata sandi", "sandi", "kode pin", "nomor pin", "pin atm", "kode otp", "otp", "cvv", "kartu kredit", "kartu debit", "kartu atm", "nomor kartu", "rekening", "norek", "no rek", "tanggal lahir", "tgl lahir", "tempat lahir", "nama ibu kandung", "alamat rumah", "nomor telepon", "nomor hp", "no hp", "nomor ponsel", "nomor wa", "slip gaji"]
 };

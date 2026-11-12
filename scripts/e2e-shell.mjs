@@ -416,9 +416,10 @@ await run("khung giao diện", async (t) => {
   const en = await t.open({ modules: ALL, locale: "en-US" });
   await t.dismissNotice(en.page);
   const english = await en.page.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir, translate: document.documentElement.getAttribute("translate"), labels: [...document.querySelectorAll("#desktop-nav .nav-label")].map((e) => e.textContent).join("|"), brand: document.querySelector("svg.brand-wordmark").getAttribute("aria-label") }));
-  ok(english.lang === "en" && english.dir === "ltr" && english.translate === "no" && english.labels.endsWith("|Messages|Connect") && english.brand === "LeNhip", 'trình duyệt tiếng Anh: <html lang="en">, nhãn của màn hình mới lấy từ catalog tiếng Anh (chuỗi cũ của 0.1.0 chưa chuyển sang catalog)');
+  ok(english.lang === "en" && english.dir === "ltr" && english.translate === "no" && english.labels.endsWith("|Messages|Connect") && english.brand === "LeNhip", 'trình duyệt tiếng Anh: <html lang="en">, nhãn điều hướng lấy từ catalog tiếng Anh');
   await en.context.close();
-  const zh = await t.open({ locale: "zh-TW", collectErrors: false });
-  ok((await zh.page.evaluate(() => document.documentElement.lang)) === "zh-Hant" && (await zh.page.textContent("#desktop-nav")).includes("Hôm nay"), "trình duyệt zh-TW: chọn zh-Hant (không bao giờ ra giản thể); catalog chưa có nên trang vẫn chạy bằng bản tiếng Việt");
+  const zh = await t.open({ locale: "zh-TW" });
+  const zhNav = await zh.page.textContent("#desktop-nav");
+  ok((await zh.page.evaluate(() => document.documentElement.lang)) === "zh-Hant" && zhNav.includes("訊息") && !zhNav.includes("消息") && !zhNav.includes("Hôm nay"), "trình duyệt zh-TW: chọn zh-Hant và nạp catalog phồn thể (không bao giờ ra giản thể, không rơi về tiếng Việt)");
   await zh.context.close();
 });

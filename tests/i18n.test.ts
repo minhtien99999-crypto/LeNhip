@@ -26,7 +26,7 @@ import { parseStrictJson } from "../src/core/strict-json.ts";
 import { catalogFile, currentConsentTexts, entryId, formatRegistry, mergeRegistry, readCatalog, readRegistry, REGISTRY_URL } from "../scripts/make-consent-texts.ts";
 
 /** Đặt true sau khi dịch xong: mọi ngôn ngữ trong LOCALES phải có đủ phần lõi và các phần (13 × 4 tệp). */
-const REQUIRE_ALL_LOCALES = false;
+const REQUIRE_ALL_LOCALES = true;
 /** LENHIP_I18N_ONLY=<tag>: chỉ kiểm tệp của một ngôn ngữ. */
 const ONLY = process.env.LENHIP_I18N_ONLY || null;
 
@@ -266,7 +266,7 @@ const NOT_KEYS = new Set(["calendar.block", "device.set_power", "robot.simulate"
 /** Họ khóa dựng lúc chạy từ mã của hợp đồng; từng họ có phép kiểm phủ riêng bên dưới. */
 const DYNAMIC = ["state.", "outcome.", "reason.", "grade.", "error.", "lele.answer.", "theme.", "consent."];
 /** Khóa của phần giữ chỗ trong khung giao diện: chỉ các tệp của nhánh tính năng dùng, hết dùng khi nhánh đó thay tệp giữ chỗ. */
-const MAY_BE_UNUSED = new Set(["shell.placeholder", "shell.messages.empty", "shell.messages.draftLabel", "shell.messages.draftNote", "shell.social.empty", "shell.endpoints.empty", "shell.trackers.empty", "connect.social.title", "connect.endpoints.title", "connect.trackers.title", "nav.messages"]);
+const MAY_BE_UNUSED = new Set(["connect.social.title", "connect.endpoints.title", "connect.trackers.title", "nav.messages"]);
 
 test("khóa: mọi khóa mã nguồn lõi nhắc tới đều có trong bản gốc; mọi khóa lõi đều được dùng", () => {
   const core = load("vi", "core")!;

@@ -49,46 +49,57 @@ const SAMPLES: Record<string, [string, Expect][]> = {
   fr: [
     ["allume la lampe du bureau", "ON"], ["éteins la lumière", "OFF"], ["eteins la lumiere", "OFF"], ["bloque 30 minutes à 15h", [30, "15:00"]], ["réserve 45 minutes à 15h30 demain", [45, "15:30", true]],
     ["j'ai mal dormi, ma tension est élevée", "HEALTH"], ["allume la lampe, j'ai de la fièvre", "HEALTH"], ["voici mon mot de passe", "PII"], ["bonjour tout le monde", null], ["il fait beau", null],
+    ["coupe la lumière du salon", "OFF"], ["garde-moi 45 minutes à 3h de l'après-midi", [45, "15:00"]], ["je suis au régime depuis lundi", "HEALTH"],
   ],
   "zh-Hans": [
     ["打开台灯", "ON"], ["把灯关了", "OFF"], ["开会前关灯", "OFF"], ["15点留出30分钟", [30, "15:00"]], ["明天下午3点半预留30分钟", [30, "15:30", true]], ["昨晚没睡好，心跳很快", "HEALTH"], ["打开台灯，我头痛", "HEALTH"],
     ["我的身份证号码", "PII"], ["你好", null], ["今天天气不错", null],
+    ["明晚8点半预留45分钟", [45, "20:30", true]], ["帮我把夜灯熄掉", "OFF"], ["我血糖有点高", "HEALTH"], ["我的支付宝账号", "PII"],
   ],
   ko: [
     ["스탠드 켜줘", "ON"], ["불 꺼줘", "OFF"], ["스탠드 꺼내서 켜줘", "ON"], ["15시에 30분 예약해줘", [30, "15:00"]], ["내일 오후 3시에 30분 비워줘", [30, "15:00", true]], ["어젯밤에 잠을 잘 못 잤어요", "HEALTH"], ["조명 켜줘, 두통이 심해", "HEALTH"],
     ["제 비밀번호는", "PII"], ["안녕하세요", null], ["오늘 날씨가 좋네요", null],
+    ["아파트 조명 꺼줘", "OFF"], ["15시에 30분 예약을 잡아줘", [30, "15:00"]], ["내일 오후 3시 반에 45분 잡아줘", [45, "15:30", true]], ["머리 아파", "HEALTH"], ["주민번호 알려줄게요", "PII"],
   ],
   ja: [
     ["デスクライトをつけて", "ON"], ["電気を消して", "OFF"], ["オフィスのライトをつけて", "ON"], ["オンライン会議の前にライトを消して", "OFF"], ["15時に30分確保して", [30, "15:00"]], ["明日15時から2時間ブロックして", [120, "15:00", true]], ["昨夜はよく眠れませんでした", "HEALTH"], ["ライトをつけて、頭痛がする", "HEALTH"],
     ["パスワードを教えます", "PII"], ["こんにちは", null], ["今日はいい天気ですね", null],
+    ["電気を付けて", "ON"], ["明日の午後3時半に45分おさえて", [45, "15:30", true]], ["お疲れ様です、デスクライトをつけて", "ON"], ["血圧が高めです", "HEALTH"],
   ],
   es: [
     ["enciende la lámpara", "ON"], ["apaga la luz", "OFF"], ["reserva 30 minutos a las 15:00", [30, "15:00"]], ["bloquea 30 minutos a las 9 de la mañana", [30, "09:00"]], ["reserva 30 minutos a las 15:00 mañana", [30, "15:00", true]],
     ["anoche dormí mal y me duele la cabeza", "HEALTH"], ["enciende la luz, tengo fiebre", "HEALTH"], ["mi contraseña es esta", "PII"], ["hola a todos", null], ["hace buen tiempo", null],
+    ["reserva 45 minutos a las 3 y media de la tarde", [45, "15:30"]], ["prende el foco de la entrada", "ON"], ["apágame la luz del salón", "OFF"], ["reserva 2 horas y 30 minutos", null], ["estoy con gripa y calentura", "HEALTH"], ["mi curp es esta", "PII"],
   ],
   "pt-BR": [
     ["acenda a luz", "ON"], ["desligue a luminária", "OFF"], ["reserve 30 minutos às 15:00", [30, "15:00"]], ["bloqueie 30 minutos às 15h amanhã", [30, "15:00", true]], ["dormi mal e estou com dor de cabeça", "HEALTH"],
     ["acenda a luz, estou com febre", "HEALTH"], ["minha senha é esta", "PII"], ["olá pessoal", null], ["o tempo está bom", null],
+    ["reserve 45 minutos às 3 e meia da tarde", [45, "15:30"]], ["reserve 2 horas às 15h", [120, "15:00"]], ["vou ligar para o cliente, reserve 30 minutos de foco às 15h", [30, "15:00"]], ["que droga, apague a luz", "OFF"], ["minha cabeça dói muito", "HEALTH"], ["meu cpf é esse", "PII"], ["saudade de você", null],
   ],
   it: [
     ["accendi la lampada", "ON"], ["spegni la luce", "OFF"], ["sono occupato, blocca 30 minuti alle 15", [30, "15:00"]], ["riserva 45 minuti alle 15:30 domani", [45, "15:30", true]], ["ho dormito male e ho mal di testa", "HEALTH"],
     ["accendi la luce, ho la febbre", "HEALTH"], ["il mio codice fiscale", "PII"], ["ciao a tutti", null], ["oggi c'è il sole", null],
+    ["tienimi 2 ore dalle 14", [120, "14:00"]], ["segna 20 min alle 3 del pomeriggio", [20, "15:00"]], ["non sto bene oggi", "HEALTH"], ["la password del wifi", "PII"],
   ],
   "zh-Hant": [
     ["打開檯燈", "ON"], ["把燈關掉", "OFF"], ["開會前關燈", "OFF"], ["15點保留30分鐘", [30, "15:00"]], ["明天15:00預留30分鐘", [30, "15:00", true]], ["昨晚失眠了，頭很痛", "HEALTH"], ["打開檯燈，我發燒了", "HEALTH"],
     ["我的身分證字號", "PII"], ["你好", null], ["今天天氣不錯", null],
+    ["今晚8點留45分鐘", [45, "20:00"]], ["把桌燈關掉", "OFF"], ["我要去看牙", "HEALTH"], ["我的統編", "PII"],
   ],
   id: [
     ["nyalakan lampu", "ON"], ["matikan lampu meja", "OFF"], ["blokir 30 menit pukul 15.00", [30, "15:00"]], ["sisihkan 2 jam jam 3 sore besok", [120, "15:00", true]], ["semalam saya kurang tidur dan pusing", "HEALTH"],
     ["nyalakan lampu, saya demam", "HEALTH"], ["kata sandi saya", "PII"], ["halo semuanya", null], ["rapat tim berjalan baik", null],
+    ["tolong lampunya dimatikan", "OFF"], ["hidupin lampu ruang tamu dong", "ON"], ["jadwalkan waktu pribadi 60 menit mulai 14.00", [60, "14:00"]], ["sisihkan 30 menit jam 11 untuk makan siang", [30, "11:00"]], ["tadi malam saya ketiduran", "HEALTH"], ["ktp saya hilang", "PII"],
   ],
   ru: [
     ["включи лампу", "ON"], ["выключи свет", "OFF"], ["заблокируй 30 минут в 15:00", [30, "15:00"]], ["забронируй 2 часа в 15:00 завтра", [120, "15:00", true]], ["я плохо спал и болит голова", "HEALTH"],
     ["включи свет, у меня температура", "HEALTH"], ["мой пароль такой", "PII"], ["привет всем", null], ["сегодня хорошая погода", null],
+    ["погаси торшер", "OFF"], ["выдели 45 минут в 3 часа дня", [45, "15:00"]], ["забронируй час в 10:00 к стоматологу", "HEALTH"], ["мой СНИЛС", "PII"],
   ],
   de: [
     ["schalte die Lampe ein", "ON"], ["Schalte die Lampe an der Wand aus", "OFF"], ["mach das Licht aus", "OFF"], ["blocke 30 Minuten um 15 Uhr", [30, "15:00"]], ["reserviere 45 Minuten um 15:30 morgen", [45, "15:30", true]],
     ["ich habe schlecht geschlafen und Kopfschmerzen", "HEALTH"], ["mach das Licht an, ich habe Fieber", "HEALTH"], ["mein Passwort lautet so", "PII"], ["hallo zusammen", null], ["dort drüben ist es schön", null],
+    ["knips die Stehlampe an", "ON"], ["halte 2 Stunden um 9 Uhr morgen frei", [120, "09:00", true]], ["blocke 30 Minuten um 15 Uhr für den Zahnarzt", "HEALTH"], ["meine IBAN lautet", "PII"],
   ],
 };
 /** Câu sức khỏe đầu tiên của mỗi ngôn ngữ. */
