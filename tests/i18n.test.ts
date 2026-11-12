@@ -57,16 +57,7 @@ const CJK = new Set(["zh-Hans", "zh-Hant", "ja", "ko"]);
 const OTHER_SCRIPTS = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Thai}]/u;
 
 const info = (tag: string) => LOCALES.find((l) => l.tag === tag)!;
-/**
- * Phần catalog của V1.0.1 chờ dịch: với ngôn ngữ ngoài tiếng Việt và tiếng Anh, tệp `export default {};` của các phần này được
- * coi như chưa có (runtime lùi về tiếng Việt). Bỏ phần khỏi danh sách ngay khi bản dịch của nó vào repo.
- */
-const PENDING_PARTS = new Set(["brief", "inbox", "homehub", "meas", "sim"]);
-const load = (tag: string, part: string) => {
-  const data = readCatalog(catalogFile(info(tag).file, part)) as Catalog | null;
-  if (data && PENDING_PARTS.has(part) && tag !== SOURCE_LOCALE && tag !== "en" && Object.keys(data).length === 0) return null;
-  return data;
-};
+const load = (tag: string, part: string) => readCatalog(catalogFile(info(tag).file, part)) as Catalog | null;
 const branches = (m: Message) => (typeof m === "string" ? [m] : Object.values(m));
 const names = (text: string) => new Set([...text.matchAll(PLACEHOLDER)].map((m) => m[1]));
 /** Bỏ tham số và tên riêng để xét phần chữ thật sự cần dịch. */
