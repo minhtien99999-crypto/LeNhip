@@ -66,3 +66,44 @@ New samples: "tolong lampunya dimatikan" OFF; "hidupin lampu ruang tamu dong" ON
 de: consent.notice.head "…einzusehen, zu berichtigen, zurückzuziehen, einzuschränken…" («rút lại» literal, reads oddly); consent.calendar_link.body: no gloss for «Thời gian cá nhân», "Auftragsverarbeiter des Unternehmens" is GDPR wording; work.row.busy "Beschäftigt" (Outlook says "Gebucht"); state.CANCELED "Abgebrochen" (or "Storniert"); review.digest.ok "festgeschrieben" for «khóa»; lele.local.health "in der Arbeitsdomäne"; dev.import.fact.until + dev.import.until read well only together; dev.ble.unit "Schläge/min"; nav.connect "Verbinden". Lexicon: "tablette*" narrowed (matched French); plain "operation*" avoided (matches English); not fixed: "müde" folds to "mude" (pt-BR verb).
 ru: state.VERIFIED "Результат подтверждён" / state.UNKNOWN "Результат ещё не подтверждён" vs state.AUTHORIZED "Вы подтвердили" (same verb for approval and verification); review.evidence.* "Подтверждающие данные"; social.evidence.label "Уровень доказательности"; msg.* "пользователю {name}" (avoids declining the name); msg.report.HARASSMENT "Преследование"; consent.calendar_link.body "обработчик данных предприятия"; house.noSite "площадках, у которых есть управляющий"; dev.status.reported "По сообщениям"; health.sleep.sentence.insufficient awkward word order; msg.safety.confirm "Этот код мной сверен". Lexicon: "здоров*" narrowed (matched "здорово"); not fixed: pm word "дня" turns "11 часов дня" into 23:00.
 New samples: de "knips die Stehlampe an" ON; "halte 2 Stunden um 9 Uhr morgen frei" [120,09:00,tomorrow]; "blocke 30 Minuten um 15 Uhr für den Zahnarzt" HEALTH; "meine IBAN lautet" PII. ru "погаси торшер" OFF; "выдели 45 минут в 3 часа дня" [45,15:00]; "забронируй час в 10:00 к стоматологу" HEALTH; "мой СНИЛС" PII.
+
+## Phần mới của 1.0.1
+
+Bản 1.0.1 thêm năm phần catalog cho mỗi ngôn ngữ: `brief`, `inbox`, `homehub`, `meas`, `sim` (`web/shared/i18n-<file>-<part>.js`).
+Tiếng Việt là bản gốc, tiếng Anh soạn song song; mười một bản còn lại là **bản dịch máy, chưa người bản ngữ rà soát**. Mọi bản có
+đủ khóa của bản gốc và qua `tests/i18n.test.ts`. Những chỗ người dịch (máy) tự thấy chưa chắc:
+
+### brief, inbox, homehub · ja, ko, zh-Hans, zh-Hant
+1. `homehub.actor.LELS`: a bare "LeLS" fails the script check, so a word was added: ja "LeLS担当", ko "LeLS 담당", zh "LeLS 方".
+2. ja: snooze «Để sau» = 後で, awkward in "{time}まで後で" and "後でにしている項目".
+3. ko: revoking a session = 회수 (as in the core file); 해제 might sound more natural.
+4. zh-Hans, zh-Hant: "Hub" kept in Latin script; ja and ko use ハブ, 허브.
+5. zh-Hans, zh-Hant: «cổng hành động riêng» rendered literally as 操作关口 / 操作關卡.
+### brief, inbox, homehub · fr, it, es, pt-BR
+1. it: "In arrivo" inside sentences became "nella sezione In arrivo", including the consent body inbox.consent.inbox_mail.body.
+2. fr: "Réception" used as a section name without article ("Chargement de Réception…").
+3. es: quote = "presupuesto" (Spain; Latin America may prefer "cotización"); survey = "visita técnica".
+4. many branches: es, pt-BR use "{n} de …"; fr, it repeat the "other" form, as their core catalogs do.
+5. fr: brief.device.registerNote uses "l'empreinte (hash)" for «mã băm».
+### meas, sim · de, ru, id
+1. ru: a Russian word was added beside mmHg and SIMULATED to pass the script check: meas.trend.point "давление … mmHg", meas.log.value "Давление … mmHg", sim.badge "SIMULATED · симуляция". Russian monitors normally show «мм рт. ст.».
+2. ru sim.form.limit: "шагов — {steps}" because the source is not a plural message.
+3. de, ru meas.consent.measurements.body: «cách ly» became "in Quarantäne" / "в карантин", may sound too medical (legal text).
+4. «cổng mô phỏng»: de "Simulationsportal", ru "портал симуляции", id "gerbang".
+5. id meas.share.logged is wordy.
+
+### meas, sim · fr, it, es, pt-BR
+- «máy đo» dịch theo nghĩa máy đo huyết áp (tensiomètre, misuratore, tensiómetro, medidor); catalog lõi tiếng Pháp dùng "appareil de mesure", nên tiếng Pháp chưa thống nhất.
+- `meas.simulated` dịch là danh từ (simulation…) như `grade.SIMULATED`; nếu nhãn gắn với một lần đo, tính từ (fr "simulée") có thể hợp hơn.
+- es: "share" là "permiso para compartir" trong lời đồng ý và nhật ký truy cập.
+- «cổng» là Portail/portale/portal ở cả `sim.title` lẫn G3; ở G3 có thể nên là "cổng giai đoạn" (stage gate).
+- "skill" của robot là Compétence/competenza/habilidad.
+
+### meas, sim · ja, ko, zh-Hans, zh-Hant
+- `sim.badge` có thêm chú thích chữ bản ngữ (kiểm i18n đòi ít nhất một ký tự chữ của ngôn ngữ), như bản tiếng Nga: SIMULATED（シミュレーション）, SIMULATED(시뮬레이션), SIMULATED（模拟/模擬）.
+- `meas.trend.point`, `meas.log.value`: thêm chú thích tâm thu/tâm trương vì cùng lý do; nhãn dài hơn.
+- ja: «máy đo» là 測定器 (không phải 血圧計); hồ sơ trên máy là ユーザープロファイル.
+- ko: lời đồng ý dùng 합쇼체, phần còn lại 해요체; nhật ký truy cập dạng "{who}: hành động".
+- zh-Hant: từ ngữ Đài Loan 量測, 裝置, 轉接器, 分享; hồ sơ trên máy là 使用者設定 (檔案 đọc như "tệp").
+- «cổng mô phỏng»: 模拟入口 (zh-Hans) và 模擬閘道 (zh-Hant) khác nghĩa nhau.
+- «Ngôi nhà», «Công việc» trong lời đồng ý theo nhãn điều hướng đã có (ホーム/仕事, 홈/업무, 家居/工作, 居家/工作).

@@ -1,6 +1,6 @@
 {
   "document": "LNH-SRS-001 V1.1 (11.11.2026); phần v101_* theo LNH-SRS-002 V2.0 (12.11.2026)",
-  "code_version": "1.0.0",
+  "code_version": "1.0.1",
   "note": "CODE_REFERENCE: có mã và kiểm thử trong bản tham chiếu (adapter giả lập, dữ liệu tổng hợp). PARTIAL: có một phần. NATIVE_APP: cần app iOS/Android. INFRA: cần hạ tầng thật. G0_DECISION: quyết định hoặc hồ sơ ở cổng G0. Không ca nào đã chạy trên đích; kiểm thử ở đây không thay báo cáo PASS (SRS mục 27). additions: hàng ngoài SRS V1.1 của bản mã 1.0.0, theo quyết định LNH-T trong docs/THIET_KE_V1_0_0.md; SRS chưa có yêu cầu hay ca nghiệm thu nào cho chúng, cần phụ lục SRS V1.2 (LNH-F20). Nhóm v101_* (mã V2-…) là phần của SRS V2.0 cài trong bản 1.0.1, theo quyết định LNH-T60 đến LNH-T69 trong docs/RA_SOAT_LENHIP_V2_0.md; không ca X01–X12 nào đã chạy trên đích.",
   "sources": [
     { "path": "docs/source/LeNhip_Dac_Ta_Ky_Thuat_LeDB_V1_1.docx", "sha256": "51783c43a4ea55e9b685e548cf0ade386042b3d826048a2f1eeb8d65ae9d3501" },

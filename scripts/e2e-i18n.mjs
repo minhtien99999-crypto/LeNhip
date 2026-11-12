@@ -195,7 +195,7 @@ await run("ngôn ngữ", async (t) => {
   ok(boot.lang === "en" && boot.dir === "ltr" && boot.translate === "no" && !boot.pending, 'trình duyệt en-US: <html lang="en" dir="ltr" translate="no">, khung hiện sau khi catalog nạp xong');
   ok(boot.title === en["meta.title"] && boot.description === en["meta.description"] && boot.skip === "Skip to main content", "tiêu đề trang, mô tả trang và liên kết bỏ qua theo ngôn ngữ");
   ok(boot.nav === "Today|Health|Work|Home|Messages|Connect" && boot.navLabel === "Main navigation" && boot.settings === "Open Personalize|Personalize|Account", "điều hướng và nhãn truy cập bằng tiếng Anh");
-  ok(boot.caption === "Your space" && boot.captionCase === "uppercase" && boot.footer === "LeNhip • Designed by LeDB • Reference build 1.0.0 per LNH-SRS-001 V1.1" && boot.build === "Trial build · Synthetic data" && boot.count === "5 styles",
+  ok(boot.caption === "Your space" && boot.captionCase === "uppercase" && boot.footer === "LeNhip • Designed by LeDB • Reference build 1.0.1 per LNH-SRS-002 V2.0" && boot.build === "Trial build · Synthetic data" && boot.count === "5 styles",
     "chữ nhãn giữ kiểu tự nhiên trong catalog và được CSS viết hoa; chân trang, nhãn bản dựng, số phong cách theo ngôn ngữ");
 
   // ---------------------------------------------------------------- thông báo đầu tiên: ô ngôn ngữ, dòng bản dịch máy, bản gốc

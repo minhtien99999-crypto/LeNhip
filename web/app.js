@@ -31,8 +31,8 @@ import { briefCard } from "./views/brief.js";
 
 const KEY = "lenhip.ui.v2";
 // Số phiên bản và mã đặc tả in ở chân trang: dữ liệu, không dịch. Đổi ở đây khi phát hành.
-const APP_VERSION = "1.0.0";
-const SPEC_ID = "LNH-SRS-001 V1.1";
+const APP_VERSION = "1.0.1";
+const SPEC_ID = "LNH-SRS-002 V2.0";
 const $ = (id) => document.getElementById(id);
 const glyphs = {
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',

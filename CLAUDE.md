@@ -1,6 +1,6 @@
 # LeNhip — quy tắc làm việc
 
-Bản tham chiếu 1.0.0 theo LNH-SRS-001 V1.1 và bản thiết kế `docs/THIET_KE_V1_0_0.md`. Bản đồ repo nằm ở `README.md`. Mã LNH-F/T/Q/D của SRS V1.1 (F01–F19, T01–T19, Q01–Q07, D01–D12) định nghĩa ở `docs/RA_SOAT_LENHIP_V1_1.md`; mã của 1.0.0 (từ F20, T20, Q08, D13) ở `docs/THIET_KE_V1_0_0.md`. Mỗi mã chỉ định nghĩa ở một tài liệu.
+Bản tham chiếu 1.0.1 theo LNH-SRS-002 V2.0 (gói hợp đồng LNH-SRS-001 V1.1 vẫn áp cho API đã phát hành), bản thiết kế `docs/THIET_KE_V1_0_0.md` và bản rà soát `docs/RA_SOAT_LENHIP_V2_0.md`. Bản đồ repo nằm ở `README.md`. Mã LNH-F/T/Q/D của SRS V1.1 (F01–F19, T01–T19, Q01–Q07, D01–D12) định nghĩa ở `docs/RA_SOAT_LENHIP_V1_1.md`; mã của 1.0.0 (từ F20, T20, Q08, D13) ở `docs/THIET_KE_V1_0_0.md`; mã của 1.0.1 (từ F30, T60, Q16, D21) ở `docs/RA_SOAT_LENHIP_V2_0.md`. Route mới của SRS V2.0 nằm dưới `/v2/`; mô-đun mới có cờ tắt khi chưa đặt. Mỗi mã chỉ định nghĩa ở một tài liệu.
 
 ## Quy tắc chung
 

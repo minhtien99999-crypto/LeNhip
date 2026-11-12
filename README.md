@@ -14,15 +14,32 @@ Bản 1.0.0 thêm, theo yêu cầu của chủ sản phẩm ngày 11/11/2026:
 
 LeLe là engine đề xuất dùng chung; LeASO cung cấp IAM.
 
-Repo này là **bản tham chiếu 1.0.0** theo *Đặc tả kỹ thuật LeNhip* LNH-SRS-001 V1.1 (11/11/2026), gói giao diện 5 phương án V1.0 và
-bản thiết kế `docs/THIET_KE_V1_0_0.md`. **1.0.0 là số phiên bản của mã tham chiếu, không phải bản phát hành:**
+Repo này là **bản tham chiếu 1.0.1** theo *Đặc tả kỹ thuật LeNhip* LNH-SRS-002 V2.0 (12/11/2026) và LNH-SRS-001 V1.1 (11/11/2026,
+gói hợp đồng vẫn áp cho API đã phát hành), gói giao diện 5 phương án V1.0, bản thiết kế `docs/THIET_KE_V1_0_0.md` và bản rà soát
+`docs/RA_SOAT_LENHIP_V2_0.md`. **1.0.1 là số phiên bản của mã tham chiếu, không phải bản phát hành:**
 
 - chưa có app iOS/Android;
 - chưa kết nối thiết bị, lịch Microsoft 365, IAM hay nền tảng mạng xã hội thật;
 - chưa cổng G0–G3 nào đóng, chưa ca nghiệm thu T01–T22 nào chạy trên đích;
 - Tin nhắn, Kết nối và máy tính nằm ngoài SRS V1.1 và cần phụ lục SRS V1.2 (LNH-F20); ba cờ `messaging`, `social`, `trackers` mặc định tắt.
 
-## Có gì mới ở 1.0.0
+## Có gì mới ở 1.0.1 (theo Đặc tả V2.0)
+
+Mọi phần dưới đây là mã tham chiếu dưới namespace `/v2/` (V2.0 mục 12), mỗi phần có cờ riêng **tắt khi chưa đặt**; chế độ dev bật
+sẵn. Năm phong cách Quỹ đạo, Không gian đêm, Nhịp an, Dòng thời gian, Titanium áp cho mọi màn hình mới.
+
+| Phần | Đã có | Giả lập hoặc chưa có |
+|---|---|---|
+| Bản tóm tắt buổi sáng (G1‑H) | Thẻ đầu «Hôm nay» dựng trên thiết bị: giấc ngủ, bước chân, lịch hôm nay, tin chưa đọc, bản nháp, Hộp tổng hợp, Le‑NodeHome; phân biệt có dữ liệu, thiếu dữ liệu, nguồn chưa sẵn sàng, quyền đã rút; chạy khi mất mạng. | App iOS/Android chưa có. |
+| Đồng bộ bản nháp, phiên thiết bị (G1‑S, cờ `sync`) | `/v2/sync/drafts` với revision và 409 khi sửa trên bản cũ (X01); hàng đợi ngoại tuyến; `/v2/devices` liệt kê và thu hồi phiên; phiên bị thu hồi thấy màn hình trung tính (X02). | Token đăng nhập chưa gắn với phiên, nên thu hồi chỉ chặn được `/v2`. Không có app đồng hồ. |
+| Hộp tổng hợp (G1‑I, cờ `inbox`) | Nhập nội dung chọn chia sẻ hoặc dán; danh sách theo cursor; Lưu, Để sau, Xong, Tạo việc cá nhân, Soạn phản hồi (chỉ tạo bản nháp); mục mất quyền nguồn biến mất (X03); tiêu đề thư chỉ là dữ liệu (X04); nhận chia sẻ từ hệ điều hành khi cài như ứng dụng. | Nguồn Outlook `Mail.ReadBasic` là **giả lập**; chưa có Microsoft Graph thật. |
+| Le‑NodeHome và HaaS (G1‑E/Home, cờ `home_hub`) | Đăng ký gói và vòng đời REQUESTED → SURVEYED → ACCEPTED → INSTALLED → ACTIVE, SUSPENDED, TERMINATED, RETURNED; sự kiện tối thiểu từ hub, chống trùng, sự kiện trễ (X05); đổi hub chặn binding cũ (X07); quyền xem tạm thời cho LeLS. | Hub, camera, danh tính hub và việc hiện trường của LeLS là **giả lập**; không có hình, video hay xem clip từ xa. Giá thử chỉ là giả định. |
+| Le‑NodeHealth phép đo (G1‑P, cờ `measurements`) | Phép đo huyết áp theo hợp đồng N20‑MEAS; gán người đo theo xác nhận; mơ hồ thì cách ly (X08); chống trùng hai kênh; chia sẻ có hạn và thu hồi (X09); nhật ký và xu hướng; bộ phân tích Bluetooth 0x2A35. | Adapter và máy đo là **giả lập**; chưa tích hợp OMRON hay Withings; không chẩn đoán, không cảnh báo y tế. Dữ liệu thật cần CLO và chuyên gia y tế duyệt. |
+| Cổng mô phỏng Le‑ORION (cờ `sim`) | `/v2/sim/runs` chỉ cho danh tính lab; biên nhận SIMULATED; biên nhận lab bị từ chối ở đích khác (X10). | Robot thật thuộc đề án riêng của LeHR (G3). |
+
+Đối chiếu đầy đủ từng mục của V2.0, các ca X01–X12 và câu hỏi cần quyết: `docs/RA_SOAT_LENHIP_V2_0.md`.
+
+## Có gì ở 1.0.0
 
 | Yêu cầu | Đã có trong mã | Giới hạn phải biết |
 |---|---|---|
@@ -44,7 +61,7 @@ bản thiết kế `docs/THIET_KE_V1_0_0.md`. **1.0.0 là số phiên bản củ
 | `src/adapters/` | Adapter lịch (Microsoft Graph giả lập), gateway site (Home Assistant/Matter giả lập), robot mô phỏng. |
 | `tests/` | Kiểm thử node:test. |
 | `scripts/` | Kiểm hợp đồng, sinh fixture, sinh sổ ghim văn bản đồng ý, kiểm trình duyệt (`e2e*.mjs`). |
-| `docs/` | `BAN_DICH_V1_0_0.md` (tình trạng 12 bản dịch và các điểm cần người bản ngữ rà soát), `THIET_KE_V1_0_0.md` (thiết kế 1.0.0: phát hiện LNH-F20 trở đi, quyết định LNH-T20 trở đi, câu hỏi LNH-Q08 trở đi, việc LNH-D13 trở đi), `RA_SOAT_LENHIP_V1_1.md` (rà soát SRS V1.1), `source/` (đặc tả, gói giao diện, gói logo; giữ nguyên byte). |
+| `docs/` | `RA_SOAT_LENHIP_V2_0.md` (rà soát Đặc tả V2.0: phát hiện từ LNH-F30, quyết định từ LNH-T60, câu hỏi từ LNH-Q16, việc từ LNH-D21, ca X01–X12), `BAN_DICH_V1_0_0.md` (tình trạng 12 bản dịch và các điểm cần người bản ngữ rà soát), `THIET_KE_V1_0_0.md` (thiết kế 1.0.0: phát hiện LNH-F20 trở đi, quyết định LNH-T20 trở đi, câu hỏi LNH-Q08 trở đi, việc LNH-D13 trở đi), `RA_SOAT_LENHIP_V1_1.md` (rà soát SRS V1.1), `source/` (đặc tả V1.1 và V2.0, gói giao diện, gói logo; giữ nguyên byte). |
 
 Các thành phần của `src/server/`:
 
@@ -70,7 +87,7 @@ npm ci
 npm run dev        # http://127.0.0.1:8787 — issuer phát triển, ba tài khoản thử, lịch và đèn giả lập
 ```
 
-- Bản chạy thử chỉ nghe trên localhost và bật sẵn ba cờ `messaging`, `social`, `trackers`. Ngoài chế độ dev ba cờ này tắt cho tới khi vận hành viên bật bằng `POST /v1/ops/flags`.
+- Bản chạy thử chỉ nghe trên localhost và bật sẵn tám cờ opt-in: `messaging`, `social`, `trackers` của 1.0.0 và `inbox`, `sync`, `home_hub`, `measurements`, `sim` của 1.0.1. Ngoài chế độ dev các cờ này tắt cho tới khi vận hành viên bật bằng `POST /v1/ops/flags`.
 - Lần đầu mở có *Thông báo đầu tiên* với bốn mục đích, mặc định để trống. Tin nhắn hỏi đồng ý riêng khi mở lần đầu.
 - Nút avatar đổi giữa các tài khoản thử: Thử nghiệm A, Thử nghiệm B, Vận hành LeDB. Để thử nhắn tin, mở hai trình duyệt (hoặc một cửa sổ ẩn danh) với hai tài khoản.
 - Ngôn ngữ chọn ở *Cá nhân hóa*; mặc định theo trình duyệt, không khớp ngôn ngữ nào thì dùng tiếng Anh.
