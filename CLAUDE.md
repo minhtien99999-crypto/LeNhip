@@ -1,22 +1,28 @@
 # LeNhip — quy tắc làm việc
 
-Bản tham chiếu 0.1.0 theo LNH-SRS-001 V1.1. Bản đồ repo nằm ở `README.md`; rà soát và các mã LNH-F/T/Q/D nằm ở `docs/RA_SOAT_LENHIP_V1_1.md`.
+Bản tham chiếu 1.0.0 theo LNH-SRS-001 V1.1 và bản thiết kế `docs/THIET_KE_V1_0_0.md`. Bản đồ repo nằm ở `README.md`. Mã LNH-F/T/Q/D của SRS V1.1 (F01–F19, T01–T19, Q01–Q07, D01–D12) định nghĩa ở `docs/RA_SOAT_LENHIP_V1_1.md`; mã của 1.0.0 (từ F20, T20, Q08, D13) ở `docs/THIET_KE_V1_0_0.md`. Mỗi mã chỉ định nghĩa ở một tài liệu.
 
 ## Quy tắc chung
 
 - Trả lời đúng điều được hỏi trước. Không biết thì nói không biết.
 - Làm đủ rồi mới báo xong: chạy mục Kiểm tra, và báo cả phần chưa kiểm hoặc chưa làm.
-- Viết tiếng Việt, tệp UTF-8. Script Python mở tệp với `encoding="utf-8"`.
+- Viết tiếng Việt, tệp UTF-8. Script Python mở tệp với `encoding="utf-8"`. Chữ giao diện không viết trong mã: nó nằm ở catalog tiếng Việt (`web/shared/i18n-vi*.js`, bản gốc) và được dịch ở catalog của từng ngôn ngữ; quy tắc đặt khóa và hướng dẫn dịch ở đầu `web/shared/i18n.js`.
 - Commit theo dạng `type(scope): mô tả` bằng tiếng Anh, mỗi commit một việc. Chỉ commit và push khi người dùng yêu cầu.
 - Không in, log hay commit secret, token hay khóa riêng. Khóa permit nằm trong thư mục dữ liệu (bị gitignore), môi trường thật dùng KMS.
 
 ## Không được làm
 
-- Không sửa tệp trong `docs/source/`. Hai tệp này phải khớp mã băm trong `contracts/traceability.json`.
+- Không sửa tệp trong `docs/source/`. Mọi tệp ở đó phải khớp mã băm trong `contracts/traceability.json`.
 - Không đưa số liệu sức khỏe, nhãn sức khỏe hay lý do của gợi ý vào API hay sổ. Schema tác vụ luôn `additionalProperties=false`.
+- Không thêm route, bảng hay trường nào về thiết bị theo dõi ở máy chủ. Không đồng bộ dữ liệu sức khỏe giữa các máy. Dữ liệu nhập từ tệp xuất chỉ nằm trong bộ nhớ của trang: không ghi localStorage, sessionStorage, IndexedDB, cookie hay Cache API (LNH-T52 đến LNH-T55).
+- Không để máy chủ thấy bản rõ của tin nhắn, khóa nội dung hay khóa riêng; không lưu tên máy hay user agent. LeLe không có đường nào tới nội dung tin nhắn (LNH-T31, LNH-T36).
+- Không đọc hay lưu ngôn ngữ của người dùng ở máy chủ; không đưa văn bản đã dịch vào payload hay digest (LNH-T23, LNH-T26). Sửa một văn bản đồng ý thì đổi phiên bản ở `web/shared/consent-text.js` rồi chạy `node scripts/make-consent-texts.ts`.
+- Không gửi câu gõ cho LeLe ra khỏi thiết bị khi quy tắc cục bộ chưa nhận ra lệnh, hoặc khi có từ sức khỏe hay dữ liệu cá nhân của bất kỳ ngôn ngữ nào (LNH-T24). Sửa bảng từ thì thêm câu mẫu vào `tests/lele-i18n.test.ts` và đổi `LELE_RULES_VERSION`.
+- Không bật mô-đun mới theo mặc định: cờ `messaging`, `social`, `trackers` tắt khi chưa đặt rõ (LNH-F27). Không nói một thao tác đã xảy ra khi chưa có bằng chứng (chia sẻ ra ngoài: «LeNhip không biết bạn đã đăng hay chưa»).
+- Không thêm SDK, widget, phông, logo hay yêu cầu mạng của bên thứ ba vào trang; CSP không đổi.
 - Không thêm đường nào đổi lịch hoặc thiết bị mà bỏ qua plan → xác nhận → permit → receiver → bằng chứng. Không tự gửi lại sau kết quả mơ hồ. Không tự chuyển UNKNOWN thành FAILED.
 - Không thêm cạnh trạng thái chỉ trong mã. Mọi cạnh nằm ở `contracts/state_transitions.csv`; thêm cạnh phải ghi mã LNH-T trong bản rà soát.
-- Không sửa migration đã phát hành (`src/server/store.ts`, có kiểm mã băm). Cần đổi thì thêm migration mới.
+- Không sửa migration đã phát hành (0001 trong `src/server/store.ts`, từ 0002 trong `src/server/migrations/`; đều có kiểm mã băm). Cần đổi thì thêm migration mới.
 - Không đổi kết quả fixture LNH-SLEEP-1 mà giữ nguyên `algorithm_version`.
 - Không bật nhà cung cấp mô hình ngoài khi chưa có VendorProfile được duyệt.
 - Không dùng tên người thật trong dữ liệu mẫu.
@@ -26,7 +32,7 @@ Bản tham chiếu 0.1.0 theo LNH-SRS-001 V1.1. Bản đồ repo nằm ở `READ
 ```bash
 npm ci
 npm run typecheck && npm test && npm run check
-npm run e2e        # khi đổi giao diện; cần Playwright
+npm run e2e        # khi đổi giao diện; cần Playwright. Chạy mọi tệp scripts/e2e*.mjs
 ```
 
 ## Thêm mô-đun (V1.0.0)
@@ -257,6 +263,15 @@ await run("tên", async (t) => {
 - Thuộc tính: `data-nav` (dùng để điều hướng: `<button data-nav="connect">`), `data-action`, `data-context`, `data-login`, `data-device`, `data-theme-choice`, `data-draft-theme`, `data-check-action`, `data-cancel-action`.
 - id: `chat-form`, `chat-list`, `block-form`, `consent-form`, `countdown`, `action-body`, `action-title`, `main`.
 - `devices`, `data-device`, `/v1/devices` là đèn tại site. Máy của người dùng gọi là «điểm nhận tin» (endpoint), vòng đeo gọi là «thiết bị theo dõi» (tracker).
+
+### Ngôn ngữ
+
+- 13 ngôn ngữ ở `LOCALES` (`web/shared/i18n.js`). Mỗi ngôn ngữ có bốn catalog: `i18n-<file>.js` (lõi) và ba phần `-msg` (Tin nhắn, Thiết bị của tôi), `-social` (mạng xã hội), `-dev` (thiết bị theo dõi); `<file>` là tag viết thường. Tiếng Việt là bản gốc; mọi bản khác có `draft: true` (dịch máy, chưa rà soát) cho tới khi người bản ngữ rà xong (LNH-D13).
+- Quy tắc đặt khóa và hướng dẫn cho người dịch: phần đầu `web/shared/i18n.js`. Dạng tệp bảng từ của LeLe và danh sách kiểm cho người rà soát: phần đầu `web/shared/lele-lexicon.js`.
+- Thêm một chuỗi: thêm khóa vào catalog tiếng Việt của đúng phần, rồi vào **mọi** catalog khác cùng phần (kiểm thử đòi đủ khóa, đủ tham số, đủ nhánh số nhiều theo CLDR). Không ghép câu từ nhiều khóa; không viết chữ giao diện trong mã.
+- Mô-đun lấy mọi thứ qua `ctx`, ngoài các hàm đã nêu ở mục khung giao diện còn có: `tSafe` (chuỗi đã thoát ký tự), `rich(key, slots, params?)` (chèn HTML tin cậy vào chỗ tham số), `bdi(tên)`, `errorText(lỗi)` (câu theo mã lỗi), `codeLabel(lớp, mã)` (nhãn của `state`, `outcome`, `reason`, `grade`), `draft()` (ngôn ngữ đang hiện là bản nháp), `consentText(purpose_id, tiền_tố?)`, `consentReceipt(purpose_id, tiền_tố?)`, `formatWeekdayCompact`, `formatDurationParts`.
+- Văn bản đồng ý: thân ở khóa `<tiền tố>consent.<purpose_id>.body`; phiên bản ở `CONSENT_TEXT_VERSIONS` (`web/shared/consent-text.js`); sổ ghim `contracts/consent-texts.json` sinh bằng `node scripts/make-consent-texts.ts`. Mô-đun ghi đồng ý bằng `ctx.consentReceipt()`, không tự băm.
+- Kiểm riêng một ngôn ngữ: `LENHIP_I18N_ONLY=<tag> node --test tests/i18n.test.ts tests/i18n-runtime.test.ts tests/lele-i18n.test.ts`.
 
 ### Dữ liệu sức khỏe trên thiết bị
 

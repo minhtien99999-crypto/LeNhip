@@ -44,7 +44,7 @@ bản thiết kế `docs/THIET_KE_V1_0_0.md`. **1.0.0 là số phiên bản củ
 | `src/adapters/` | Adapter lịch (Microsoft Graph giả lập), gateway site (Home Assistant/Matter giả lập), robot mô phỏng. |
 | `tests/` | Kiểm thử node:test. |
 | `scripts/` | Kiểm hợp đồng, sinh fixture, sinh sổ ghim văn bản đồng ý, kiểm trình duyệt (`e2e*.mjs`). |
-| `docs/` | `THIET_KE_V1_0_0.md` (thiết kế 1.0.0: phát hiện LNH-F20 trở đi, quyết định LNH-T20 trở đi, câu hỏi LNH-Q08 trở đi, việc LNH-D13 trở đi), `RA_SOAT_LENHIP_V1_1.md` (rà soát SRS V1.1), `source/` (đặc tả, gói giao diện, gói logo; giữ nguyên byte). |
+| `docs/` | `BAN_DICH_V1_0_0.md` (tình trạng 12 bản dịch và các điểm cần người bản ngữ rà soát), `THIET_KE_V1_0_0.md` (thiết kế 1.0.0: phát hiện LNH-F20 trở đi, quyết định LNH-T20 trở đi, câu hỏi LNH-Q08 trở đi, việc LNH-D13 trở đi), `RA_SOAT_LENHIP_V1_1.md` (rà soát SRS V1.1), `source/` (đặc tả, gói giao diện, gói logo; giữ nguyên byte). |
 
 Các thành phần của `src/server/`:
 

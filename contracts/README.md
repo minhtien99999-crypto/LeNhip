@@ -5,10 +5,13 @@ Máy chủ, app iOS và app Android dùng chung các tệp trong thư mục này
 | Tệp | Nội dung | Ai dùng |
 |---|---|---|
 | `openapi.json` | API /v1 (OpenAPI 3.1), phần lõi. Máy chủ kiểm thân yêu cầu trực tiếp bằng các schema của hợp đồng đã ghép (xem «Mảnh OpenAPI của mô-đun»). | Client sinh mã, máy chủ, QA |
-| `openapi/<mô-đun>.json` | Mảnh OpenAPI của một mô-đun thêm ở V1.0.0: thao tác và schema của riêng nó. Hôm nay chưa có mảnh nào. | Client sinh mã, máy chủ, QA |
+| `openapi/<mô-đun>.json` | Mảnh OpenAPI của một mô-đun thêm ở V1.0.0: thao tác và schema của riêng nó. Hiện có `messaging.json` (16 thao tác dưới `/v1/messages/*` và `GET /v1/ops/messages/reports`). | Client sinh mã, máy chủ, QA |
 | `state_transitions.csv` | Bảng chuyển trạng thái đầy đủ: trạng thái nguồn, sự kiện, actor, trạng thái đích, guard, hạn. Máy chủ đọc tệp này khi chạy. Một tệp, nhiều máy (xem «Các máy trạng thái»). | Máy chủ, QA (T07) |
 | `fixtures/sleep/S01–S16.json` | Golden fixture LNH-SLEEP-1. Mỗi tệp có đầu vào, kết quả đầy đủ (`expected`) và phép kiểm lấy từ chữ của SRS (`checks`). App phải cho kết quả trùng từng trường. | iOS, Android (T03) |
 | `fixtures/jcs-vectors.json` | Vector RFC 8785 và digest SHA-256 base64url, gồm cả payload lịch và đèn. Đầu vào là JSON thô để giữ cách viết số. | iOS, Android, máy chủ (T14) |
+| `fixtures/msg/` | Vector của phong bì mã hóa đầu cuối `LNH-MSG-1` (khóa cố định, bản mã, phong bì từng thiết bị) và vector HPKE công bố của bộ DHKEM P-256, HKDF-SHA256, AES-256-GCM. App phải mở được và tạo ra đúng các byte này. | iOS, Android, web |
+| `fixtures/import/` | Tệp xuất **tổng hợp** của Apple Health, Samsung Health và Garmin để kiểm bộ phân tích trên thiết bị. Không phải dữ liệu của người thật. | Web, QA |
+| `consent-texts.json` | Sổ ghim văn bản đồng ý: mỗi dòng là mục đích, ngôn ngữ, `text_version` và mã băm của đúng văn bản người dùng đọc. Sinh bằng `node scripts/make-consent-texts.ts`; kiểm thử chặn việc sửa văn bản mà không đổi phiên bản. | Máy chủ, app, CLO |
 | `traceability.json` | Trạng thái của 33 REQ và 22 ca T, tệp mã và tệp kiểm thử tương ứng, mã băm tài liệu nguồn, và các hàng ngoài SRS của V1.0.0 (`additions`). | Tech Lead, QA |
 
 `npm run check` (`scripts/check-contracts.ts`) kiểm mọi điều dưới đây. Mã `LNH-…` nhắc trong `src/`, `web/` hay `contracts/` phải có
