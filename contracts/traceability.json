@@ -74,6 +74,7 @@
     "messaging": [
     ],
     "social": [
+      { "id": "V1-SOC01", "title": "Chia sẻ ra từ thiết bị: danh mục 34 nền tảng có mức bằng chứng, trình dựng liên kết chia sẻ, thẻ chia sẻ, phần Mạng xã hội của màn hình Kết nối", "decisions": ["LNH-T40", "LNH-T41"], "status": "PARTIAL", "code": ["web/shared/social-registry.js", "web/shared/share-card.js", "web/views/connect-social.js"], "tests": ["tests/social-share.test.ts", "scripts/e2e-social.mjs"], "remaining": "Chưa nền tảng thật nào được gọi hay kiểm. Chưa đọc trực tiếp tài liệu chính thức để bật 16 liên kết còn lại (LNH-D15). Chưa có địa chỉ công khai nên Telegram và LINE chưa dùng được (LNH-Q13). Bảng chia sẻ của thiết bị mới kiểm bằng bản thử trên Chromium (LNH-D19)." }
     ],
     "trackers": [
     ]

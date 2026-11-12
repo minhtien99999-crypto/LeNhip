@@ -125,8 +125,7 @@ await run("khung giao diện", async (t) => {
   }));
   ok(connect.sections.join("|") === "social:Mạng xã hội|endpoints:Thiết bị của tôi|trackers:Thiết bị theo dõi" && connect.current === "connect" && connect.hash === "#connect" && connect.focus === "main", "Kết nối: ba phần theo thứ tự Mạng xã hội, Thiết bị của tôi, Thiết bị theo dõi");
   ok(connect.layout === "wide" && connect.panelHidden, "màn hình khai báo wide dùng hết bề ngang, ẩn cột chọn phong cách");
-  const emptyTexts = await desk.$$eval(".connect-grid .empty-state", (els) => els.map((e) => e.textContent));
-  ok(emptyTexts.length === 3 && emptyTexts.every((x) => x.includes("chưa có trong bản dựng này")), "mỗi phần của Kết nối nói rõ bản dựng chưa có phần đó");
+  // Nội dung của từng phần do tệp kiểm riêng của phần đó xét (e2e-social, e2e-messages, e2e-trackers).
   await shot(desk, "connect-desktop");
 
   const none = await t.open({ modules: { messaging: false, social: false, trackers: false } });

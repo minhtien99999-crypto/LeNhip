@@ -92,7 +92,8 @@ export default {
   // bar=false: không nằm trên thanh dưới của điện thoại; có ở thanh bên từ 701 px và trong hộp Tài khoản (LNH-T51).
   nav: { label: (ctx) => ctx.t("nav.connect"), hint: (ctx) => ctx.t("nav.connectHint"), icon: "link", bar: false },
   wide: true,
-  visible: (ctx) => SECTIONS.some((s) => s.visible(ctx) === true),
+  // Hỏi MỌI phần ở mỗi lần vẽ (không dừng ở phần đầu tiên bật): một phần có thể dọn trạng thái của mình khi cờ vừa tắt.
+  visible: (ctx) => SECTIONS.map((s) => s.visible(ctx) === true).includes(true),
   plans: Object.assign({}, ...SECTIONS.map((s) => s.plans ?? {})),
 
   mount(ctx, host) {

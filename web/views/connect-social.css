@@ -1,3 +1,45 @@
-/* Kiểu riêng của phần Mạng xã hội (web/views/connect-social.js). Nhánh mạng xã hội viết ở đây, không sửa styles.css.
-   Quy ước: token màu của phong cách, thuộc tính logic (inline/block), mốc 700/701, 1180/1181, 1500 px, và đặt mọi bộ chọn dưới
-   .connect-section[data-section=social] hoặc một lớp có tiền tố social-. */
+/* Kiểu riêng của phần Mạng xã hội (web/views/connect-social.js): phần trong màn hình Kết nối và hộp soạn «Chia sẻ LeNhip».
+   Quy ước: token màu của phong cách, thuộc tính logic (inline/block), vùng bấm tối thiểu 44 px; mọi bộ chọn nằm dưới
+   .connect-section[data-section=social] hoặc một lớp có tiền tố social-. Lưới dùng auto-fit/auto-fill với cột tính bằng rem nên
+   tự về một cột trên điện thoại và ở cỡ chữ 200 %, không cần mốc bề ngang riêng. */
+
+/* ---------------------------------------------------------------- phần trong màn hình Kết nối */
+.connect-section[data-section=social] .section-heading{flex-wrap:wrap}
+.connect-section[data-section=social] .empty-state{text-align:start;padding:0}
+.social-lead{margin-block:0 16px;font-size:.85rem}
+.social-open{max-inline-size:100%}
+.social-subhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.88rem;margin-block:20px 6px}
+/* Danh mục mở ra có 34 mục: phần chiếm cả hàng của lưới Kết nối để danh sách chia được nhiều cột, thay vì một cột rất dài bên
+   cạnh hai phần kia. Trình duyệt chưa có :has() thì phần giữ nguyên bề ngang, danh sách vẫn đọc được. */
+.connect-section[data-section=social]:has(.social-catalogue[open]){grid-column:1/-1}
+.social-catalogue{margin-block-start:18px;padding-block-start:4px;border-block-start:1px solid var(--line)}
+.social-catalogue>summary{cursor:pointer;min-block-size:44px;padding-block:11px;font-size:.85rem;font-weight:650;color:var(--text)}
+.social-catalogue .fine-print{margin-block:6px}
+.social-no-account{margin-block:10px;padding:10px 12px;border-inline-start:3px solid var(--gold);border-radius:8px;background:var(--surface-soft);font-size:.78rem;font-weight:600}
+.social-platforms{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,14rem),1fr))}
+.social-platform{display:grid;gap:5px;align-content:start;justify-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+.social-platform-name{font-size:.82rem;font-weight:650}
+/* Trạng thái và mức bằng chứng là nội dung chính của danh mục: dùng màu chữ chính, không dùng màu chữ phụ. */
+.social-platform .status-chip{border-radius:12px;text-align:start}
+.social-platform .status-chip.muted{color:var(--text)}
+.social-evidence{font-size:.7rem}
+
+/* ---------------------------------------------------------------- hộp soạn (nằm trong hộp thao tác dùng chung) */
+.social-composer>.fine-print{margin-block:0 6px}
+.social-composer .field{margin-block:14px 6px}
+.social-composer .field textarea{min-block-size:112px}
+.social-error{padding:8px 10px;border-inline-start:3px solid var(--gold);border-radius:8px;background:var(--surface-soft);color:var(--text);font-size:.78rem;font-weight:650}
+.social-check{display:flex;align-items:flex-start;gap:12px;min-block-size:44px;padding-block:10px;font-size:.8rem;cursor:pointer}
+.social-check input{inline-size:22px;block-size:22px;margin:1px 0 0;flex-shrink:0;accent-color:var(--accent)}
+.social-check strong{display:block}
+.social-url{display:block;color:var(--muted);font-size:.72rem}
+/* Ô xem trước giữ đúng xuống dòng của văn bản; mỗi dòng tự chọn chiều chữ (ghi chú viết từ phải sang trái, liên kết từ trái sang). */
+.social-preview{margin:0;padding:12px 14px;min-block-size:46px;border:1px dashed var(--line);border-radius:12px;background:var(--surface-soft);font-size:.82rem;white-space:pre-wrap;unicode-bidi:plaintext;text-align:start}
+.social-preview.social-preview-empty{font-style:italic}
+.social-targets{display:grid;gap:10px;margin-block:6px 10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,8.5rem),1fr))}
+.social-target{min-block-size:46px;text-align:center;overflow-wrap:break-word}
+a.social-target:not([href]){opacity:.55;cursor:not-allowed}
+.social-status{margin-block:12px 0;padding:10px 12px;border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--surface-soft);font-size:.8rem;font-weight:600}
+.social-status:empty{display:none}
+/* Chữ chỉ dành cho trình đọc màn hình («mở trong cửa sổ mới»). */
+.social-sr{position:absolute;inline-size:1px;block-size:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
