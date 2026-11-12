@@ -46,7 +46,7 @@ export function countGraphemes(text) {
  * @param {string} text
  */
 export function toWellFormed(text) {
-  return text.replace(/[\uD800-\uDFFF]/gu, "�");
+  return text.replace(/[\uD800-\uDFFF]/gu, "\uFFFD");
 }
 
 /**
