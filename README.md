@@ -92,6 +92,18 @@ npm run dev        # http://127.0.0.1:8787 — issuer phát triển, ba tài kho
 - Nút avatar đổi giữa các tài khoản thử: Thử nghiệm A, Thử nghiệm B, Vận hành LeDB. Để thử nhắn tin, mở hai trình duyệt (hoặc một cửa sổ ẩn danh) với hai tài khoản.
 - Ngôn ngữ chọn ở *Cá nhân hóa*; mặc định theo trình duyệt, không khớp ngôn ngữ nào thì dùng tiếng Anh.
 
+Bản trình diễn tĩnh, không cần máy chủ (để gửi đường dẫn cho người thử):
+
+```bash
+node scripts/build-demo.mjs        # dist-demo/: web/ + demo/backend.js (API giả trong trình duyệt), demo/boot.js, demo/demo.css
+```
+
+- Mọi lời gọi API được trả lời ngay trong trang theo hợp đồng OpenAPI (`tests/demo-backend.test.ts` kiểm từng phản hồi với schema);
+  dữ liệu tổng hợp, không gọi mạng. Dải «Bản trình diễn» ở đầu trang có nút đặt lại và nút chạy các bước LeLS của Le‑NodeHome.
+- Phép đo huyết áp chỉ giữ trong bộ nhớ của trang (mất khi tải lại); các route `/ops`, nhập phép đo từ adapter và kiểm biên nhận
+  mô phỏng không có trong bản giả. Hai thẻ của một trình duyệt là một phiên đồng bộ.
+- Kiểm trên trình duyệt: `scripts/e2e-demo.mjs` (chạy trong `npm run e2e`).
+
 Chạy với IAM thật:
 
 ```bash

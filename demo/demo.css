@@ -1,0 +1,35 @@
+/* Dải «Bản trình diễn» (demo/boot.js). Màu lấy từ token của phong cách đang chọn, nên chạy với cả năm phong cách. Dải cố định ở
+   đầu trang và trang được đẩy xuống đúng chiều cao của nó: không che thanh dưới, thông báo nổi hay nút của hộp thoại. */
+:root { --demo-ribbon-block: 0px; }
+body[data-demo] { padding-block-start: var(--demo-ribbon-block); }
+body[data-demo] .sidebar { inset-block-start: var(--demo-ribbon-block); block-size: calc(100dvh - var(--demo-ribbon-block)); }
+body[data-demo] .design-panel { inset-block-start: calc(26px + var(--demo-ribbon-block)); }
+body[data-demo] .skip-link:focus { inset-block-start: calc(8px + var(--demo-ribbon-block)); }
+
+.demo-ribbon {
+  position: fixed; z-index: 1500; inset-block-start: 0; inset-inline: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  padding-block: calc(4px + env(safe-area-inset-top)) 4px;
+  padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  background: var(--surface); color: var(--text); border-block-end: 2px solid var(--gold);
+  font-size: .74rem; line-height: 1.35; box-shadow: var(--shadow);
+}
+.demo-ribbon-tag {
+  flex: none; padding: 2px 8px; border-radius: 999px; background: var(--gold); color: var(--surface);
+  font-weight: 700; letter-spacing: .02em; overflow-wrap: normal;
+}
+.demo-ribbon-note { flex: 1 1 18rem; min-inline-size: 0; color: var(--text); }
+.demo-ribbon-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.demo-ribbon-button {
+  min-block-size: 32px; padding-inline: 10px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface-soft); color: var(--text); font-size: .74rem; font-weight: 600; overflow-wrap: break-word;
+}
+.demo-ribbon-button:hover { border-color: var(--accent); }
+.demo-ribbon-status:empty { display: none; }
+.demo-ribbon-status { flex-basis: 100%; color: var(--muted); }
+@media (pointer: coarse) { .demo-ribbon-button { min-block-size: 44px; } }
+@media (max-width: 700px) {
+  .demo-ribbon { font-size: .7rem; }
+  .demo-ribbon-note { flex-basis: calc(100% - 7rem); }
+}
+@media print { .demo-ribbon { display: none; } body[data-demo] { padding-block-start: 0; } }
