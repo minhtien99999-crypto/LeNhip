@@ -2,12 +2,22 @@
 // Client của API /v1 (SRS mục 15–16). Mỗi POST mang Idempotency-Key 32 byte ngẫu nhiên; mất mạng thì thử lại đúng một lần với
 // cùng khóa (không tạo khóa mới để chữa timeout). Token chỉ giữ trong sessionStorage của phiên; app native dùng OIDC code + PKCE.
 
+/**
+ * Lỗi của một lời gọi API. Giao diện dựng câu báo từ MÃ (`code`, `detail_code`, `limit`) bằng catalog của ngôn ngữ đang chọn
+ * (LNH-T23); câu `message` tiếng Việt của máy chủ không bao giờ được in ra, nên `Error.message` ở đây chỉ là mã cho log.
+ */
 export class ApiError extends Error {
   /** @param {number} status @param {any} body */
   constructor(status, body) {
-    super(body?.message ?? `HTTP ${status}`);
+    const code = typeof body?.code === "string" ? body.code : status === 0 ? "OFFLINE" : "ERROR";
+    super(`${code} (HTTP ${status})`);
+    this.name = "ApiError";
     this.status = status;
-    this.code = body?.code ?? (status === 0 ? "OFFLINE" : "ERROR");
+    this.code = code;
+    /** Mã chi tiết và giới hạn kèm theo, khi máy chủ gửi (ví dụ BLOCK_TOO_LONG với limit là số phút). */
+    this.detail_code = typeof body?.detail_code === "string" ? body.detail_code : null;
+    this.limit = typeof body?.limit === "number" && Number.isFinite(body.limit) ? body.limit : null;
+    this.request_id = typeof body?.request_id === "string" ? body.request_id : null;
     this.body = body;
   }
 }
@@ -100,12 +110,12 @@ export class Api {
       return await once();
     } catch (e) {
       if (e instanceof ApiError) throw e;
-      if (method !== "POST") throw new ApiError(0, { code: "OFFLINE", message: "Không kết nối được máy chủ LeNhip." });
+      if (method !== "POST") throw new ApiError(0, { code: "OFFLINE" });
       try {
         return await once();
       } catch (e2) {
         if (e2 instanceof ApiError) throw e2;
-        throw new ApiError(0, { code: "OFFLINE", message: "Không kết nối được máy chủ LeNhip." });
+        throw new ApiError(0, { code: "OFFLINE" });
       }
     }
   }

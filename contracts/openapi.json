@@ -261,7 +261,9 @@
         "type": "object", "additionalProperties": false, "required": ["code", "message", "request_id", "retryable"],
         "properties": {
           "code": { "type": "string" }, "message": { "type": "string" }, "request_id": { "type": "string" }, "retryable": { "type": "boolean" },
-          "resource_id": { "type": "string" }, "state": { "type": "string" }, "issues": { "type": "array", "items": { "type": "object" } }
+          "resource_id": { "type": "string" }, "state": { "type": "string" }, "issues": { "type": "array", "items": { "type": "object" } },
+          "detail_code": { "enum": ["WINDOW_TOO_LONG", "WORKSPACE_HEADER", "END_BEFORE_START", "BLOCK_TOO_LONG", "START_IN_PAST", "BEYOND_HORIZON"] },
+          "limit": { "type": "integer" }
         }
       },
       "Empty": { "type": "object", "additionalProperties": false, "properties": {} },
@@ -451,7 +453,8 @@
         "properties": {
           "type": { "enum": ["PROPOSAL", "ANSWER", "FORM"] }, "engine": { "type": "string" }, "ai_generated": { "type": "boolean" },
           "proposal": { "oneOf": [{ "$ref": "#/components/schemas/IntentProposal" }, { "type": "null" }] }, "answer": { "type": ["string", "null"] },
-          "fallback": { "type": ["string", "null"], "enum": ["calendar.block", "device.set_power", "NONE", null] }
+          "fallback": { "type": ["string", "null"], "enum": ["calendar.block", "device.set_power", "NONE", null] },
+          "answer_code": { "type": ["string", "null"], "enum": ["HELP", "PICK_LAMP", "DURATION_RANGE", "USE_FORM", "TOO_LONG", "HEALTH_LOCAL", "PII_BLOCKED", "UNAVAILABLE", "TIMEOUT", "INVALID_PROPOSAL", null] }
         }
       },
       "Me": {

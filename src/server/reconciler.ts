@@ -146,9 +146,10 @@ export class Reconciler {
       if (next === "TICKET_OPEN") this.stats.tickets++;
       if (next === "ESCALATED") {
         run(ctx.db, "UPDATE tickets SET status = 'ESCALATED', escalated_at = ? WHERE id = ?", at, ticket);
-        // Thông báo người dùng bằng nội dung chung (không lộ chi tiết trên màn hình khóa).
+        // Thông báo người dùng bằng nội dung chung (không lộ chi tiết trên màn hình khóa). `code` để thiết bị dựng câu theo ngôn
+        // ngữ của mình (LNH-T23); `text` tiếng Việt giữ cho bên nhận cũ. Máy chủ không biết ngôn ngữ của người dùng.
         run(ctx.db, "INSERT INTO outbox (id, topic, plan_id, payload, created_at) VALUES (?, 'notify.user', ?, ?, ?)", uuid(), row.id,
-          JSON.stringify({ to: row.actor, text: "Một thao tác của bạn chưa xác minh được kết quả. Mở LeNhip để xem." }), at);
+          JSON.stringify({ to: row.actor, code: "ACTION_UNVERIFIED", text: "Một thao tác của bạn chưa xác minh được kết quả. Mở LeNhip để xem." }), at);
         this.stats.escalated++;
       }
       if (next === "MANUAL_REQUIRED") {

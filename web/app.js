@@ -7,21 +7,31 @@
 // - Màn hình lấy từ sổ đăng ký web/views/index.js; điều hướng, địa chỉ #id và <main> dựng từ một chỗ. Màn hình có trạng thái
 //   được mount một lần, render nền chỉ gọi update (không dựng lại DOM). Mô-đun mới nhận `ctx` (makeCtx), không import tệp này.
 // - Chữ LeNhip đổi theo phong cách (shared/brand.js, T20); icon ứng dụng luôn là I01.
-// - Ngôn ngữ: shared/i18n.js nạp catalog trước lần vẽ đầu (LNH-T22, LNH-T29). Chuỗi tiếng Việt có sẵn của 0.1.0 chưa chuyển sang
-//   catalog: việc đó và ô chọn ngôn ngữ thuộc nhánh ngôn ngữ.
-import { THEMES, FONT_SIZES, ZONES, defaults, sanitizeSettings, restorePrefs, inkFor } from "./model.js";
+// - Ngôn ngữ (LNH-T21..LNH-T29): mọi chữ hiển thị lấy từ catalog qua t() (shared/i18n.js, tệp shared/i18n-<ngôn ngữ>.js); tệp này
+//   không chứa câu chữ nào. Catalog nạp trước lần vẽ đầu; ô chọn ngôn ngữ ở đầu hộp Cá nhân hóa và trên Thông báo đầu tiên; đổi
+//   ngôn ngữ thì vẽ lại, không nạp lại trang, và bị từ chối khi một kế hoạch đang chờ đồng ý. Bản không phải tiếng Việt là bản
+//   dịch máy chưa rà soát và giao diện nói rõ điều đó. Máy chủ không biết ngôn ngữ của người dùng: lỗi và câu trả lời hiển
+//   thị được dựng từ mã (LNH-T23). Không văn bản đã dịch nào đi vào payload hay digest (LNH-T26).
+import { THEMES, FONT_SIZES, ZONES, defaults, sanitizeSettings, restorePrefs, inkFor, SettingsFileError } from "./model.js";
 import { Api, ApiError } from "./api.js";
 import { buildViews, planKinds, isStateful, BAR_LIMIT } from "./views/index.js";
 import { wordmark } from "./shared/brand.js";
-import { localeInfo, resolveLocale, setLocale, getLocale, t, formatNumber, formatDate, formatWeekday, formatTime24, formatDuration as formatMinutes, formatList } from "./shared/i18n.js";
+import {
+  LOCALES, PARTS, SOURCE_LOCALE, LANGUAGE_WORD, isLocale, localeInfo, resolveLocale, loadLocale, setLocale, getLocale, hasCatalog, hasMessage, messageLocale,
+  t, tParts, tSource, localizeStatic, formatNumber, formatDate, formatWeekday, formatWeekdayCompact, formatTime24, formatDuration as formatMinutes, formatDurationParts, formatList,
+} from "./shared/i18n.js";
 import { leleMark } from "./shared/lele-mark.js";
+import { scanLele, leleBlock } from "./shared/lele-lexicon.js";
 import { digestJcs } from "./shared/jcs.js";
-import { computeHealthDays, sleepSentence, formatDuration } from "./shared/sleep.js";
+import { computeHealthDays, sleepMessage } from "./shared/sleep.js";
+import { consentText, consentReceipt } from "./shared/consent-text.js";
 import { healthInputFor, onHealthInputChanged } from "./shared/health-input.js";
 import { localParts, localDate, addDays, zonedToInstant } from "./shared/zone.js";
 
 const KEY = "lenhip.ui.v2";
-const NOTICE_VERSION = "v1-2026-11-11";
+// Số phiên bản và mã đặc tả in ở chân trang: dữ liệu, không dịch. Đổi ở đây khi phát hành.
+const APP_VERSION = "0.1.0";
+const SPEC_ID = "LNH-SRS-001 V1.1";
 const $ = (id) => document.getElementById(id);
 const glyphs = {
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
@@ -103,12 +113,14 @@ function writeStore(k, v) {
     localStorage.setItem(k, v);
     return true;
   } catch {
-    toast("Trình duyệt chưa cho lưu. Tùy chọn chỉ giữ trong phiên này.");
+    toast(t("settings.storeBlocked"));
     return false;
   }
 }
 const sub = () => me?.user.id ?? prefs.activeSub ?? "khach";
-const settings = () => prefs.users[sub()] ?? (prefs.users[sub()] = defaults(me?.user.name ?? "Bạn"));
+const settings = () => prefs.users[sub()] ?? (prefs.users[sub()] = defaults(me?.user.name ?? ""));
+/** Tên hiển thị. Để trống thì dùng chữ «Bạn» của ngôn ngữ đang chọn; chữ đó không được lưu vào thiết lập. */
+const displayName = () => settings().name || t("common.you");
 const zone = () => settings().zone;
 function savePrefs() {
   prefs.activeSub = sub();
@@ -130,23 +142,83 @@ function hhmmss(iso) {
   const p = localParts(Date.parse(iso), zone());
   return `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}:${String(p.second).padStart(2, "0")}`;
 }
-const WEEKDAY = ["CHỦ NHẬT", "THỨ HAI", "THỨ BA", "THỨ TƯ", "THỨ NĂM", "THỨ SÁU", "THỨ BẢY"];
-const SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+// Dòng ngày ở đầu Hôm nay: thứ và ngày tháng theo ngôn ngữ đang chọn (Intl), ở múi phân tích. Chữ hoa do CSS của .eyebrow.
 function dateLine() {
-  const p = localParts(api.serverNow(), zone());
-  return `${WEEKDAY[p.weekday]} · ${p.day} THÁNG ${p.month}`;
+  const now = api.serverNow();
+  return t("home.dateLine", { weekday: formatWeekday(now, "long", zone()), date: formatDate(now, { day: "numeric", month: "long", timeZone: zone() }) });
+}
+
+// ---------------------------------------------------------------- chữ: mọi câu lấy từ catalog, ghép vào HTML qua các hàm dưới đây
+const tSafe = (key, params) => safe(t(key, params));
+/** Tên lấy từ dữ liệu (người dùng, đèn, site): cô lập hướng chữ để tên viết theo chiều khác không làm đảo câu của giao diện. */
+const bdi = (value) => "<bdi>" + safe(value) + "</bdi>";
+/** Ngôn ngữ đang hiện có phải bản dịch máy chưa rà soát không (LNH-T21). Catalog chưa nạp được thì chữ đang hiện là bản gốc. */
+const draftUi = () => localeInfo().draft && hasCatalog(getLocale());
+/** Đoạn tiếng Việt cố định đặt trong câu của ngôn ngữ khác (tiêu đề sự kiện lịch, câu lệnh mẫu của LeLe): mang lang="vi". */
+const viSpan = (text) => (getLocale() === SOURCE_LOCALE ? safe(text) : '<span lang="' + SOURCE_LOCALE + '">' + safe(text) + "</span>");
+/** Tiêu đề mà máy chủ ghi vào lịch: luôn là câu tiếng Việt này ở mọi ngôn ngữ, vì nó nằm trong payload và phép đọc lại (LNH-T26). */
+const calendarTitle = () => tSource("calendar.title.PERSONAL_TIME");
+/** Một bản dịch nhắc nguyên văn tiêu đề lịch (văn bản đồng ý): đánh dấu đoạn đó là tiếng Việt. `html` đã được thoát ký tự. */
+function markCalendarTitle(html) {
+  if (getLocale() === SOURCE_LOCALE) return html;
+  const title = safe(calendarTitle());
+  return html.split(title).join('<span lang="' + SOURCE_LOCALE + '">' + title + "</span>");
+}
+/**
+ * Thông điệp có chỗ chèn HTML tin cậy của ứng dụng: phần chữ của bản dịch được thoát ký tự, tham số có tên trong `slots` được
+ * thay bằng HTML đã cho (chữ LeLe, tên trong <bdi>, đoạn có lang riêng). Bản dịch vẫn là văn bản thuần, không chứa HTML.
+ */
+function rich(key, slots, params = {}) {
+  const all = { ...params };
+  for (const name of Object.keys(slots)) all[name] = "";
+  return tParts(key, all).map((p) => (p.type === "param" && Object.hasOwn(slots, p.name) ? slots[p.name] : safe(p.value))).join("");
+}
+/** Tiêu đề nhiều dòng: bản dịch tự đặt chỗ xuống dòng bằng ký tự xuống dòng. */
+const lines = (key) => tSafe(key).replaceAll("\n", "<br>");
+/** Số kèm đơn vị trong ô số liệu: phần số giữ cỡ lớn, phần chữ của bản dịch (đơn vị) in nhỏ. */
+function withUnit(key, n) {
+  return tParts(key, { n }).map((p) => (p.type === "param" ? safe(p.value) : p.value.replace(/^(\s*)([\s\S]*?)(\s*)$/, (_, a, b, c) => a + (b ? "<small>" + safe(b) + "</small>" : "") + c))).join("");
+}
+/** Thời lượng (giây, làm tròn xuống phút như LNH-SLEEP-1) dựng từ các phần của Intl: đơn vị in nhỏ, không đọc lại chuỗi đã định dạng. */
+const durationHtml = (seconds) => formatDurationParts(Math.floor(seconds / 60)).map((p) => (p.type === "unit" ? "<small>" + safe(p.value) + "</small>" : safe(p.value))).join("");
+const durationText = (seconds) => formatMinutes(Math.floor(seconds / 60));
+/** Nối các ý độc lập bằng dấu chấm giữa của ngôn ngữ đang chọn; bỏ ý rỗng. */
+const dotJoin = (items) => items.filter(Boolean).reduce((a, b) => t("common.dot", { a, b }));
+/**
+ * Tra một khóa theo lớp ở phần lõi rồi ở từng phần mô-đun: `state.UNKNOWN`, rồi `msg.state.UNKNOWN`, `social.state.UNKNOWN`…
+ * Không có khóa, hoặc thông điệp cần tham số mà nơi gọi không có, thì trả null.
+ */
+function lookupLabel(suffix, params) {
+  for (const prefix of ["", ...PARTS.map((part) => part + ".")]) {
+    const key = prefix + suffix;
+    if (!hasMessage(key)) continue;
+    try {
+      return t(key, params);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+/**
+ * Nhãn của một mã do máy chủ trả (lớp `state`, `outcome`, `reason`, `grade`): khóa `<lớp>.<MÃ>`, mô-đun khai mã riêng ở
+ * `<phần>.<lớp>.<MÃ>` (ví dụ `social.outcome.POSTED`). Chưa có nhãn thì trả null và nơi gọi in nguyên mã.
+ */
+function codeLabel(cls, code, params) {
+  if (typeof code !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(code)) return null;
+  return lookupLabel(cls + "." + code, params);
 }
 
 // ---------------------------------------------------------------- LeLe
 const mark = (tone = "amber", cls = "") => leleMark({ tone, className: cls });
-const askLele = () => '<button class="ask-lele" data-action="chat"><span class="mini-orb"></span><span class="ask-copy">Hỏi ' + mark("amber", "inline") + "</span>" + icon("spark") + "</button>";
+const askLele = () => '<button class="ask-lele" data-action="chat"><span class="mini-orb"></span><span class="ask-copy">' + rich("lele.ask", { lele: mark("amber", "inline") }) + "</span>" + icon("spark") + "</button>";
 
 // ---------------------------------------------------------------- khung
 function themeButton(th, inSettings = false) {
   const isActive = (inSettings ? draftSettings.theme : settings().theme) === th.id;
   const swatch = '<span class="palette">' + th.colors.map((c) => '<i style="background:' + c + '"></i>').join("") + "</span>";
   if (inSettings) return '<button type="button" class="settings-theme ' + (isActive ? "active" : "") + '" data-draft-theme="' + th.id + '" aria-pressed="' + isActive + '">' + swatch + th.code + "</button>";
-  return '<button class="theme-option ' + (isActive ? "active" : "") + '" data-theme-choice="' + th.id + '" aria-pressed="' + isActive + '">' + swatch + "<span><strong>" + th.name + "</strong><small>" + th.code + " · " + th.description + "</small></span>" + (isActive ? '<span class="selection-check">' + icon("check") + "</span>" : "") + "</button>";
+  return '<button class="theme-option ' + (isActive ? "active" : "") + '" data-theme-choice="' + th.id + '" aria-pressed="' + isActive + '">' + swatch + "<span><strong>" + tSafe("theme." + th.id + ".name") + "</strong><small>" + tSafe("theme.option.meta", { code: th.code, description: t("theme." + th.id + ".description") }) + "</small></span>" + (isActive ? '<span class="selection-check">' + icon("check") + "</span>" : "") + "</button>";
 }
 // Sổ đăng ký màn hình (web/views/index.js). Bốn màn hình gốc vẫn vẽ bằng các hàm home/health_/work/house bên dưới.
 const VIEWS = buildViews({ home, health: health_, work, house });
@@ -177,7 +249,8 @@ function applyTheme() {
     document.body.style.removeProperty("--accent");
     document.body.style.removeProperty("--accent-ink");
   }
-  $("profile-button").textContent = (s.name || "Bạn").split(/\s+/).slice(-2).map((x) => x[0]).join("").toUpperCase();
+  // Chữ tắt của tên: ký tự đầu (theo điểm mã, không cắt đôi ký tự ngoài BMP) của hai từ cuối.
+  $("profile-button").textContent = displayName().trim().split(/\s+/).slice(-2).map((x) => Array.from(x)[0] ?? "").join("").toLocaleUpperCase(getLocale());
   // Màu thanh trình duyệt và thanh trạng thái của bản cài (PWA) đi theo nền của phong cách.
   const themeColor = getComputedStyle(document.body).getPropertyValue("--bg").trim();
   if (/^#[0-9a-f]{6}$/i.test(themeColor)) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themeColor);
@@ -225,7 +298,7 @@ function nav(current) {
   setHtml($("mobile-nav"), visible.filter((v) => v.nav.bar).slice(0, BAR_LIMIT).map((v) => navButton(v, v === current)).join(""));
 }
 function contextControl() {
-  return '<div class="context-switch" aria-label="Không gian hiện tại">' + [["personal", "person", "Cá nhân"], ["work", "work", "Công việc"]].map(([id, i, text]) => '<button data-context="' + id + '" class="' + (context === id ? "active" : "") + '" aria-pressed="' + (context === id) + '">' + icon(i) + text + "</button>").join("") + "</div>";
+  return '<div class="context-switch" role="group" aria-label="' + tSafe("context.label") + '">' + [["personal", "person", "context.personal"], ["work", "work", "context.work"]].map(([id, i, key]) => '<button data-context="' + id + '" class="' + (context === id ? "active" : "") + '" aria-pressed="' + (context === id) + '">' + icon(i) + tSafe(key) + "</button>").join("") + "</div>";
 }
 function orb(sceneClass = "") {
   return '<div class="orb-scene ' + sceneClass + '" aria-hidden="true"><div class="orbit-ring"></div><div class="orbit-ring second"></div><div class="orb"><span class="orb-label">' + leleMark({ tone: "duo", label: false }) + "</span></div></div>";
@@ -235,11 +308,11 @@ function banner() {
   if (!online) {
     b.hidden = false;
     b.className = "banner warn";
-    b.innerHTML = icon("alert") + "<span>Chưa kết nối được máy chủ LeNhip. Sức khỏe vẫn tính trên thiết bị; lịch và đèn tạm khóa, không có thao tác giả.</span>";
+    setHtml(b, icon("alert") + "<span>" + tSafe("banner.offline") + "</span>");
   } else if (me && !me.dispatch_open) {
     b.hidden = false;
     b.className = "banner warn";
-    b.innerHTML = icon("lock") + "<span>Đang đóng phát tác vụ để kiểm tra hệ thống. Bạn vẫn xem được trạng thái; thao tác mới sẽ chờ.</span>";
+    setHtml(b, icon("lock") + "<span>" + tSafe("banner.dispatchClosed") + "</span>");
   } else {
     b.hidden = true;
   }
@@ -264,10 +337,6 @@ function computeHealth() {
 /** Dữ liệu sức khỏe đang hiện có phải là dữ liệu tổng hợp của bản tham chiếu không. */
 function healthSynthetic() {
   return healthFrom.kind !== "import";
-}
-/** Chữ chỉ nguồn dữ liệu: `synthetic` cho dữ liệu tổng hợp, còn lại là nhãn do nguồn nhập cung cấp (đã thoát HTML). */
-function healthSourceWord(synthetic) {
-  return healthSynthetic() ? synthetic : safe(healthFrom.label);
 }
 function healthKey() {
   return `lenhip.health.v1.${sub()}`;
@@ -339,213 +408,245 @@ async function refresh() {
   await syncLocale(); // tùy chọn ngôn ngữ lưu theo tài khoản trên trình duyệt này; đổi tài khoản có thể đổi ngôn ngữ
   render();
 }
-// Chọn catalog theo thiết lập `locale` ("auto" theo trình duyệt) và đặt <html lang dir> (LNH-T28, LNH-T29). Trả false khi hoãn.
+// ---------------------------------------------------------------- ngôn ngữ (LNH-T21, LNH-T28, LNH-T29)
+let reviewing = false; // hộp xem lại kế hoạch đang mở
+let staticLocale = null; // ngôn ngữ của lần điền HTML tĩnh gần nhất
+/**
+ * Một kế hoạch đang chờ đồng ý: hộp xem lại đang mở hoặc đồng hồ 120 giây đang chạy. Lúc này không đổi ngôn ngữ (LNH-T29).
+ * Xét cả trạng thái thật của hộp: sự kiện `close` (nơi hạ cờ `reviewing`) tới sau lời gọi close() một nhịp.
+ */
+const planPending = () => (reviewing && $("action-dialog").open) || countdownTimer !== null;
+// Chọn catalog theo thiết lập `locale` ("auto" theo trình duyệt), đặt <html lang dir> và điền chữ cho HTML tĩnh. Trả false khi
+// hoãn vì một kế hoạch đang chờ đồng ý: màn hình xem lại giữ nguyên một ngôn ngữ tới khi đóng.
 async function syncLocale() {
   const want = resolveLocale(settings().locale, navigator.languages);
   if (want !== getLocale()) {
-    // Không đổi ngôn ngữ khi một kế hoạch đang chờ đồng ý (LNH-T29): màn hình xem lại giữ nguyên chữ tới khi đóng.
-    if (countdownTimer !== null) return false;
+    if (planPending()) return false;
     try {
       await setLocale(want);
     } catch (e) {
       console.error(e);
     }
   }
+  applyLocale();
+  return true;
+}
+function applyLocale() {
   const info = localeInfo();
   document.documentElement.lang = info.tag;
   document.documentElement.dir = info.dir;
-  return true;
+  if (staticLocale === info.tag) return;
+  // Tiêu đề trang, mô tả, liên kết bỏ qua, nhãn truy cập và chữ cố định của index.html (data-i18n, data-i18n-attr).
+  localizeStatic(document);
+  staticLocale = info.tag;
 }
+/**
+ * Ngôn ngữ người dùng vừa chọn có dùng được không: "auto" luôn được; một ngôn ngữ cụ thể phải nạp được catalog lõi của nó,
+ * không thì giao diện sẽ hiện tiếng Việt dưới tên một ngôn ngữ khác.
+ */
+async function localeUsable(pref) {
+  if (!isLocale(pref)) return true;
+  try {
+    await loadLocale(pref);
+  } catch {
+    return false;
+  }
+  return hasCatalog(pref);
+}
+/** Lý do từ chối đổi sang `next` (khóa catalog của câu báo), hoặc null nếu đổi được. */
+async function localeRefusal(next, current) {
+  if (next === current) return null;
+  if (planPending()) return "settings.language.pending";
+  return (await localeUsable(next)) ? null : "settings.language.unavailable";
+}
+/**
+ * Ô chọn ngôn ngữ: «Theo trình duyệt» và 13 ngôn ngữ bằng tên tự gọi, mỗi lựa chọn mang lang của chính nó. Nhãn có thêm chữ
+ * "Language" cố định để người không đọc được ngôn ngữ đang hiện vẫn tìm ra ô này. `extra` là HTML đặt dưới ô chọn.
+ */
+function languageField(id, selected, extra = "") {
+  const options = '<option value="auto"' + (isLocale(selected) ? "" : " selected") + ">" + tSafe("settings.language.auto") + "</option>" +
+    LOCALES.map((l) => '<option value="' + l.tag + '" lang="' + l.tag + '"' + (l.tag === selected ? " selected" : "") + ">" + safe(l.name) + "</option>").join("");
+  const fixed = getLocale() === "en" ? "" : ' · <span lang="en">' + LANGUAGE_WORD + "</span>";
+  return '<div class="field language-field"><label for="' + id + '">' + icon("globe") + "<span>" + tSafe("settings.language.label") + fixed + '</span></label><select id="' + id + '" name="locale" autocomplete="off">' + options + "</select>" + extra + "</div>";
+}
+/** Dòng báo bản dịch máy chưa rà soát; rỗng khi đang hiện bản gốc tiếng Việt. */
+const draftNote = (key = "i18n.draft.notice") => (draftUi() ? '<p class="fine-print draft-note">' + tSafe(key) + "</p>" : "");
 
 // ---------------------------------------------------------------- trạng thái tác vụ
-const STATUS = {
-  AUTHORIZED: "Đã xác nhận · chờ gửi",
-  DISPATCHING: "Đang gửi",
-  ACKED: "Đã gửi · đang xác minh",
-  UNKNOWN: "Chưa xác minh kết quả",
-  VERIFIED: "Đã xác minh",
-  FAILED: "Không thực hiện",
-  CONFLICT: "Trùng lịch",
-  REJECTED: "Không còn hiệu lực",
-  EXPIRED: "Hết hạn",
-  CANCELED: "Đã hủy",
-};
-const OUTCOME = {
-  APPLIED: "Thiết bị đã báo trạng thái mới.",
-  ALREADY_IN_STATE: "Thiết bị đã ở trạng thái này nên không gửi lệnh.",
-  EVENT_CREATED: "Khung giờ đã có trong lịch công việc.",
-  SIMULATED: "Mô phỏng hoàn tất (không có thiết bị thật).",
-  BUSY_BEFORE_CREATE: "Khung giờ đã bận khi kiểm ngay trước lúc ghi; chưa tạo gì.",
-  OVERLAP_AFTER_CREATE: "Khối đã được tạo nhưng trùng một cuộc hẹn khác. Chọn giờ khác, hoặc xóa khối trong Outlook (hủy khối từ LeNhip chưa có trong bản này).",
-  EVENT_CHANGED: "Khối trong lịch đã bị sửa hoặc xóa trước khi xác minh.",
-  NO_EFFECT: "Nguồn xác nhận chưa có tác động.",
-};
-const REASON = {
-  AUTHZ_CHANGED: "Quyền của bạn đã thay đổi.",
-  GRANT_REVOKED: "Quyền đã bị thu hồi.",
-  CONSENT_REVOKED: "Bạn đã rút đồng ý cho mục đích này.",
-  POLICY_CHANGED: "Chính sách xuất dữ liệu đã đổi.",
-  BINDING_CHANGED: "Thiết bị đã reset hoặc đổi cấu hình.",
-  TARGET_UNAVAILABLE: "Đích không còn sẵn sàng.",
-  APPROVAL_TIMEOUT: "Quá 120 giây chưa xác nhận.",
-  DISPATCH_WINDOW_PASSED: "Không gửi được trong cửa sổ 120 giây.",
-  USER_CANCELED: "Bạn đã hủy.",
-  USER_DENIED: "Bạn đã từ chối.",
-  BARRIER_UNAVAILABLE: "Hệ thống tạm đóng phát; chưa có lệnh nào được gửi.",
-  NO_BARRIER_NO_IO: "Lệnh chưa được gửi.",
-  PRECHECK_ERROR: "Không đọc được trạng thái trước khi gửi; chưa gửi lệnh.",
-  PROVIDER_THROTTLED: "Lịch đang giới hạn tốc độ; chưa gửi gì.",
-};
-const GRADE = { PROVIDER_READBACK: "đọc lại từ lịch", DEVICE_REPORTED: "thiết bị báo", PHYSICAL_OBSERVED: "quan sát độc lập", SIMULATED: "mô phỏng" };
-
-function describe(a) {
+// Nhãn trạng thái, kết quả, lý do và hạng bằng chứng nằm ở các khóa `state.<MÃ>`, `outcome.<MÃ>`, `reason.<MÃ>`, `grade.<MÃ>`
+// (codeLabel). Mã chưa có nhãn thì in nguyên mã: không đoán nghĩa, và UNKNOWN không bao giờ được diễn giải thành thất bại.
+/** Tên đèn theo mã trong kế hoạch; không tìm thấy thì dùng chính mã. */
+const lampName = (ref) => devices.find((x) => x.device_ref === ref)?.name ?? ref;
+/** Mô tả một tác vụ theo nội dung đã chuẩn hóa của nó (HTML đã thoát ký tự; tên đèn nằm trong <bdi>). */
+function describeHtml(a) {
   const p = a.preview;
-  if (PLAN_KINDS[p.kind]) return String(PLAN_KINDS[p.kind].title(baseCtx, p));
-  if (p.kind === "calendar.block") return `Thời gian cá nhân ${hhmm(p.start)}–${hhmm(p.end)}`;
-  if (p.kind === "device.set_power") {
-    const d = devices.find((x) => x.device_ref === p.target.device_ref);
-    return `${p.command === "SET_ON" ? "Bật" : "Tắt"} ${d?.name ?? p.target.device_ref}`;
-  }
-  return "Le-ORION · kịch bản đưa tài liệu (mô phỏng)";
+  if (PLAN_KINDS[p.kind]) return safe(String(PLAN_KINDS[p.kind].title(baseCtx, p)));
+  if (p.kind === "calendar.block") return tSafe("review.describe.calendarBlock", { start: hhmm(p.start), end: hhmm(p.end) });
+  if (p.kind === "device.set_power") return rich(p.command === "SET_ON" ? "review.describe.powerOn" : "review.describe.powerOff", { device: bdi(lampName(p.target.device_ref)) });
+  return tSafe("review.describe.robot");
 }
 function unknownPanel(a) {
-  return '<div class="unknown-panel" role="status"><strong>' + icon("alert") + "Chưa xác minh kết quả</strong><dl>" +
-    "<dt>Gửi lúc</dt><dd>" + hhmmss(a.times.first_io_at ?? a.times.dispatch_claimed_at) + "</dd>" +
-    "<dt>Đối soát gần nhất</dt><dd>" + hhmmss(a.times.last_check_at) + "</dd>" +
-    "<dt>Cập nhật tiếp theo</dt><dd>" + hhmmss(a.deadlines.next_check) + "</dd>" +
-    "<dt>Mã hỗ trợ</dt><dd><code>" + safe(a.support_code ?? "—") + "</code></dd></dl>" +
-    '<p class="fine-print">Thao tác tương tự trên cùng ' + (a.kind === "calendar.block" ? "khung giờ" : "thiết bị") + " tạm khóa tới khi có bằng chứng. Không tự gửi lại." +
-    (a.reconciliation_status === "ESCALATED" || a.reconciliation_status === "MANUAL_REQUIRED" ? " Đội vận hành LeDB đang xử lý." : "") + "</p>" +
-    '<button class="button secondary" data-check-action="' + safe(a.action_id) + '">' + icon("clock") + "Kiểm tra trạng thái</button></div>";
+  const slot = a.kind === "calendar.block";
+  const escalated = a.reconciliation_status === "ESCALATED" || a.reconciliation_status === "MANUAL_REQUIRED";
+  const locked = slot ? (escalated ? "review.unknown.lockedSlotEscalated" : "review.unknown.lockedSlot") : escalated ? "review.unknown.lockedDeviceEscalated" : "review.unknown.lockedDevice";
+  return '<div class="unknown-panel" role="status"><strong>' + icon("alert") + tSafe("state.UNKNOWN") + "</strong><dl>" +
+    "<dt>" + tSafe("review.unknown.sentAt") + "</dt><dd>" + hhmmss(a.times.first_io_at ?? a.times.dispatch_claimed_at) + "</dd>" +
+    "<dt>" + tSafe("review.unknown.lastCheck") + "</dt><dd>" + hhmmss(a.times.last_check_at) + "</dd>" +
+    "<dt>" + tSafe("review.unknown.nextCheck") + "</dt><dd>" + hhmmss(a.deadlines.next_check) + "</dd>" +
+    "<dt>" + tSafe("review.unknown.supportCode") + "</dt><dd><code>" + safe(a.support_code ?? "—") + "</code></dd></dl>" +
+    '<p class="fine-print">' + tSafe(locked) + "</p>" +
+    '<button class="button secondary" data-check-action="' + safe(a.action_id) + '">' + icon("clock") + tSafe("review.unknown.check") + "</button></div>";
 }
 function actionCard(a, compact = false) {
   const terminal = ["VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED"].includes(a.status);
   const tone = a.status === "VERIFIED" ? "ok" : a.status === "UNKNOWN" || a.status === "CONFLICT" ? "warn" : terminal ? "muted" : "busy";
-  let html = '<div class="action-card ' + tone + '" data-action-id="' + safe(a.action_id) + '"><div class="action-head"><strong>' + safe(describe(a)) + '</strong><span class="status-chip ' + tone + '">' + (STATUS[a.status] ?? a.status) + "</span></div>";
+  let html = '<div class="action-card ' + tone + '" data-action-id="' + safe(a.action_id) + '"><div class="action-head"><strong>' + describeHtml(a) + '</strong><span class="status-chip ' + tone + '">' + safe(codeLabel("state", a.status) ?? a.status) + "</span></div>";
   if (!compact) {
-    if (a.outcome && OUTCOME[a.outcome]) html += "<p>" + OUTCOME[a.outcome] + "</p>";
-    else if (a.reason && REASON[a.reason]) html += "<p>" + REASON[a.reason] + "</p>";
-    if (a.evidence_grade) html += '<p class="fine-print">Bằng chứng: ' + (GRADE[a.evidence_grade] ?? a.evidence_grade) + (a.times.last_observed_at ? " lúc " + hhmmss(a.times.last_observed_at) : "") + ". Kết quả này ghi theo lúc kiểm, không đổi khi thiết bị đổi sau đó.</p>";
-    if (a.cancel_requested && !terminal) html += '<p class="fine-print">Đã ghi yêu cầu hủy; lệnh đã bắt đầu nên vẫn đối soát tới khi có bằng chứng.</p>';
+    const result = codeLabel("outcome", a.outcome) ?? codeLabel("reason", a.reason);
+    if (result) html += "<p>" + safe(result) + "</p>";
+    if (a.evidence_grade) {
+      const grade = codeLabel("grade", a.evidence_grade) ?? a.evidence_grade;
+      html += '<p class="fine-print">' + (a.times.last_observed_at ? tSafe("review.evidence.at", { grade, time: hhmmss(a.times.last_observed_at) }) : tSafe("review.evidence.plain", { grade })) + "</p>";
+    }
+    if (a.cancel_requested && !terminal) html += '<p class="fine-print">' + tSafe("review.cancelRequested") + "</p>";
     if (a.status === "UNKNOWN") html += unknownPanel(a);
-    else if (a.status === "AUTHORIZED") html += '<button class="text-button" data-cancel-action="' + safe(a.action_id) + '">Hủy trước khi gửi</button>';
+    else if (a.status === "AUTHORIZED") html += '<button class="text-button" data-cancel-action="' + safe(a.action_id) + '">' + tSafe("review.cancelBeforeSend") + "</button>";
   }
   return html + "</div>";
 }
 
 // ---------------------------------------------------------------- trang
 function sleepTile() {
-  if (!health) return '<button class="card" data-nav="health"><div class="stat-label">' + icon("moon") + 'Giấc ngủ</div><div class="stat-value">—</div><div class="stat-meta">Sức khỏe đang tắt trên thiết bị này</div></button>';
+  if (!health) return '<button class="card" data-nav="health"><div class="stat-label">' + icon("moon") + tSafe("health.sleep.title") + '</div><div class="stat-value">—</div><div class="stat-meta">' + tSafe("health.off.tile") + "</div></button>";
   const s = health.summary;
   const today = health.days[health.days.length - 1];
-  const value = today.sleep_seconds !== null ? formatDuration(today.sleep_seconds) : s.sleep_average_seconds !== null ? formatDuration(s.sleep_average_seconds) : "—";
-  const meta = today.sleep_seconds !== null ? "Đêm qua · " + healthSourceWord("dữ liệu tổng hợp") : `${s.sleep_observed_days}/7 ngày có dữ liệu · ` + healthSourceWord("tổng hợp");
+  const seconds = today.sleep_seconds ?? s.sleep_average_seconds;
+  const counts = { n: s.sleep_observed_days, total: s.completed_days };
+  const meta = today.sleep_seconds !== null
+    ? (healthSynthetic() ? tSafe("health.sleep.lastNight.synthetic") : tSafe("health.sleep.lastNight.source", { source: healthFrom.label }))
+    : healthSynthetic() ? tSafe("health.sleep.observed.synthetic", counts) : tSafe("health.sleep.observed.source", { ...counts, source: healthFrom.label });
   const bars = health.days.slice(0, 7).map((d) => '<i class="' + (d.sleep_seconds === null ? "missing" : "") + '" style="--h:' + (d.sleep_seconds === null ? 6 : Math.min(100, Math.round((d.sleep_seconds / 36000) * 100))) + '%"></i>').join("");
-  return '<button class="card" data-nav="health"><div class="stat-label">' + icon("moon") + 'Giấc ngủ</div><div class="stat-value">' + safe(value).replace(/(\d+) (giờ|phút)/g, "$1 <small>$2</small>") + '</div><div class="stat-meta">' + meta + '</div><div class="spark-bars" aria-hidden="true">' + bars + "</div></button>";
+  return '<button class="card" data-nav="health"><div class="stat-label">' + icon("moon") + tSafe("health.sleep.title") + '</div><div class="stat-value">' + (seconds === null ? "—" : durationHtml(seconds)) + '</div><div class="stat-meta">' + meta + '</div><div class="spark-bars" aria-hidden="true">' + bars + "</div></button>";
 }
 function stepsTile() {
-  if (!health) return '<button class="card" data-nav="health"><div class="stat-label">' + icon("steps") + 'Vận động</div><div class="stat-value">—</div><div class="stat-meta">Sức khỏe đang tắt trên thiết bị này</div></button>';
+  if (!health) return '<button class="card" data-nav="health"><div class="stat-label">' + icon("steps") + tSafe("health.steps.title") + '</div><div class="stat-value">—</div><div class="stat-meta">' + tSafe("health.off.tile") + "</div></button>";
   const today = health.days[health.days.length - 1];
   const v = today.steps;
-  return '<button class="card" data-nav="health"><div class="stat-label">' + icon("steps") + 'Vận động</div><div class="stat-value">' + (v === null ? "—" : v.toLocaleString("vi-VN") + " <small>bước</small>") + '</div><div class="stat-meta">' + (v === null ? "Hôm nay chưa có dữ liệu" : "Hôm nay, chưa đủ ngày · " + healthSourceWord("tổng hợp")) + "</div></button>";
+  const meta = v === null ? tSafe("health.steps.noneToday") : healthSynthetic() ? tSafe("health.steps.partial.synthetic") : tSafe("health.steps.partial.source", { source: healthFrom.label });
+  return '<button class="card" data-nav="health"><div class="stat-label">' + icon("steps") + tSafe("health.steps.title") + '</div><div class="stat-value">' + (v === null ? "—" : withUnit("health.steps.value", v)) + '</div><div class="stat-meta">' + meta + "</div></button>";
 }
 function scheduleRows(dayOffset = 0) {
-  if (!online) return '<p class="empty-state">Chưa kết nối máy chủ.</p>';
-  if (!me?.calendar.linked) return '<p class="empty-state">Chưa liên kết tài khoản Microsoft 365 công việc.</p>';
-  if (!serverConsent("calendar_link")) return '<p class="empty-state">Bạn chưa đồng ý liên kết lịch công việc. Mở Cá nhân hóa → Quyền riêng tư để bật.</p>';
-  if (!availability || availability.error) return '<p class="empty-state">Chưa đọc được lịch' + (availability?.error ? " (" + safe(availability.error) + ")" : "") + ".</p>";
+  const empty = (text) => '<p class="empty-state">' + safe(text) + "</p>";
+  if (!online) return empty(t("common.offline"));
+  if (!me?.calendar.linked) return empty(t("work.notLinked"));
+  if (!serverConsent("calendar_link")) return empty(t("work.consentNeeded"));
+  if (!availability || availability.error) return empty(availability?.error ? t("work.unreadableCode", { code: availability.error }) : t("work.unreadable"));
   const day = addDays(localDate(api.serverNow(), zone()), dayOffset);
   const onDay = (iso) => localDate(Date.parse(iso), zone()) === day;
   const mine = availability.lenhip_blocks.filter((b) => onDay(b.start));
   const rows = [
-    ...availability.busy.filter((b) => onDay(b.start) && !mine.some((m) => m.start === b.start && m.end === b.end)).map((b) => ({ start: b.start, end: b.end, title: "Bận", detail: "Lịch công việc · không hiện tiêu đề" })),
-    ...mine.map((b) => ({ start: b.start, end: b.end, title: "Thời gian cá nhân", detail: "Chỉ mình tôi · " + (STATUS[b.status] ?? b.status) })),
+    ...availability.busy.filter((b) => onDay(b.start) && !mine.some((m) => m.start === b.start && m.end === b.end)).map((b) => ({ start: b.start, end: b.end, title: t("work.row.busy"), detail: t("work.row.busyDetail") })),
+    ...mine.map((b) => ({ start: b.start, end: b.end, title: t("work.row.personal"), detail: t("work.row.personalDetail", { status: codeLabel("state", b.status) ?? b.status }) })),
   ].sort((a, b) => a.start.localeCompare(b.start));
-  if (!rows.length) return '<p class="empty-state">Không có lịch bận trong ngày.</p>';
-  return rows.map((e) => '<div class="event-row"><span class="event-time">' + hhmm(e.start) + '</span><div class="event-copy"><strong>' + safe(e.title) + "</strong><span>" + hhmm(e.start) + " – " + hhmm(e.end) + " · " + safe(e.detail) + "</span></div>" + icon("arrow") + "</div>").join("");
+  if (!rows.length) return empty(t("work.empty"));
+  return rows.map((e) => '<div class="event-row"><span class="event-time">' + hhmm(e.start) + '</span><div class="event-copy"><strong>' + safe(e.title) + "</strong><span>" + tSafe("work.row.line", { start: hhmm(e.start), end: hhmm(e.end), detail: e.detail }) + "</span></div>" + icon("arrow") + "</div>").join("");
 }
 function timeline() {
-  return '<div class="timeline">' + [["07:30", "Buổi sáng", "sun", "Xem tóm tắt và chuẩn bị ngày mới", "health"], ["09:00", "Công việc", "work", "Lịch hôm nay và thời gian tập trung", "work"], ["18:00", "Về nhà", "home", "Thiết bị và không gian của bạn", "house"]].map(([time, title, i, desc, target]) => '<button class="card" data-nav="' + target + '"><span class="tile-icon">' + icon(i) + '</span><span class="event-copy"><strong>' + time + " · " + title + "</strong><span>" + desc + "</span></span>" + icon("arrow") + "</button>").join("") + "</div>";
+  const items = [["07:30", "home.timeline.morning", "sun", "home.timeline.morningDesc", "health"], ["09:00", "home.timeline.work", "work", "home.timeline.workDesc", "work"], ["18:00", "home.timeline.evening", "home", "home.timeline.eveningDesc", "house"]];
+  return '<div class="timeline">' + items.map(([time, title, i, desc, target]) => '<button class="card" data-nav="' + target + '"><span class="tile-icon">' + icon(i) + '</span><span class="event-copy"><strong>' + tSafe("home.timeline.item", { time, title: t(title) }) + "</strong><span>" + tSafe(desc) + "</span></span>" + icon("arrow") + "</button>").join("") + "</div>";
 }
 function statWidgets() {
   const widgets = settings().widgets;
   const tiles = [];
   if (widgets.includes("sleep")) tiles.push(sleepTile());
   if (widgets.includes("steps")) tiles.push(stepsTile());
-  return (tiles.length ? '<div class="stats-grid">' + tiles.join("") + "</div>" : "") + (widgets.includes("schedule") ? '<div class="section-heading"><h2>Lịch hôm nay</h2><button class="text-button" data-nav="work">Xem tất cả →</button></div><div class="card">' + scheduleRows() + "</div>" : "");
+  return (tiles.length ? '<div class="stats-grid">' + tiles.join("") + "</div>" : "") + (widgets.includes("schedule") ? '<div class="section-heading"><h2>' + tSafe("home.schedule.title") + '</h2><button class="text-button" data-nav="work">' + tSafe("home.schedule.all") + '</button></div><div class="card">' + scheduleRows() + "</div>" : "");
 }
 function home() {
   const { name, theme } = settings();
   const work = context === "work";
-  let html = '<div class="heading-row"><div><span class="eyebrow">' + dateLine() + "</span><h1>Chào " + safe(name) + '.</h1><p class="subtitle">Một ngày của bạn, theo nhịp của bạn.</p></div></div>';
+  let html = '<div class="heading-row"><div><span class="eyebrow">' + safe(dateLine()) + "</span><h1>" + (name ? rich("home.greeting", { name: bdi(name) }) : tSafe("home.greetingAnon")) + '</h1><p class="subtitle">' + tSafe("home.subtitle") + "</p></div></div>";
   if (theme === "flow") {
-    html += '<section class="hero flow-hero"><div class="hero-copy"><span class="eyebrow" style="color:#c9f0ff">DÒNG THỜI GIAN</span><h2>Ngày của bạn,<br>gọn gàng hơn.</h2><p>Cá nhân, công việc và ngôi nhà trong cùng một hành trình.</p></div>' + orb() + "</section>" + timeline();
+    html += '<section class="hero flow-hero"><div class="hero-copy"><span class="eyebrow" style="color:#c9f0ff">' + tSafe("home.flow.eyebrow") + "</span><h2>" + lines("home.flow.title") + "</h2><p>" + tSafe("home.flow.text") + "</p></div>" + orb() + "</section>" + timeline();
   } else if (theme === "titanium") {
-    html += '<div class="space-tiles">' + [["person", "Cá nhân", "Tóm tắt sức khỏe và nhịp sống", "health"], ["work", "Công việc", "Lịch hôm nay, việc tiếp theo", "work"], ["home", "Ngôi nhà", "Thiết bị và không gian của bạn", "house"]].map(([i, title, d, target]) => '<button class="card space-tile" data-nav="' + target + '"><span class="tile-icon">' + icon(i) + '</span><span class="event-copy"><strong>' + title + "</strong><span>" + d + "</span></span>" + icon("arrow") + "</button>").join("") + "</div>";
+    const tiles = [["person", "home.space.personal", "home.space.personalDesc", "health"], ["work", "home.space.work", "home.space.workDesc", "work"], ["home", "home.space.house", "home.space.houseDesc", "house"]];
+    html += '<div class="space-tiles">' + tiles.map(([i, title, d, target]) => '<button class="card space-tile" data-nav="' + target + '"><span class="tile-icon">' + icon(i) + '</span><span class="event-copy"><strong>' + tSafe(title) + "</strong><span>" + tSafe(d) + "</span></span>" + icon("arrow") + "</button>").join("") + "</div>";
   } else {
-    const title = work ? "Dành chỗ cho điều quan trọng." : theme === "calm" ? "Một ngày<br>nhẹ nhàng." : theme === "night" ? "Không gian<br>đúng nhịp." : "Nhịp sống<br>hôm nay.";
-    html += '<section class="hero ' + theme + '-hero"><div class="hero-copy"><span class="tiny-pill">' + (work ? "Không gian công việc" : mark("amber", "inline") + " đồng hành cùng bạn") + "</span><h2>" + title + "</h2><p>" + (work ? "Chủ động sắp xếp lịch, có thời gian cho chính mình." : "Bắt đầu với những điều nhỏ, tận hưởng một ngày trọn vẹn.") + '</p><button class="button primary" data-nav="' + (work ? "work" : "health") + '">' + (work ? "Xem lịch hôm nay" : "Xem tóm tắt") + icon("arrow") + "</button></div>" + orb() + "</section>";
+    const title = lines(work ? "home.hero.work.title" : theme === "calm" ? "home.hero.calm.title" : theme === "night" ? "home.hero.night.title" : "home.hero.orbit.title");
+    html += '<section class="hero ' + theme + '-hero"><div class="hero-copy"><span class="tiny-pill">' + (work ? tSafe("home.hero.work.pill") : rich("lele.companion", { lele: mark("amber", "inline") })) + "</span><h2>" + title + "</h2><p>" + tSafe(work ? "home.hero.work.text" : "home.hero.personal.text") + '</p><button class="button primary" data-nav="' + (work ? "work" : "health") + '">' + tSafe(work ? "home.hero.work.cta" : "home.hero.personal.cta") + icon("arrow") + "</button></div>" + orb() + "</section>";
     html += statWidgets();
   }
-  if ((theme === "flow" || theme === "titanium") && settings().widgets.length) html += '<details class="today-details"><summary>Thông tin hôm nay</summary>' + statWidgets() + "</details>";
+  if ((theme === "flow" || theme === "titanium") && settings().widgets.length) html += '<details class="today-details"><summary>' + tSafe("home.today.details") + "</summary>" + statWidgets() + "</details>";
   const live = actions.filter((a) => !["VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED"].includes(a.status));
-  if (live.length) html += '<div class="section-heading"><h2>Đang theo dõi</h2></div>' + live.map((a) => actionCard(a)).join("");
+  if (live.length) html += '<div class="section-heading"><h2>' + tSafe("home.tracking.title") + "</h2></div>" + live.map((a) => actionCard(a)).join("");
   return html + askLele();
 }
+/** Câu trung tính về giấc ngủ (SRS mục 10) theo ngôn ngữ đang chọn, dựng từ khóa và tham số của LNH-SLEEP-1. */
+function sleepText(summary) {
+  const m = sleepMessage(summary);
+  return t(m.key, m.durationMinutes === null ? m.params : { ...m.params, duration: formatMinutes(m.durationMinutes) });
+}
 function health_() {
-  let html = '<span class="eyebrow">CHỈ TRONG KHÔNG GIAN CÁ NHÂN · TÍNH TRÊN THIẾT BỊ</span><h1>Nhịp sống của bạn.</h1><p class="subtitle">Từng thay đổi nhỏ, được nhìn rõ hơn.</p>';
+  let html = '<span class="eyebrow">' + tSafe("health.eyebrow") + "</span><h1>" + tSafe("health.title") + '</h1><p class="subtitle">' + tSafe("health.subtitle") + "</p>";
   if (!health) {
-    return html + '<section class="card health-card"><div class="stat-label">' + icon("shield") + 'Sức khỏe đang tắt</div><p>LeNhip chỉ đọc bước chân và giấc ngủ sau khi bạn đồng ý, tính trên thiết bị và không gửi số liệu sức khỏe về máy chủ. Bạn vẫn dùng được lịch và ngôi nhà khi không bật.</p><button class="button primary" data-action="onboarding">Xem thông báo và lựa chọn</button></section>' + askLele();
+    return html + '<section class="card health-card"><div class="stat-label">' + icon("shield") + tSafe("health.off.title") + "</div><p>" + tSafe("health.off.text") + '</p><button class="button primary" data-action="onboarding">' + tSafe("health.off.cta") + "</button></section>" + askLele();
   }
   const s = health.summary;
   const completed = health.days.slice(0, 7);
   const today = health.days[7];
-  const label = (d) => SHORT[new Date(d.local_date + "T00:00:00Z").getUTCDay()];
+  const label = (d) => formatWeekdayCompact(d.local_date);
   const avg = s.sleep_average_seconds;
-  html += '<section class="card health-card"><div class="stat-label">' + icon("moon") + "Giấc ngủ · 7 ngày đã kết thúc</div>" +
-    '<div class="stat-value">' + (avg === null ? "—" : safe(formatDuration(avg))) + '</div><p class="subtitle">' + safe(sleepSentence(s)) + "</p>" +
-    '<div class="bar-chart" role="img" aria-label="' + safe(`${s.sleep_observed_days} ngày có quan sát giấc ngủ, ${7 - s.sleep_observed_days} ngày thiếu dữ liệu`) + '">' +
-    completed.map((d) => '<div><i class="' + (d.sleep_seconds === null ? "missing" : "") + '" style="--h:' + (d.sleep_seconds === null ? 3 : Math.min(100, Math.round((d.sleep_seconds / 36000) * 100))) + '%"></i><span>' + label(d) + "</span></div>").join("") +
-    '</div><p class="fine-print">Hôm nay (' + label(today) + ") tách riêng vì chưa đủ ngày: " + (today.sleep_seconds === null ? "chưa có dữ liệu ngủ." : "giấc chính " + safe(formatDuration(today.sleep_seconds)) + ".") + " Ngày thiếu hiển thị vạch mờ, không tính là 0.</p></section>";
+  const chartLabel = t("health.sleep.chart.label", { observed: t("health.sleep.chart.observed", { n: s.sleep_observed_days }), missing: t("health.sleep.chart.missing", { n: s.completed_days - s.sleep_observed_days }) });
+  html += '<section class="card health-card"><div class="stat-label">' + icon("moon") + tSafe("health.sleep.heading", { n: s.completed_days }) + "</div>" +
+    '<div class="stat-value">' + (avg === null ? "—" : safe(durationText(avg))) + '</div><p class="subtitle">' + safe(sleepText(s)) + "</p>" + draftNote("health.draft") +
+    '<div class="bar-chart" role="img" aria-label="' + safe(chartLabel) + '">' +
+    completed.map((d) => '<div><i class="' + (d.sleep_seconds === null ? "missing" : "") + '" style="--h:' + (d.sleep_seconds === null ? 3 : Math.min(100, Math.round((d.sleep_seconds / 36000) * 100))) + '%"></i><span>' + safe(label(d)) + "</span></div>").join("") +
+    '</div><p class="fine-print">' + (today.sleep_seconds === null ? tSafe("health.sleep.today.none", { weekday: label(today) }) : tSafe("health.sleep.today.main", { weekday: label(today), duration: durationText(today.sleep_seconds) })) + "</p></section>";
   const stepsDays = completed.filter((d) => d.steps !== null);
-  html += '<div class="stats-grid" style="margin-top:15px"><div class="card"><div class="stat-label">' + icon("steps") + 'Vận động</div><div class="stat-value">' + (s.steps_average === null ? "—" : s.steps_average.toLocaleString("vi-VN") + " <small>bước/ngày</small>") + '</div><div class="stat-meta">Trung bình ' + stepsDays.length + "/7 ngày có dữ liệu</div></div>" +
-    '<div class="card"><div class="stat-label">' + icon("shield") + 'Nguồn dữ liệu</div><h3 style="margin-top:16px">' + healthSourceWord("Dữ liệu tổng hợp") + '</h3><div class="stat-meta">' + (healthSynthetic() || !healthFrom.detail ? "" : safe(healthFrom.detail) + " · ") + 'Nguồn ' + safe(health.source.id ?? "—") + (health.source.selection === "MOST_RECENT_NEEDS_CONFIRMATION" ? " · cần bạn xác nhận" : "") + " · " + health.algorithm_version + " · múi " + safe(health.analysis_zone) + "</div></div></div>";
-  html += '<div class="privacy-note">' + icon("lock") + "<span>" + (healthSynthetic() ? "Bản web dùng dữ liệu tổng hợp vì trình duyệt không đọc được HealthKit hay Health Connect. App iOS và Android đọc qua HealthSource, tính bằng cùng thuật toán và không gửi số liệu sức khỏe về máy chủ." : "Dữ liệu này do bạn nhập trên thiết bị này và ở lại trên thiết bị này. LeNhip không gửi số liệu sức khỏe về máy chủ và không đồng bộ sang thiết bị khác của bạn.") + "</span></div>";
-  html += '<div class="button-row"><button class="button secondary" data-action="health-source">Quyền và nguồn dữ liệu ' + icon("arrow") + '</button><button class="button secondary" data-action="health-export">Xuất dữ liệu trên thiết bị</button><button class="button secondary" data-action="health-erase">Xóa bộ nhớ đệm</button></div>';
+  const sourceMeta = t(health.source.selection === "MOST_RECENT_NEEDS_CONFIRMATION" ? "health.source.metaConfirm" : "health.source.meta", { id: health.source.id ?? "—", algorithm: health.algorithm_version, zone: health.analysis_zone });
+  html += '<div class="stats-grid" style="margin-top:15px"><div class="card"><div class="stat-label">' + icon("steps") + tSafe("health.steps.title") + '</div><div class="stat-value">' + (s.steps_average === null ? "—" : withUnit("health.steps.perDay", s.steps_average)) + '</div><div class="stat-meta">' + tSafe("health.steps.observed", { n: stepsDays.length, total: s.completed_days }) + "</div></div>" +
+    '<div class="card"><div class="stat-label">' + icon("shield") + tSafe("health.source.title") + '</div><h3 style="margin-top:16px">' + (healthSynthetic() ? tSafe("health.source.synthetic") : safe(healthFrom.label)) + '</h3><div class="stat-meta">' + safe(healthSynthetic() || !healthFrom.detail ? sourceMeta : dotJoin([healthFrom.detail, sourceMeta])) + "</div></div></div>";
+  html += '<div class="privacy-note">' + icon("lock") + "<span>" + tSafe(healthSynthetic() ? "health.note.synthetic" : "health.note.import") + "</span></div>";
+  html += '<div class="button-row"><button class="button secondary" data-action="health-source">' + tSafe("health.actions.source") + " " + icon("arrow") + '</button><button class="button secondary" data-action="health-export">' + tSafe("health.actions.export") + '</button><button class="button secondary" data-action="health-erase">' + tSafe("health.actions.erase") + "</button></div>";
   return html + askLele();
 }
 function work() {
   const live = actions.filter((a) => a.kind === "calendar.block").slice(0, 3);
-  return '<div class="heading-row"><div><span class="eyebrow">KHÔNG GIAN CÔNG VIỆC</span><h1>Lịch theo nhịp bạn.</h1></div><span class="tiny-pill">Microsoft 365 · giả lập</span></div><p class="subtitle">Dành thời gian cho cả công việc và chính mình.</p>' +
-    '<section class="card" style="margin-top:25px"><div class="section-heading" style="margin-top:0"><h2>Hôm nay · ' + localParts(api.serverNow(), zone()).day + "/" + localParts(api.serverNow(), zone()).month + "</h2>" + icon("today") + "</div>" + scheduleRows() + "</section>" +
-    '<button class="button primary full" style="margin-top:18px" data-action="new-block" ' + (online && me?.calendar.linked && serverConsent("calendar_link") ? "" : "disabled") + ">" + icon("plus") + "Thêm thời gian cá nhân</button>" +
-    '<div class="privacy-note">' + icon("lock") + "<span>Tiêu đề cố định “Thời gian cá nhân”, chỉ mình bạn, hiển thị bận. LeNhip không gửi lý do hay dữ liệu sức khỏe, và không đọc tiêu đề cuộc hẹn của bạn.</span></div>" +
-    (live.length ? '<div class="section-heading"><h2>Khung giờ gần đây</h2></div>' + live.map((a) => actionCard(a)).join("") : "") + askLele();
+  const date = formatDate(api.serverNow(), { day: "numeric", month: "numeric", timeZone: zone() });
+  return '<div class="heading-row"><div><span class="eyebrow">' + tSafe("work.eyebrow") + "</span><h1>" + tSafe("work.title") + '</h1></div><span class="tiny-pill">' + tSafe("work.simulatedPill") + '</span></div><p class="subtitle">' + tSafe("work.subtitle") + "</p>" +
+    '<section class="card" style="margin-top:25px"><div class="section-heading" style="margin-top:0"><h2>' + tSafe("work.today", { date }) + "</h2>" + icon("today") + "</div>" + scheduleRows() + "</section>" +
+    '<button class="button primary full" style="margin-top:18px" data-action="new-block" ' + (online && me?.calendar.linked && serverConsent("calendar_link") ? "" : "disabled") + ">" + icon("plus") + tSafe("work.addBlock") + "</button>" +
+    '<div class="privacy-note">' + icon("lock") + "<span>" + rich("work.note", { title: viSpan(calendarTitle()) }) + "</span></div>" +
+    (live.length ? '<div class="section-heading"><h2>' + tSafe("work.recent") + "</h2></div>" + live.map((a) => actionCard(a)).join("") : "") + askLele();
 }
 function roomVisual() {
   const lamp = devices.find((d) => d.device_ref === "dev_lamp_01") ?? devices[0];
   const on = lamp?.state?.power === "ON";
-  return '<div class="room-visual"><svg viewBox="0 0 520 225" role="img" aria-label="Minh họa bàn làm việc và đèn ' + (on ? "đang bật" : "đang tắt") + '"><defs><linearGradient id="desk" x2="1" y2="1"><stop stop-color="#e4caa8"/><stop offset="1" stop-color="#b69779"/></linearGradient><radialGradient id="light"><stop stop-color="#fff3a8" stop-opacity=".7"/><stop offset="1" stop-color="#ffe997" stop-opacity="0"/></radialGradient><linearGradient id="screen" x2="1" y2="1"><stop stop-color="#6ac4dc"/><stop offset="1" stop-color="#284c73"/></linearGradient></defs><path d="M80 120 350 75 450 140 175 190Z" fill="url(#desk)"/><path d="M80 120v12l95 68 275-48v-12l-275 50Z" fill="#a88c70"/><path d="m100 140 6 63h12l-2-54m307 14-5 51h12l9-64m-250 40 3 29h13l1-34" fill="#8b7c6c"/><path d="m170 57 116-17v74l-116 19Z" fill="#244150"/><path d="m176 62 104-15v62l-104 17Z" fill="url(#screen)"/><path d="m220 122 3 22 27-5-4-21" fill="#5b6b75"/><ellipse cx="346" cy="133" rx="26" ry="8" fill="#827759"/><path d="m345 130 6-58-27-25" stroke="#b39d67" stroke-width="6" fill="none"/><path d="m304 39 29-4 16 29-54 7Z" fill="' + (on ? "#c9af70" : "#71818e") + '"/>' + (on ? '<ellipse cx="320" cy="103" rx="66" ry="40" fill="url(#light)"/>' : "") + '<path d="m386 99 20-4v22l-20 4Z" fill="#f7f3e8"/><path d="M406 100q17-1 0 14" fill="none" stroke="#e7ded0" stroke-width="5"/></svg></div>';
+  return '<div class="room-visual"><svg viewBox="0 0 520 225" role="img" aria-label="' + tSafe(on ? "house.visual.on" : "house.visual.off") + '"><defs><linearGradient id="desk" x2="1" y2="1"><stop stop-color="#e4caa8"/><stop offset="1" stop-color="#b69779"/></linearGradient><radialGradient id="light"><stop stop-color="#fff3a8" stop-opacity=".7"/><stop offset="1" stop-color="#ffe997" stop-opacity="0"/></radialGradient><linearGradient id="screen" x2="1" y2="1"><stop stop-color="#6ac4dc"/><stop offset="1" stop-color="#284c73"/></linearGradient></defs><path d="M80 120 350 75 450 140 175 190Z" fill="url(#desk)"/><path d="M80 120v12l95 68 275-48v-12l-275 50Z" fill="#a88c70"/><path d="m100 140 6 63h12l-2-54m307 14-5 51h12l9-64m-250 40 3 29h13l1-34" fill="#8b7c6c"/><path d="m170 57 116-17v74l-116 19Z" fill="#244150"/><path d="m176 62 104-15v62l-104 17Z" fill="url(#screen)"/><path d="m220 122 3 22 27-5-4-21" fill="#5b6b75"/><ellipse cx="346" cy="133" rx="26" ry="8" fill="#827759"/><path d="m345 130 6-58-27-25" stroke="#b39d67" stroke-width="6" fill="none"/><path d="m304 39 29-4 16 29-54 7Z" fill="' + (on ? "#c9af70" : "#71818e") + '"/>' + (on ? '<ellipse cx="320" cy="103" rx="66" ry="40" fill="url(#light)"/>' : "") + '<path d="m386 99 20-4v22l-20 4Z" fill="#f7f3e8"/><path d="M406 100q17-1 0 14" fill="none" stroke="#e7ded0" stroke-width="5"/></svg></div>';
 }
 function deviceRow(d) {
   const st = d.state;
   const on = st?.power === "ON";
   // Thẻ trạng thái hiện tại: báo "đã cũ" sau 60 giây. Bằng chứng của tác vụ dùng max-age 2 giây ở gateway (SRS mục 23).
-  const status = !st ? "Chưa có trạng thái mới" : (on ? "Đang bật" : "Đang tắt") + " · báo lúc " + hhmmss(st.observed_at) + (st.age_ms > 60_000 ? " (đã cũ)" : "");
+  const stale = st ? st.age_ms > 60_000 : false;
+  const state = !st ? t("house.lamp.noState") : t(on ? (stale ? "house.lamp.onStale" : "house.lamp.on") : stale ? "house.lamp.offStale" : "house.lamp.off", { time: hhmmss(st.observed_at) });
+  // Trạng thái đăng ký lạ (không phải ACTIVE hay QUARANTINED) in nguyên mã của máy chủ.
+  const status = dotJoin([state, d.locked ? t("house.lamp.locked") : "", d.status === "ACTIVE" ? "" : d.status === "QUARANTINED" ? t("house.lamp.quarantined") : String(d.status)]);
   const disabled = !online || d.locked || d.status !== "ACTIVE" || !me?.dispatch_open;
-  return '<div class="device-control">' + icon("lamp") + '<div class="device-copy"><h3>' + safe(d.name) + "</h3><p>" + safe(status) + (d.locked ? " · đang chờ xác minh thao tác trước" : "") + (d.status !== "ACTIVE" ? " · " + (d.status === "QUARANTINED" ? "đang cách ly sau reset" : d.status) : "") + '</p></div><button class="switch" data-device="' + safe(d.device_ref) + '" role="switch" aria-label="' + safe(d.name) + '" aria-checked="' + on + '" ' + (disabled ? "disabled" : "") + "></button></div>";
+  return '<div class="device-control">' + icon("lamp") + '<div class="device-copy"><h3>' + bdi(d.name) + "</h3><p>" + safe(status) + '</p></div><button class="switch" data-device="' + safe(d.device_ref) + '" role="switch" aria-label="' + safe(d.name) + '" aria-checked="' + on + '" ' + (disabled ? "disabled" : "") + "></button></div>";
 }
 function house() {
   const live = actions.filter((a) => a.kind === "device.set_power" || a.kind === "robot.simulate").slice(0, 3);
+  const empty = (key) => '<p class="empty-state">' + tSafe(key) + "</p>";
   let body;
-  if (!online) body = '<p class="empty-state">Chưa kết nối máy chủ.</p>';
-  else if (!site) body = '<p class="empty-state">Bạn chưa thuộc nhóm Home ở site nào. Nhóm Home của bản thử nghiệm có 10–20 người tại 1–3 site có người quản lý.</p>';
-  else if (!serverConsent("home_control")) body = '<p class="empty-state">Bạn chưa đồng ý điều khiển đèn tại site. Mở Cá nhân hóa → Quyền riêng tư để bật.</p>';
-  else body = devices.length ? devices.map(deviceRow).join('<hr class="soft">') : '<p class="empty-state">Site chưa có đèn được đăng ký.</p>';
-  return '<span class="eyebrow">NGÔI NHÀ · ' + safe((site?.name ?? "PHÒNG LÀM VIỆC").toUpperCase()) + '</span><h1>Mọi thứ sẵn sàng.</h1><p class="subtitle">Một không gian thoải mái, theo cách của bạn.</p><section class="card" style="margin-top:25px">' + roomVisual() + body + "</section>" +
-    (live.length ? '<div class="section-heading"><h2>Thao tác gần đây</h2></div>' + live.map((a) => actionCard(a)).join("") : "") +
-    '<div class="section-heading"><h2>Le-ORION</h2><span class="tiny-pill">Mô phỏng</span></div><button class="card device-control full" data-action="robot" ' + (online && me?.grants.some((g) => g.scope === "robot.simulate" && g.status === "ACTIVE") ? "" : "disabled") + ">" + icon("robot") + '<span class="event-copy"><strong>Đồng hành trong không gian</strong><span>Chạy kịch bản đưa tài liệu, bằng chứng mô phỏng</span></span>' + icon("arrow") + "</button>" +
-    '<div class="privacy-note">' + icon("shield") + "<span>Lệnh đi qua gateway của site sau khi bạn xác nhận; kết quả chỉ hiện theo bằng chứng thiết bị báo. Robot là mô phỏng, chưa điều khiển robot thật.</span></div>" + askLele();
+  if (!online) body = empty("common.offline");
+  else if (!site) body = empty("house.noSite");
+  else if (!serverConsent("home_control")) body = empty("house.consentNeeded");
+  else body = devices.length ? devices.map(deviceRow).join('<hr class="soft">') : empty("house.noLamps");
+  return '<span class="eyebrow">' + rich("house.eyebrow", { site: site?.name ? bdi(site.name) : tSafe("house.defaultSite") }) + "</span><h1>" + tSafe("house.title") + '</h1><p class="subtitle">' + tSafe("house.subtitle") + '</p><section class="card" style="margin-top:25px">' + roomVisual() + body + "</section>" +
+    (live.length ? '<div class="section-heading"><h2>' + tSafe("house.recent") + "</h2></div>" + live.map((a) => actionCard(a)).join("") : "") +
+    '<div class="section-heading"><h2>' + tSafe("house.robot.heading") + '</h2><span class="tiny-pill">' + tSafe("common.simulated") + '</span></div><button class="card device-control full" data-action="robot" ' + (online && me?.grants.some((g) => g.scope === "robot.simulate" && g.status === "ACTIVE") ? "" : "disabled") + ">" + icon("robot") + '<span class="event-copy"><strong>' + tSafe("house.robot.title") + "</strong><span>" + tSafe("house.robot.text") + "</span></span>" + icon("arrow") + "</button>" +
+    '<div class="privacy-note">' + icon("shield") + "<span>" + tSafe("house.note") + "</span></div>" + askLele();
 }
 
 // ---------------------------------------------------------------- khung: phạm vi sống, ctx của màn hình, vẽ
@@ -638,7 +739,6 @@ function createScope(parent = null) {
   if (!parent) rootScopes.add(scope);
   return scope;
 }
-const tSafe = (key, params) => safe(t(key, params));
 // `ctx`: mọi thứ một màn hình hay một phần của mô-đun mới được dùng, để không phải import app.js. Bảng trường và chữ ký:
 // web/views/index.js. `scope` rỗng là ctx chỉ để đọc (visible, nav.label, nav.badge, plans): không đăng ký được nhịp.
 function makeCtx(scope) {
@@ -667,6 +767,16 @@ function makeCtx(scope) {
     formatTime24,
     formatDuration: formatMinutes,
     formatList,
+    // Thêm ở nhánh ngôn ngữ (cùng nghĩa với các hàm cùng tên trong tệp này và trong shared/i18n.js, shared/consent-text.js):
+    formatWeekdayCompact, // tên thứ gọn cho nhãn cột
+    formatDurationParts, // thời lượng theo từng phần (số, đơn vị, chữ nối)
+    rich, // (key, slots, params?) -> HTML: chèn HTML tin cậy vào chỗ tham số, phần chữ của bản dịch được thoát ký tự
+    bdi, // tên lấy từ dữ liệu -> "<bdi>…</bdi>" đã thoát ký tự
+    errorText, // (lỗi) -> câu báo theo mã: error.<CODE>.<detail_code> → error.<CODE> → error.generic (LNH-T23)
+    codeLabel, // (lớp, mã, params?) -> nhãn của `state`/`outcome`/`reason`/`grade`, tra cả `<phần>.<lớp>.<MÃ>`; null nếu chưa có
+    draft: draftUi, // () -> ngôn ngữ đang hiện là bản dịch máy chưa rà soát
+    consentText, // (purpose_id, tiền tố?) -> văn bản đồng ý đang hiện { head, body, title, text, text_version, locale }
+    consentReceipt, // (purpose_id, tiền tố?) -> Promise<{ text_version, text_hash, locale }> cho POST /v1/consents (LNH-T25)
     safe,
     icon,
     toast,
@@ -687,7 +797,7 @@ function makeCtx(scope) {
 }
 const baseCtx = makeCtx(null);
 let currentView = null;
-let mounted = null; // màn hình có trạng thái đang hiện: { view, user, scope, ctx }
+let mounted = null; // màn hình có trạng thái đang hiện: { view, user, locale, scope, ctx }
 let drawn = null; // màn hình đơn giản đang hiện: { view, scope }
 const services = new Map(); // phần chạy nền của mô-đun: id màn hình → { user, scope }
 function leaveView() {
@@ -741,7 +851,11 @@ function render() {
   syncServices();
   nav(view);
   banner();
-  setHtml($("privacy-chip"), icon("shield") + "Sức khỏe tính trên thiết bị");
+  setHtml($("privacy-chip"), icon("shield") + tSafe("shell.privacyChip"));
+  // Chữ phụ thuộc trạng thái nên không đi qua data-i18n: nhãn bản dựng, dòng phiên bản ở chân trang, số phong cách.
+  $("build-label").textContent = t(!apiReady ? "shell.build.pending" : api.dev ? "shell.build.dev" : "shell.build.reference");
+  $("footer-build").textContent = t("shell.footer.build", { version: APP_VERSION, spec: SPEC_ID });
+  $("theme-count").textContent = t("theme.panel.count", { n: THEMES.length });
   setHtml($("settings-button"), icon("settings"));
   setHtml($("note-icon"), icon("lock"));
   setHtml($("theme-options"), THEMES.map((th) => themeButton(th)).join(""));
@@ -752,7 +866,8 @@ function render() {
   if (isStateful(view)) {
     // Màn hình có trạng thái: mount một lần. Render nền (thăm dò 5 giây, đổi phong cách, kết nối lại…) chỉ gọi update, không
     // dựng lại DOM, nên ô đang soạn, con trỏ và vị trí cuộn được giữ. Đổi tài khoản thì mount lại: trạng thái thuộc người cũ.
-    if (mounted && mounted.view === view && mounted.user === user) {
+    // Đổi ngôn ngữ cũng mount lại: chữ của màn hình được dựng lúc mount, update không vẽ lại chúng.
+    if (mounted && mounted.view === view && mounted.user === user && mounted.locale === getLocale()) {
       try {
         view.update?.(mounted.ctx);
       } catch (e) {
@@ -764,7 +879,7 @@ function render() {
     main.innerHTML = '<div class="view-host" data-view-host="' + view.id + '"></div>';
     lastHtml.delete(main);
     const scope = createScope();
-    mounted = { view, user, scope, ctx: makeCtx(scope) };
+    mounted = { view, user, locale: getLocale(), scope, ctx: makeCtx(scope) };
     try {
       view.mount(mounted.ctx, main.firstElementChild);
     } catch (e) {
@@ -816,6 +931,7 @@ function releaseDialog() {
 }
 function showAction(title, html) {
   releaseDialog();
+  reviewing = false; // nội dung hộp bị thay: bước xem lại (nếu có) không còn trên màn hình
   $("action-title").innerHTML = title;
   $("action-body").innerHTML = html;
   if (!$("action-dialog").open) $("action-dialog").showModal();
@@ -835,33 +951,31 @@ function stopCountdown() {
 }
 
 // ---------------------------------------------------------------- plan → xem lại → xác nhận
+// Câu báo lỗi dựng từ MÃ (LNH-T23): error.<CODE>.<detail_code> → error.<CODE> → error.generic kèm mã và request_id. Mô-đun
+// khai mã riêng ở phần catalog của mình (`msg.error.<CODE>`, `social.error.<CODE>`…). Câu `message` của máy chủ không bao giờ
+// được in. Thông điệp chi tiết có giới hạn nhận `n` (và `limit`) từ trường `limit` của lỗi; thiếu thì lùi về câu của mã.
 function errorText(e) {
-  const map = {
-    CONSENT_REQUIRED: "Bạn chưa đồng ý cho mục đích này. Mở Cá nhân hóa → Quyền riêng tư.",
-    FORBIDDEN: "Tài khoản của bạn chưa có quyền với thao tác này.",
-    RESOURCE_LOCKED: "Đang chờ xác minh một thao tác trước trên cùng tài nguyên. Xem mục Đang theo dõi.",
-    MODULE_DISABLED: "Mô-đun đang tạm tắt.",
-    DISPATCH_CLOSED: "Hệ thống đang tạm đóng phát tác vụ. Thử lại sau.",
-    CALENDAR_NOT_LINKED: "Chưa liên kết tài khoản Microsoft 365.",
-    PLAN_STALE: "Quyền, chính sách hoặc thiết bị đã thay đổi. Cần xem lại và xác nhận mới.",
-    DIGEST_MISMATCH: "Nội dung xác nhận khác nội dung đã chuẩn hóa.",
-    OFFLINE: "Không kết nối được máy chủ LeNhip.",
-    RATE_LIMITED: "Bạn thao tác quá nhanh. Thử lại sau ít giây.",
-  };
-  return map[e.code] ?? e.body?.message ?? e.message;
+  const code = typeof e?.code === "string" && /^[A-Z][A-Z0-9_]{1,63}$/.test(e.code) ? e.code : "ERROR";
+  const detail = typeof e?.detail_code === "string" && /^[A-Z][A-Z0-9_]{1,63}$/.test(e.detail_code) ? e.detail_code : null;
+  const params = typeof e?.limit === "number" && Number.isFinite(e.limit) ? { n: e.limit, limit: e.limit } : undefined;
+  const text = (detail ? lookupLabel("error." + code + "." + detail, params) : null) ?? lookupLabel("error." + code);
+  if (text) return text;
+  const id = typeof e?.request_id === "string" && /^[A-Za-z0-9._:-]{1,64}$/.test(e.request_id) ? e.request_id : null;
+  return id ? t("error.genericWithId", { code, request_id: id }) : t("error.generic", { code });
 }
 function planSummary(p) {
   // Loại kế hoạch của mô-đun mới (trường `plans` của màn hình): mô-đun tự vẽ phần tóm tắt và tự thoát ký tự.
   if (PLAN_KINDS[p.kind]) return '<div class="card preview-card">' + PLAN_KINDS[p.kind].summary(baseCtx, p) + "</div>";
   if (p.kind === "calendar.block") {
-    const date = localDate(Date.parse(p.start), zone());
-    return '<div class="card preview-card"><h3>Thời gian cá nhân</h3><div class="event-row">' + icon("clock") + safe(hhmm(p.start)) + " – " + safe(hhmm(p.end)) + " · " + safe(date.split("-").reverse().join("/")) + '</div><div class="event-row">' + icon("lock") + 'Chỉ mình tôi · hiển thị bận</div><div class="event-row">' + icon("work") + "Lịch primary của tài khoản đã liên kết</div></div>";
+    const date = formatDate(localDate(Date.parse(p.start), zone()), { day: "2-digit", month: "2-digit", year: "numeric" });
+    // Ở ngôn ngữ khác tiếng Việt, tiêu đề hiển thị là bản dịch; dòng dưới nói rõ tiêu đề thật sẽ ghi vào lịch (LNH-T26).
+    const written = getLocale() === SOURCE_LOCALE ? "" : '<div class="event-row">' + icon("today") + "<span>" + rich("review.calendar.writtenTitle", { title: viSpan(calendarTitle()) }) + "</span></div>";
+    return '<div class="card preview-card"><h3>' + tSafe("review.calendar.title") + '</h3><div class="event-row">' + icon("clock") + tSafe("review.calendar.when", { start: hhmm(p.start), end: hhmm(p.end), date }) + "</div>" + written + '<div class="event-row">' + icon("lock") + tSafe("review.calendar.privacy") + '</div><div class="event-row">' + icon("work") + tSafe("review.calendar.target") + "</div></div>";
   }
   if (p.kind === "device.set_power") {
-    const d = devices.find((x) => x.device_ref === p.target.device_ref);
-    return '<div class="card preview-card"><h3>' + (p.command === "SET_ON" ? "Bật" : "Tắt") + " " + safe(d?.name ?? p.target.device_ref) + '</h3><div class="event-row">' + icon("home") + safe(site?.name ?? p.target.site) + '</div><div class="event-row">' + icon("shield") + "Qua gateway của site · cấu hình bản " + p.target_binding_version + "</div></div>";
+    return '<div class="card preview-card"><h3>' + rich(p.command === "SET_ON" ? "review.describe.powerOn" : "review.describe.powerOff", { device: bdi(lampName(p.target.device_ref)) }) + '</h3><div class="event-row">' + icon("home") + bdi(site?.name ?? p.target.site) + '</div><div class="event-row">' + icon("shield") + tSafe("review.device.gateway", { version: String(p.target_binding_version) }) + "</div></div>";
   }
-  return '<div class="card preview-card"><h3>Le-ORION · đưa tài liệu</h3><div class="event-row">' + icon("robot") + "Kịch bản mô phỏng, không có robot thật</div></div>";
+  return '<div class="card preview-card"><h3>' + tSafe("review.robot.title") + '</h3><div class="event-row">' + icon("robot") + tSafe("review.robot.text") + "</div></div>";
 }
 async function propose(input, label) {
   try {
@@ -870,21 +984,22 @@ async function propose(input, label) {
     pendingPlan = { plan, input, label, digestOk };
     showPreview();
   } catch (e) {
-    showAction("Chưa tạo được thao tác", "<p>" + safe(errorText(e)) + '</p><button class="button primary" data-action="close-action">Đã hiểu</button>');
+    showAction(tSafe("review.failed.createTitle"), "<p>" + safe(errorText(e)) + '</p><button class="button primary" data-action="close-action">' + tSafe("common.understood") + "</button>");
   }
 }
 function showPreview() {
   const { plan, label, digestOk } = pendingPlan;
-  showAction("Xem lại và xác nhận", '<span class="tiny-pill">' + safe(label) + "</span>" + planSummary(plan.preview) +
-    '<p class="fine-print">' + (digestOk ? icon("check") + " Nội dung trên đúng với nội dung máy chủ đã khóa (mã " + safe(plan.payload_digest.slice(0, 10)) + "…)." : icon("alert") + " Nội dung không khớp mã đã khóa; không nên xác nhận.") + "</p>" +
+  showAction(tSafe("review.title"), '<span class="tiny-pill">' + safe(label) + "</span>" + planSummary(plan.preview) +
+    '<p class="fine-print">' + (digestOk ? icon("check") + " " + rich("review.digest.ok", { digest: "<code>" + safe(plan.payload_digest.slice(0, 10)) + "</code>" }) : icon("alert") + " " + tSafe("review.digest.mismatch")) + "</p>" +
     '<p class="countdown" id="countdown" aria-live="polite"></p>' +
-    '<button class="button primary full" data-action="approve-plan" ' + (digestOk ? "" : "disabled") + '>Xác nhận</button><button class="text-button full" data-action="cancel-plan">Không làm</button>');
+    '<button class="button primary full" data-action="approve-plan" ' + (digestOk ? "" : "disabled") + ">" + tSafe("review.approve") + '</button><button class="text-button full" data-action="cancel-plan">' + tSafe("review.cancel") + "</button>");
+  reviewing = true;
   stopCountdown();
   const tickDown = () => {
     const left = Math.max(0, Math.ceil((Date.parse(plan.approval_deadline) - api.serverNow()) / 1000));
     const el = $("countdown");
     if (!el) return stopCountdown();
-    el.textContent = left > 0 ? `Còn ${left} giây để xác nhận.` : "Bản xem lại đã hết hạn.";
+    el.textContent = left > 0 ? t("review.countdown", { n: left }) : t("review.expired.short");
     if (left <= 0) {
       stopCountdown();
       expired();
@@ -895,7 +1010,7 @@ function showPreview() {
 }
 function expired() {
   // Hết 120 giây: giữ bản nháp, giải thích, cho xem lại để xác nhận mới; không tự gia hạn (SRS mục 13).
-  showAction("Bản xem lại đã hết hạn", "<p>Quá 120 giây chưa xác nhận nên thao tác chưa được gửi. Nội dung vẫn giữ để bạn xem lại.</p>" + planSummary(pendingPlan.plan.preview) + '<button class="button primary full" data-action="repropose">Xem lại để xác nhận mới</button><button class="text-button full" data-action="close-action">Bỏ qua</button>');
+  showAction(tSafe("review.expired.title"), "<p>" + tSafe("review.expired.text") + "</p>" + planSummary(pendingPlan.plan.preview) + '<button class="button primary full" data-action="repropose">' + tSafe("review.repropose") + '</button><button class="text-button full" data-action="close-action">' + tSafe("common.skip") + "</button>");
 }
 async function approve() {
   const { plan } = pendingPlan;
@@ -905,90 +1020,137 @@ async function approve() {
     track(r.action_id);
   } catch (e) {
     if (e.code === "APPROVAL_EXPIRED") return expired();
-    showAction("Chưa gửi được", "<p>" + safe(errorText(e)) + "</p>" + (e.code === "PLAN_STALE" ? '<button class="button primary full" data-action="repropose">Xem lại để xác nhận mới</button>' : "") + '<button class="text-button full" data-action="close-action">Đóng</button>');
+    showAction(tSafe("review.failed.approveTitle"), "<p>" + safe(errorText(e)) + "</p>" + (e.code === "PLAN_STALE" ? '<button class="button primary full" data-action="repropose">' + tSafe("review.repropose") + "</button>" : "") + '<button class="text-button full" data-action="close-action">' + tSafe("common.close") + "</button>");
   }
 }
+/** Hộp theo dõi một tác vụ: thẻ theo bằng chứng và nút đóng. */
+const trackDialog = (a) => showAction(tSafe("review.track.title"), actionCard(a) + '<button class="button secondary full" data-action="close-action">' + tSafe("common.close") + "</button>");
 async function track(actionId) {
   tracked.add(actionId);
-  const draw = (a) => showAction("Theo dõi thao tác", actionCard(a) + '<button class="button secondary full" data-action="close-action">Đóng</button>');
   let a = await api.get(`/v1/actions/${actionId}`);
-  draw(a);
+  trackDialog(a);
   const started = Date.now();
   while (!["VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED", "UNKNOWN"].includes(a.status) && Date.now() - started < 60_000) {
     await new Promise((r) => setTimeout(r, 800));
     a = await api.get(`/v1/actions/${actionId}`);
-    if ($("action-dialog").open && $("action-body").querySelector(`[data-action-id="${actionId}"]`)) draw(a);
+    if ($("action-dialog").open && $("action-body").querySelector(`[data-action-id="${actionId}"]`)) trackDialog(a);
   }
   await Promise.all([loadWork(), loadHouse(), loadActions()]);
   render();
 }
 
 // ---------------------------------------------------------------- thông báo đầu tiên và đồng ý
-const PURPOSES = [
-  { id: "health_local", title: "Sức khỏe trên điện thoại", text: "Đọc bước chân và giấc ngủ từ HealthKit/Health Connect, tính tóm tắt trên điện thoại. Không gửi số liệu hay nhãn sức khỏe về máy chủ. Bộ nhớ đệm tối đa 30 ngày trên máy." },
-  { id: "calendar_link", title: "Liên kết lịch công việc", text: "Đọc khoảng bận/trống của lịch primary và tạo khung giờ “Thời gian cá nhân” riêng tư khi bạn xác nhận. Không đọc tiêu đề hay khách mời. Máy chủ LeNhip đặt tại Việt Nam; Microsoft 365 là bên xử lý của doanh nghiệp." },
-  { id: "home_control", title: "Điều khiển đèn tại site", text: "Gửi lệnh bật/tắt tới đèn đã đăng ký tại site có người quản lý, sau khi bạn xác nhận từng lần. Lưu kết quả và bằng chứng tối thiểu 90 ngày." },
-  { id: "beta_telemetry", title: "Số liệu thử nghiệm", text: "Gửi sự kiện tối thiểu về hành trình (không giá trị sức khỏe, không nội dung) để đo chất lượng bản thử nghiệm. Rút lại bất cứ lúc nào, vẫn dùng app bình thường." },
-];
-const NOTICE_HEAD = "LeNhip là ứng dụng của LeDB. Mỗi mục đích dưới đây là một lựa chọn riêng, mặc định để trống. Bạn có quyền xem, sửa, rút lại, hạn chế, xóa và nhận bản sao dữ liệu; đầu mối là người phụ trách bảo vệ dữ liệu của LeDB (CHƯA CHỐT tên). Tham gia thử nghiệm là tự nguyện, từ 18 tuổi; dữ liệu sức khỏe không dùng để đánh giá nhân sự.";
-async function onboarding() {
+// Bốn mục đích của Thông báo đầu tiên. Tiêu đề, thân và phần đầu chung nằm ở catalog: `consent.<purpose_id>.title`,
+// `consent.<purpose_id>.body`, `consent.notice.head`. Văn bản được băm vào biên nhận là văn bản ĐANG HIỆN lúc bấm lưu, ở
+// ngôn ngữ đang chọn; `text_version` của bản dịch có hậu tố `.<tag>` (LNH-T25, shared/consent-text.js).
+const PURPOSES = ["health_local", "calendar_link", "home_control", "beta_telemetry"];
+/** `ticked`: giữ các ô đã đánh dấu khi hộp được vẽ lại vì đổi ngôn ngữ; bỏ trống thì lấy theo lựa chọn đã lưu. */
+function onboarding(ticked = null) {
   const hs = healthState();
-  const checked = (p) => (p === "health_local" ? healthConsent() : serverConsent(p));
-  showAction("Thông báo đầu tiên", '<p class="fine-print">' + safe(NOTICE_HEAD) + '</p><form id="consent-form">' + PURPOSES.map((p) =>
-    '<label class="consent-row"><input type="checkbox" name="' + p.id + '" ' + (checked(p.id) ? "checked" : "") + " " + ((p.id !== "health_local" && !online) ? "disabled" : "") + "><span><strong>" + safe(p.title) + "</strong><small>" + safe(p.text) + "</small></span></label>").join("") +
-    '<p class="fine-print">Phiên bản thông báo ' + NOTICE_VERSION + (hs ? " · lựa chọn sức khỏe lưu trên thiết bị này" : "") + '.</p><button class="button primary full">Lưu lựa chọn</button></form>');
+  const checked = (id) => (ticked ? ticked[id] === true : id === "health_local" ? healthConsent() : serverConsent(id));
+  const texts = PURPOSES.map((id) => consentText(id));
+  // Văn bản đang lùi về bản gốc (ngôn ngữ đang chọn thiếu bản dịch của mục đó) mang lang="vi".
+  const langOf = (c) => (c.locale === getLocale() ? "" : ' lang="' + c.locale + '"');
+  // Bản dịch máy chưa rà soát: nói rõ, và cho đọc bản gốc tiếng Việt ngay tại đây (LNH-T21).
+  const original = draftUi()
+    ? '<details class="notice-original"><summary>' + tSafe("i18n.draft.original") + '</summary><div lang="' + SOURCE_LOCALE + '"><p>' + safe(tSource("consent.notice.head")) + "</p>" +
+      PURPOSES.map((id) => "<p><strong>" + safe(tSource("consent." + id + ".title")) + "</strong><br>" + safe(tSource("consent." + id + ".body")) + "</p>").join("") + "</div></details>"
+    : "";
+  const versions = formatList([...new Set(texts.map((c) => c.text_version))]);
+  showAction(tSafe("consent.notice.title"), languageField("notice-locale", settings().locale) + draftNote() + original +
+    '<p class="fine-print"' + langOf(texts[0]) + ">" + safe(texts[0].head) + '</p><form id="consent-form">' + texts.map((c) =>
+      '<label class="consent-row"><input type="checkbox" name="' + c.purpose_id + '" ' + (checked(c.purpose_id) ? "checked" : "") + " " + ((c.purpose_id !== "health_local" && !online) ? "disabled" : "") + "><span" + langOf(c) + "><strong>" + safe(c.title) + "</strong><small>" + markCalendarTitle(safe(c.body)) + "</small></span></label>").join("") +
+    '<p class="fine-print">' + tSafe(hs ? "consent.notice.versionLocal" : "consent.notice.version", { version: versions }) + '</p><button class="button primary full">' + tSafe("consent.save") + "</button></form>");
 }
 async function saveConsents(form) {
   const now = new Date(api.serverNow()).toISOString();
-  for (const p of PURPOSES) {
-    const want = form.elements[p.id].checked;
-    const hash = await digestJcs(NOTICE_HEAD + "\n" + p.text);
-    if (p.id === "health_local") {
+  const wanted = Object.fromEntries(PURPOSES.map((id) => [id, form.elements[id].checked]));
+  // Phiên bản và mã băm của văn bản đang hiện, lấy một lượt trước mọi lời gọi mạng.
+  const receipts = Object.fromEntries(await Promise.all(PURPOSES.map(async (id) => [id, await consentReceipt(id)])));
+  for (const id of PURPOSES) {
+    const want = wanted[id];
+    const { text_version, text_hash } = receipts[id];
+    if (id === "health_local") {
       // Biên nhận sức khỏe chỉ lưu trên thiết bị (SRS mục 08).
       const prev = healthState();
-      const receipt = { purpose_id: "health_local", text_version: NOTICE_VERSION, text_hash: hash, choice: want ? "GRANTED" : "DECLINED", at: now, withdrawn_at: null };
+      const receipt = { purpose_id: "health_local", text_version, text_hash, choice: want ? "GRANTED" : "DECLINED", at: now, withdrawn_at: null };
       if (prev?.receipt?.choice === "GRANTED" && !want) receipt.withdrawn_at = now;
       writeStore(healthKey(), JSON.stringify({ receipt, revision: (prev?.revision ?? 0) + 1 }));
       continue;
     }
     if (!online) continue;
-    const has = serverConsent(p.id);
-    if (want && !has) await api.post("/v1/consents", { purpose_id: p.id, text_version: NOTICE_VERSION, text_hash: hash, choice: "GRANTED" });
-    if (!want && has) await api.post(`/v1/consents/${p.id}/withdraw`);
-    if (!want && !has && !me.consents.some((c) => c.purpose_id === p.id)) await api.post("/v1/consents", { purpose_id: p.id, text_version: NOTICE_VERSION, text_hash: hash, choice: "DECLINED" });
+    const has = serverConsent(id);
+    if (want && !has) await api.post("/v1/consents", { purpose_id: id, text_version, text_hash, choice: "GRANTED" });
+    if (!want && has) await api.post(`/v1/consents/${id}/withdraw`);
+    if (!want && !has && !me.consents.some((c) => c.purpose_id === id)) await api.post("/v1/consents", { purpose_id: id, text_version, text_hash, choice: "DECLINED" });
   }
   $("action-dialog").close();
-  toast("Đã lưu lựa chọn của bạn.");
+  toast(t("consent.saved"));
   await refresh();
 }
 
 // ---------------------------------------------------------------- LeLe
+// Câu lệnh mẫu viết bằng ngôn ngữ đang chọn: bảng từ dùng chung (shared/lele-lexicon.js, LNH-T24) nhận lệnh của cả 13 ngôn
+// ngữ, và tests/lele-i18n.test.ts kiểm rằng câu mẫu của mỗi catalog được nhận ra. Catalog thiếu khóa thì câu mẫu là bản gốc
+// tiếng Việt và mang lang="vi".
+const leleExample = (key) => (messageLocale(key) === getLocale() ? safe(t(key)) : viSpan(tSource(key)));
 function chat() {
-  showAction("Trò chuyện cùng " + mark("amber", "inline title"), '<p class="fine-print">LeLe chỉ soạn đề xuất; bạn xem lại và xác nhận trước khi LeNhip làm. Bản này dùng quy tắc cục bộ, không gửi nội dung tới mô hình AI. Câu hỏi về sức khỏe không rời thiết bị.</p><div id="chat-list" class="chat-list" role="log" aria-live="polite"><div class="chat-message">Chào bạn! Tôi có thể soạn khung giờ riêng trong lịch công việc (“dành 30 phút lúc 15:00”) hoặc bật/tắt đèn đã đăng ký (“tắt đèn bàn”).</div></div><form id="chat-form" class="chat-form"><input name="message" maxlength="400" required aria-label="Nội dung gửi LeLe" placeholder="Bạn muốn làm gì?"><button class="button primary" aria-label="Gửi tin nhắn">' + icon("arrow") + "</button></form>");
+  showAction(rich("lele.chat.title", { lele: mark("amber", "inline title") }), '<p class="fine-print">' + tSafe("lele.chat.intro") + '</p><div id="chat-list" class="chat-list" role="log" aria-live="polite"><div class="chat-message">' + rich("lele.chat.greeting", { exampleBlock: leleExample("lele.example.block"), exampleLamp: leleExample("lele.example.lampOff") }) + '</div></div><form id="chat-form" class="chat-form"><input name="message" maxlength="400" required aria-label="' + tSafe("lele.chat.inputLabel") + '" placeholder="' + tSafe("lele.chat.placeholder") + '"><button class="button primary" aria-label="' + tSafe("lele.chat.send") + '">' + icon("arrow") + "</button></form>");
 }
-function chatLine(text, kind, extra = "") {
+/** Thêm một dòng vào cuộc trò chuyện. `text` là văn bản thuần; `html` (nếu có) thay cho `text` và phải đã thoát ký tự. */
+function chatLine(text, kind, extra = "", html = null) {
   const node = document.createElement("div");
   node.className = "chat-message " + kind;
-  node.textContent = text;
+  if (html === null) node.textContent = text;
+  else node.innerHTML = html;
   if (extra) node.insertAdjacentHTML("beforeend", extra);
   $("chat-list").append(node);
   $("chat-list").scrollTop = $("chat-list").scrollHeight;
 }
+/**
+ * Tóm tắt một đề xuất, dựng trên thiết bị từ loại và tham số của chính đề xuất (không in câu `summary` tiếng Việt của máy
+ * chủ, và không in câu do mô hình viết): người dùng đọc đúng thứ sẽ đi vào bước xem lại.
+ */
+function proposalSummary(p) {
+  if (p.kind === "device.set_power") return t(p.args.command === "SET_ON" ? "review.describe.powerOn" : "review.describe.powerOff", { device: lampName(p.args.device_ref) });
+  if (p.kind === "calendar.block") {
+    const start = Date.parse(p.args.start);
+    const n = Math.round((Date.parse(p.args.end) - start) / 60_000);
+    const day = localDate(start, zone());
+    const today = localDate(api.serverNow(), zone());
+    const time = hhmm(p.args.start);
+    if (day === today) return t("lele.summary.blockToday", { n, time });
+    if (day === addDays(today, 1)) return t("lele.summary.blockTomorrow", { n, time });
+    return t("lele.summary.blockDate", { n, time, date: formatDate(day, { day: "numeric", month: "numeric" }) });
+  }
+  return String(p.kind);
+}
+/** Câu trả lời không phải đề xuất: dựng từ `answer_code` (LNH-T23). */
+function chatAnswer(r) {
+  const code = typeof r.answer_code === "string" && /^[A-Z][A-Z0-9_]{1,63}$/.test(r.answer_code) ? r.answer_code : null;
+  if (code === "HELP") return chatLine("", "assistant", "", rich("lele.answer.HELP", { exampleBlock: leleExample("lele.example.block"), exampleLamp: leleExample("lele.example.lampOn") }));
+  if (code && hasMessage("lele.answer." + code)) return chatLine(t("lele.answer." + code), "assistant");
+  // Máy chủ chưa gửi answer_code: câu `answer` của nó là tiếng Việt, chỉ in khi giao diện cũng đang là tiếng Việt.
+  chatLine(getLocale() === SOURCE_LOCALE && typeof r.answer === "string" && r.answer ? r.answer : t("lele.answer.fallback"), "assistant");
+}
 let lastProposal = null;
+// Đóng khi không chắc (LNH-T24, sửa LNH-F24). Câu chỉ được gửi tới máy chủ khi bảng từ dùng chung nhận ra lệnh đèn hoặc lệnh
+// khung giờ VÀ không có từ sức khỏe hay dữ liệu cá nhân của bất kỳ ngôn ngữ nào trong 13 ngôn ngữ. Câu có từ sức khỏe được trả
+// lời ngay tại đây; câu không nhận ra chỉ nhận câu hướng dẫn và không rời thiết bị. Máy chủ lặp lại đúng phép chặn này.
 async function chatSend(value) {
   chatLine(value, "user");
-  const lower = value.toLocaleLowerCase("vi");
-  if (/(ngủ|giấc|bước|nhịp tim|sức khỏe|sức khoẻ|bệnh|thuốc)/.test(lower)) {
-    return chatLine("Câu hỏi sức khỏe được xử lý trên điện thoại và không gửi tới LeLe trong miền công việc. Màn hình Sức khỏe cho thấy số ngày có dữ liệu và trung bình; LeNhip không chẩn đoán hay khuyến nghị điều trị.", "assistant");
-  }
-  if (/giao diện|phong cách|màu|cá nhân hóa/.test(lower)) return chatLine("Mở nút Cá nhân hóa ở góc trên: 5 phong cách, màu nhấn, cỡ chữ tới 200 %, giảm chuyển động.", "assistant");
-  if (!online) return chatLine("Chưa kết nối máy chủ nên chưa soạn được đề xuất.", "assistant");
+  const scan = scanLele(value);
+  const blocked = leleBlock(scan);
+  if (blocked === "HEALTH") return chatLine(t("lele.local.health"), "assistant");
+  if (blocked === "PII") return chatLine(t("lele.local.pii"), "assistant");
+  if (!scan.intent) return scan.ui ? chatLine(t("lele.local.interface"), "assistant") : chatAnswer({ answer_code: "HELP" });
+  if (!online) return chatLine(t("lele.local.offline"), "assistant");
   try {
-    const r = await api.post("/v1/lele/proposals", { text: value, context: /đèn|nhà|robot/.test(lower) ? "home" : "work", zone: zone() });
+    const r = await api.post("/v1/lele/proposals", { text: value, context: scan.intent.kind === "device.set_power" ? "home" : "work", zone: zone() });
     if (r.type === "PROPOSAL") {
       lastProposal = r.proposal;
-      chatLine((r.ai_generated ? "Đề xuất từ mô hình AI: " : "Đề xuất: ") + r.proposal.summary, "assistant proposal", '<button class="button primary small" data-action="use-proposal">Xem và xác nhận</button>');
-    } else chatLine(r.answer ?? "Dùng form trong Công việc hoặc Ngôi nhà để tạo thao tác.", "assistant");
+      chatLine(t(r.ai_generated ? "lele.proposal.ai" : "lele.proposal.rules", { summary: proposalSummary(r.proposal) }), "assistant proposal", '<button class="button primary small" data-action="use-proposal">' + tSafe("lele.proposal.use") + "</button>");
+    } else chatAnswer(r);
   } catch (e) {
     chatLine(errorText(e), "assistant");
   }
@@ -997,12 +1159,30 @@ async function chatSend(value) {
 // ---------------------------------------------------------------- cài đặt
 function settingFields() {
   const s = draftSettings;
-  $("settings-fields").innerHTML = '<div class="field"><label for="display-name">Tên hiển thị</label><input id="display-name" name="name" value="' + safe(s.name) + '" maxlength="48" autocomplete="off"></div><div class="field"><span>Phong cách giao diện</span><div class="settings-themes">' + THEMES.map((th) => themeButton(th, true)).join("") + '</div><span class="fine-print">' + THEMES.find((th) => th.id === s.theme).name + '</span></div><div class="field"><label for="font-size">Cỡ chữ</label><select id="font-size" name="fontSize">' + FONT_SIZES.map((n) => '<option value="' + n + '" ' + (n === s.fontSize ? "selected" : "") + ">" + n + "%</option>").join("") + '</select></div><div class="field"><label for="zone">Múi giờ phân tích</label><select id="zone" name="zone">' + [...new Set([s.zone, ...ZONES])].map((z) => '<option value="' + safe(z) + '" ' + (z === s.zone ? "selected" : "") + ">" + safe(z) + "</option>").join("") + '</select><span class="fine-print">Đổi múi thì tính lại cả chuỗi 7 ngày và ghi nhãn; không sửa lịch sử ngầm.</span></div><div class="field"><label for="accent-color">Màu nhấn riêng</label><div style="display:flex;align-items:center;gap:12px"><input type="color" id="accent-color" name="accent" value="' + (s.accent || THEMES.find((th) => th.id === s.theme).accent) + '"><button type="button" class="text-button" data-action="theme-accent">Dùng màu của phong cách</button></div></div><label class="checkbox-row">Giảm chuyển động<input type="checkbox" name="reducedMotion" ' + (s.reducedMotion ? "checked" : "") + '></label><label class="checkbox-row">Bố cục gọn<input type="checkbox" name="compact" ' + (s.compact ? "checked" : "") + '></label><div class="field"><span>Nội dung trên Hôm nay</span><span class="fine-print">Với Dòng thời gian và Titanium, mở Thông tin hôm nay để xem.</span></div>' + ["sleep", "steps", "schedule"].map((k) => '<label class="checkbox-row">' + { sleep: "Giấc ngủ", steps: "Vận động", schedule: "Lịch hôm nay" }[k] + '<input type="checkbox" data-widget="' + k + '" ' + (s.widgets.includes(k) ? "checked" : "") + "></label>").join("");
-  $("privacy-settings").innerHTML = '<div class="privacy-box"><h3>Quyền riêng tư</h3><p class="fine-print">Sức khỏe: ' + (healthConsent() ? "đang bật trên thiết bị này" : "đang tắt") + " · Lịch: " + (serverConsent("calendar_link") ? "đã đồng ý" : "chưa đồng ý") + " · Đèn: " + (serverConsent("home_control") ? "đã đồng ý" : "chưa đồng ý") + " · Số liệu thử nghiệm: " + (serverConsent("beta_telemetry") ? "đã đồng ý" : "chưa đồng ý") + '</p><div class="button-row"><button type="button" class="button secondary" data-action="onboarding">Đổi lựa chọn</button><button type="button" class="button secondary" data-action="privacy-export" ' + (online ? "" : "disabled") + ">Nhận bản sao dữ liệu máy chủ</button></div></div>";
+  const theme = THEMES.find((th) => th.id === s.theme);
+  const consentLine = dotJoin([
+    t(healthConsent() ? "settings.privacy.health.on" : "settings.privacy.health.off"),
+    t(serverConsent("calendar_link") ? "settings.privacy.calendar.on" : "settings.privacy.calendar.off"),
+    t(serverConsent("home_control") ? "settings.privacy.home.on" : "settings.privacy.home.off"),
+    t(serverConsent("beta_telemetry") ? "settings.privacy.telemetry.on" : "settings.privacy.telemetry.off"),
+  ]);
+  // Ô ngôn ngữ đứng đầu (LNH-T29). Dòng «bản dịch máy» hiện khi ngôn ngữ đang chọn trong ô là bản nháp (LNH-T21).
+  const chosenDraft = localeInfo(resolveLocale(s.locale, navigator.languages)).draft;
+  $("settings-fields").innerHTML = languageField("locale", s.locale, '<span class="fine-print">' + tSafe("settings.language.note") + "</span>" + (chosenDraft ? '<span class="fine-print draft-note">' + tSafe("i18n.draft.notice") + "</span>" : "")) +
+    '<div class="field"><label for="display-name">' + tSafe("settings.name") + '</label><input id="display-name" name="name" value="' + safe(s.name) + '" placeholder="' + tSafe("common.you") + '" maxlength="48" autocomplete="off"></div>' +
+    '<div class="field"><span>' + tSafe("settings.theme") + '</span><div class="settings-themes">' + THEMES.map((th) => themeButton(th, true)).join("") + '</div><span class="fine-print">' + tSafe("theme." + theme.id + ".name") + "</span></div>" +
+    '<div class="field"><label for="font-size">' + tSafe("settings.fontSize") + '</label><select id="font-size" name="fontSize">' + FONT_SIZES.map((n) => '<option value="' + n + '" ' + (n === s.fontSize ? "selected" : "") + ">" + safe(formatNumber(n / 100, { style: "percent" })) + "</option>").join("") + "</select></div>" +
+    '<div class="field"><label for="zone">' + tSafe("settings.zone") + '</label><select id="zone" name="zone">' + [...new Set([s.zone, ...ZONES])].map((z) => '<option value="' + safe(z) + '" ' + (z === s.zone ? "selected" : "") + ">" + safe(z) + "</option>").join("") + '</select><span class="fine-print">' + tSafe("settings.zoneNote") + "</span></div>" +
+    '<div class="field"><label for="accent-color">' + tSafe("settings.accent") + '</label><div style="display:flex;align-items:center;gap:12px"><input type="color" id="accent-color" name="accent" value="' + (s.accent || theme.accent) + '"><button type="button" class="text-button" data-action="theme-accent">' + tSafe("settings.accentReset") + "</button></div></div>" +
+    '<label class="checkbox-row">' + tSafe("settings.reducedMotion") + '<input type="checkbox" name="reducedMotion" ' + (s.reducedMotion ? "checked" : "") + "></label>" +
+    '<label class="checkbox-row">' + tSafe("settings.compact") + '<input type="checkbox" name="compact" ' + (s.compact ? "checked" : "") + "></label>" +
+    '<div class="field"><span>' + tSafe("settings.widgets") + '</span><span class="fine-print">' + tSafe("settings.widgetsNote") + "</span></div>" +
+    [["sleep", "settings.widget.sleep"], ["steps", "settings.widget.steps"], ["schedule", "settings.widget.schedule"]].map(([k, key]) => '<label class="checkbox-row">' + tSafe(key) + '<input type="checkbox" data-widget="' + k + '" ' + (s.widgets.includes(k) ? "checked" : "") + "></label>").join("");
+  $("privacy-settings").innerHTML = '<div class="privacy-box"><h3>' + tSafe("settings.privacy.title") + '</h3><p class="fine-print">' + safe(consentLine) + '</p><div class="button-row"><button type="button" class="button secondary" data-action="onboarding">' + tSafe("settings.privacy.change") + '</button><button type="button" class="button secondary" data-action="privacy-export" ' + (online ? "" : "disabled") + ">" + tSafe("settings.privacy.export") + "</button></div></div>";
 }
 function captureDraft() {
   const form = $("settings-form");
-  draftSettings = { ...draftSettings, name: form.elements.name.value, fontSize: Number(form.elements.fontSize.value), zone: form.elements.zone.value, reducedMotion: form.elements.reducedMotion.checked, compact: form.elements.compact.checked, widgets: [...form.querySelectorAll("[data-widget]:checked")].map((el) => el.dataset.widget) };
+  draftSettings = { ...draftSettings, locale: form.elements.locale.value, name: form.elements.name.value, fontSize: Number(form.elements.fontSize.value), zone: form.elements.zone.value, reducedMotion: form.elements.reducedMotion.checked, compact: form.elements.compact.checked, widgets: [...form.querySelectorAll("[data-widget]:checked")].map((el) => el.dataset.widget) };
 }
 function openSettings() {
   if ($("action-dialog").open) $("action-dialog").close();
@@ -1018,9 +1198,9 @@ async function profiles() {
   const moreRows = more.length
     ? '<div class="account-nav"><h3>' + tSafe("nav.more") + "</h3>" + more.map((v) => '<button class="card account-nav-row" data-nav="' + v.id + '">' + icon(v.nav.icon) + '<span class="event-copy"><strong>' + safe(v.nav.label(baseCtx)) + "</strong>" + (v.nav.hint ? "<span>" + safe(v.nav.hint(baseCtx)) + "</span>" : "") + "</span>" + icon("arrow") + "</button>").join("") + "</div>"
     : "";
-  showAction("Tài khoản", (api.dev
-    ? '<p class="fine-print">Bản chạy thử: chọn một tài khoản thử của dữ liệu tổng hợp. App thật đăng nhập bằng tài khoản LeASO (OIDC).</p>' + users.map((u) => '<div class="profile-row"><button class="button secondary" data-login="' + safe(u.sub) + '">' + safe(u.name) + (u.sub === me?.user.id ? icon("check") : "") + "</button></div>").join("")
-    : '<p class="fine-print">Đăng nhập bằng tài khoản LeASO (OIDC). Bản web tham chiếu chưa có trang đăng nhập riêng.</p>') + moreRows);
+  showAction(tSafe("account.title"), (api.dev
+    ? '<p class="fine-print">' + tSafe("account.devNote") + "</p>" + users.map((u) => '<div class="profile-row"><button class="button secondary" data-login="' + safe(u.sub) + '">' + bdi(u.name) + (u.sub === me?.user.id ? icon("check") : "") + "</button></div>").join("")
+    : '<p class="fine-print">' + tSafe("account.oidcNote") + "</p>") + moreRows);
 }
 
 const actionsMap = {
@@ -1039,7 +1219,9 @@ const actionsMap = {
     settingFields();
   },
   "reset-settings": () => {
-    draftSettings = defaults(settings().name);
+    // Khôi phục mặc định không đổi tên hiển thị và ngôn ngữ đang chọn trong ô.
+    captureDraft();
+    draftSettings = { ...defaults(draftSettings.name), locale: draftSettings.locale };
     settingFields();
   },
   export: () => {
@@ -1053,7 +1235,7 @@ const actionsMap = {
   },
   "new-block": () => {
     const today = localDate(api.serverNow(), zone());
-    showAction("Dành thời gian cá nhân", '<p class="fine-print">Lịch công việc Microsoft 365 · múi ' + safe(zone()) + '</p><form id="block-form"><div class="field"><label for="block-day">Ngày</label><select id="block-day" name="day"><option value="' + today + '">Hôm nay</option><option value="' + addDays(today, 1) + '">Ngày mai</option></select></div><div class="field"><label for="block-start">Bắt đầu</label><input id="block-start" name="start" type="time" value="10:00" required></div><div class="field"><label for="block-end">Kết thúc</label><input id="block-end" name="end" type="time" value="10:30" required></div><p id="block-error" class="form-error" role="alert" hidden></p><button class="button primary full">Xem lại</button></form>');
+    showAction(tSafe("work.block.title"), '<p class="fine-print">' + tSafe("work.block.zone", { zone: zone() }) + '</p><form id="block-form"><div class="field"><label for="block-day">' + tSafe("work.block.day") + '</label><select id="block-day" name="day"><option value="' + today + '">' + tSafe("common.today") + '</option><option value="' + addDays(today, 1) + '">' + tSafe("common.tomorrow") + '</option></select></div><div class="field"><label for="block-start">' + tSafe("work.block.start") + '</label><input id="block-start" name="start" type="time" value="10:00" required></div><div class="field"><label for="block-end">' + tSafe("work.block.end") + '</label><input id="block-end" name="end" type="time" value="10:30" required></div><p id="block-error" class="form-error" role="alert" hidden></p><button class="button primary full">' + tSafe("work.block.review") + "</button></form>");
   },
   "approve-plan": approve,
   "cancel-plan": async () => {
@@ -1064,19 +1246,19 @@ const actionsMap = {
       /* đã hết hạn hoặc đã đóng */
     }
     $("action-dialog").close();
-    toast("Đã bỏ thao tác. Chưa có gì được gửi.");
+    toast(t("review.canceled"));
   },
   repropose: () => propose(pendingPlan.input, pendingPlan.label),
-  robot: () => propose({ kind: "robot.simulate", schema_version: 1, workspace_ref: api.ws, args: { scenario: "DELIVER_DOCUMENT" } }, "Le-ORION · mô phỏng"),
+  robot: () => propose({ kind: "robot.simulate", schema_version: 1, workspace_ref: api.ws, args: { scenario: "DELIVER_DOCUMENT" } }, t("review.label.robot")),
   "use-proposal": () => {
     if (!lastProposal) return;
-    const label = lastProposal.kind === "calendar.block" ? "Đề xuất của LeLe · lịch công việc" : "Đề xuất của LeLe · ngôi nhà";
+    const label = t(lastProposal.kind === "calendar.block" ? "review.label.leleCalendar" : "review.label.leleHome");
     propose({ kind: lastProposal.kind, schema_version: 1, workspace_ref: api.ws, args: lastProposal.args }, label);
   },
-  "health-source": () => showAction("Nguồn và quyền dữ liệu", '<div class="privacy-note">' + icon("shield") + "<span>Bản web dùng dữ liệu tổng hợp cố định theo ngày.</span></div><p>App iOS dùng HealthKit, app Android dùng Health Connect qua cùng hợp đồng HealthSource v1: xin quyền bước chân và giấc ngủ riêng, đọc trong cửa sổ 7 ngày, không đọc nền.</p><p class=\"fine-print\">Thuật toán " + safe(health?.algorithm_version ?? "LNH-SLEEP-1") + " · revision " + safe(health?.source_revision ?? "-") + " · múi " + safe(zone()) + '</p><button class="button primary full" data-action="close-action">Đã hiểu</button>'),
+  "health-source": () => showAction(tSafe("health.sourceDialog.title"), '<div class="privacy-note">' + icon("shield") + "<span>" + tSafe("health.sourceDialog.synthetic") + "</span></div><p>" + tSafe("health.sourceDialog.text") + '</p><p class="fine-print">' + tSafe("health.sourceDialog.meta", { algorithm: health?.algorithm_version ?? "LNH-SLEEP-1", revision: String(health?.source_revision ?? "-"), zone: zone() }) + '</p><button class="button primary full" data-action="close-action">' + tSafe("common.understood") + "</button>"),
   "health-export": () => {
     if (!health) return;
-    const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), note: healthSynthetic() ? "Dữ liệu tổng hợp tính trên thiết bị" : "Dữ liệu bạn nhập, tính trên thiết bị", days: health.days, summary: health.summary }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), note: t(healthSynthetic() ? "health.export.noteSynthetic" : "health.export.noteImport"), days: health.days, summary: health.summary }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -1089,7 +1271,7 @@ const actionsMap = {
     if (s) writeStore(healthKey(), JSON.stringify({ ...s, revision: (s.revision ?? 0) + 1 }));
     computeHealth();
     render();
-    toast("Đã xóa bộ nhớ đệm và tính lại từ nguồn.");
+    toast(t("health.erased"));
   },
   "privacy-export": async () => {
     try {
@@ -1103,7 +1285,7 @@ const actionsMap = {
       link.download = "LeNhip-du-lieu-may-chu.json";
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast("Đã tải bản sao. Liên kết chỉ dùng một lần.");
+      toast(t("settings.privacy.exported"));
     } catch (e) {
       toast(errorText(e));
     }
@@ -1151,12 +1333,12 @@ document.addEventListener("click", async (event) => {
     const d = devices.find((x) => x.device_ref === target.dataset.device);
     if (!d) return;
     const on = d.state?.power === "ON";
-    return propose({ kind: "device.set_power", schema_version: 1, workspace_ref: api.ws, args: { site: d.site, device_ref: d.device_ref, command: on ? "SET_OFF" : "SET_ON" } }, "Ngôi nhà · " + (site?.name ?? d.site));
+    return propose({ kind: "device.set_power", schema_version: 1, workspace_ref: api.ws, args: { site: d.site, device_ref: d.device_ref, command: on ? "SET_OFF" : "SET_ON" } }, t("review.label.home", { site: site?.name ?? d.site }));
   }
   if (target.dataset.checkAction) {
     const a = await api.get(`/v1/actions/${target.dataset.checkAction}`);
     actions = actions.map((x) => (x.action_id === a.action_id ? a : x));
-    if ($("action-dialog").open) showAction("Theo dõi thao tác", actionCard(a) + '<button class="button secondary full" data-action="close-action">Đóng</button>');
+    if ($("action-dialog").open) trackDialog(a);
     else render();
     return;
   }
@@ -1175,32 +1357,79 @@ document.addEventListener("click", async (event) => {
 $("settings-form").addEventListener("input", (event) => {
   if (event.target.name === "accent") draftSettings.accent = event.target.value;
 });
+// Đổi ngôn ngữ trong ô của hộp Cá nhân hóa: vẽ lại các trường để dòng «bản dịch máy» khớp lựa chọn; chưa áp dụng tới khi lưu.
+$("settings-form").addEventListener("change", (event) => {
+  if (event.target.name !== "locale") return;
+  captureDraft();
+  settingFields();
+  $("locale").focus();
+});
 $("settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   captureDraft();
-  const before = settings().zone;
-  prefs.users[sub()] = sanitizeSettings(draftSettings);
+  const before = settings();
+  const next = sanitizeSettings(draftSettings);
+  // Ngôn ngữ đổi khi lưu, không nạp lại trang. Bị từ chối khi một kế hoạch đang chờ đồng ý (LNH-T29) hoặc khi bản dựng chưa
+  // có catalog của ngôn ngữ đó; các tùy chọn khác vẫn được lưu.
+  const refusal = await localeRefusal(next.locale, before.locale);
+  if (refusal) next.locale = before.locale;
+  prefs.users[sub()] = next;
   const persisted = savePrefs();
   $("settings-dialog").close();
-  if (before !== settings().zone) computeHealth();
+  if (before.zone !== next.zone) computeHealth();
   await syncLocale();
   render();
-  if (persisted) toast(before !== settings().zone ? "Đã lưu. Sức khỏe được tính lại theo múi " + settings().zone + "." : "Đã lưu giao diện riêng cho " + settings().name + ".");
+  if (refusal) toast(t(refusal));
+  else if (persisted) toast(before.zone !== next.zone ? t("settings.saved.zone", { zone: next.zone }) : next.name ? t("settings.saved.name", { name: next.name }) : t("settings.saved.anon"));
+});
+// Đổi ngôn ngữ ngay trên Thông báo đầu tiên: áp dụng liền, vẽ lại hộp bằng ngôn ngữ mới và giữ các ô đã đánh dấu. Biên nhận
+// ghi phiên bản và mã băm của văn bản đang hiện lúc bấm lưu.
+document.addEventListener("change", async (event) => {
+  const select = event.target;
+  if (select.id !== "notice-locale") return;
+  const form = $("consent-form");
+  const ticked = Object.fromEntries(PURPOSES.map((id) => [id, form.elements[id].checked]));
+  const current = settings().locale;
+  const next = isLocale(select.value) ? select.value : "auto";
+  const refusal = await localeRefusal(next, current);
+  if (refusal) {
+    select.value = current;
+    return toast(t(refusal));
+  }
+  settings().locale = next;
+  savePrefs();
+  await syncLocale();
+  render();
+  // Thông báo mở từ hộp Cá nhân hóa nằm chồng lên hộp đó: các trường bên dưới cũng đổi ngôn ngữ và ô ngôn ngữ của nó nhận
+  // lựa chọn mới, để bấm «Lưu» ở đó không đưa ngôn ngữ cũ trở lại.
+  if ($("settings-dialog").open) {
+    captureDraft();
+    draftSettings.locale = next;
+    settingFields();
+  }
+  if (!$("consent-form")) return; // hộp đã đóng trong lúc nạp catalog
+  onboarding(ticked);
+  $("notice-locale").focus();
 });
 document.addEventListener("submit", (event) => {
   const form = event.target;
   if (form.id === "block-form") {
     event.preventDefault();
     const { day, start, end } = Object.fromEntries(new FormData(form));
-    try {
-      if (!(String(end) > String(start))) throw new Error("Chọn giờ kết thúc sau giờ bắt đầu.");
-      const s = new Date(zonedToInstant(String(day), String(start), zone())).toISOString();
-      const e = new Date(zonedToInstant(String(day), String(end), zone())).toISOString();
-      propose({ kind: "calendar.block", schema_version: 1, workspace_ref: api.ws, args: { calendar_ref: "primary", start: s, end: e, zone: zone(), title_code: "PERSONAL_TIME", visibility: "private" } }, "Công việc · lịch Microsoft 365");
-    } catch (err) {
-      $("block-error").textContent = err.message;
-      $("block-error").hidden = false;
+    let problem = null;
+    let window = null;
+    if (!(String(end) > String(start))) problem = "work.block.endBeforeStart";
+    else {
+      try {
+        window = [String(start), String(end)].map((hhmm) => new Date(zonedToInstant(String(day), hhmm, zone())).toISOString());
+      } catch {
+        problem = "work.block.invalidTime";
+      }
     }
+    if (problem) {
+      $("block-error").textContent = t(problem);
+      $("block-error").hidden = false;
+    } else propose({ kind: "calendar.block", schema_version: 1, workspace_ref: api.ws, args: { calendar_ref: "primary", start: window[0], end: window[1], zone: zone(), title_code: "PERSONAL_TIME", visibility: "private" } }, t("review.label.calendar"));
   }
   if (form.id === "consent-form") {
     event.preventDefault();
@@ -1219,18 +1448,29 @@ $("import-file").addEventListener("change", async (event) => {
   const file = event.target.files[0];
   if (!file) return;
   try {
-    if (file.size > 16384) throw new Error("Tệp tùy chọn vượt quá 16 KB.");
-    const data = JSON.parse(await file.text());
-    if (![1, 2].includes(data.version) || !data.settings) throw new Error("Định dạng tùy chọn không được hỗ trợ.");
-    prefs.users[sub()] = sanitizeSettings({ ...settings(), ...data.settings });
+    if (file.size > 16384) throw new SettingsFileError("settings.import.tooLarge");
+    let data;
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      throw new SettingsFileError("settings.import.invalid");
+    }
+    if (!data || ![1, 2].includes(data.version) || !data.settings) throw new SettingsFileError("settings.import.unsupported");
+    const before = settings();
+    const next = sanitizeSettings({ ...before, ...data.settings });
+    // Ngôn ngữ trong tệp nhập đi qua cùng phép kiểm với ô chọn ngôn ngữ.
+    const refusal = await localeRefusal(next.locale, before.locale);
+    if (refusal) next.locale = before.locale;
+    prefs.users[sub()] = next;
     savePrefs();
     $("settings-dialog").close();
     computeHealth();
     await syncLocale();
     render();
-    toast("Đã nhập tùy chọn vào tài khoản hiện tại.");
+    toast(t(refusal ?? "settings.import.done"));
   } catch (err) {
-    toast(err.message);
+    // Chỉ in câu của catalog theo khóa của lỗi; không in thông báo lỗi thô của trình duyệt.
+    toast(t(err instanceof SettingsFileError ? err.key : "settings.import.invalid"));
   } finally {
     event.target.value = "";
   }
@@ -1243,10 +1483,13 @@ window.addEventListener("hashchange", () => {
 });
 // Mọi cách đóng hộp thao tác (nút ✕, phím Escape, đóng từ mã) đều dừng đếm ngược của màn hình xem lại. Trước đây Escape để
 // đồng hồ chạy tiếp và hộp tự mở lại với "Bản xem lại đã hết hạn" sau 120 giây. Kế hoạch chưa xác nhận tự hết hạn ở máy chủ.
-$("action-dialog").addEventListener("close", () => {
+$("action-dialog").addEventListener("close", async () => {
   if ($("action-dialog").open) return;
   stopCountdown();
+  reviewing = false;
   releaseDialog();
+  // Một lần đổi ngôn ngữ bị hoãn vì kế hoạch đang chờ đồng ý (ví dụ đổi tài khoản ở nền) được áp dụng khi hộp đóng.
+  if (resolveLocale(settings().locale, navigator.languages) !== getLocale() && (await syncLocale())) render();
 });
 // Mất và có lại kết nối mạng: cập nhật thanh cảnh báo ngay, rồi nạp lại từ máy chủ khi có mạng. Không gửi lại thao tác nào.
 window.addEventListener("offline", () => {
@@ -1270,14 +1513,22 @@ if (typeof ResizeObserver === "function") {
 }
 
 // ---------------------------------------------------------------- khởi động
+let apiReady = false; // đã hỏi xong máy chủ đây là bản chạy thử hay bản tham chiếu
 (async () => {
   // Phong cách và chữ LeNhip không phụ thuộc ngôn ngữ nên vẽ ngay; phần còn lại chờ catalog (LNH-T22: nạp trước lần vẽ đầu).
+  // Khung ẩn (lớp i18n-pending) tới khi catalog nạp xong để không lóe chữ của ngôn ngữ khác; quá 1,5 giây thì hiện dù chưa xong.
+  const reveal = () => document.body.classList.remove("i18n-pending");
+  setTimeout(reveal, 1500);
   applyTheme();
   brand();
-  await syncLocale();
+  try {
+    await syncLocale();
+  } finally {
+    reveal();
+  }
   render();
   await api.init();
-  $("build-label").textContent = api.dev ? "Bản chạy thử · Dữ liệu tổng hợp" : "Bản tham chiếu";
+  apiReady = true;
   const restored = api.restoreSession();
   if (!restored && api.dev) {
     try {

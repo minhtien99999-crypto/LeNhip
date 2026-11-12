@@ -2,8 +2,8 @@
 <html lang="vi" dir="ltr" translate="no">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f1f9fb"><meta name="description" content="LeNhip — trợ lý cá nhân của LeDB: sức khỏe trên điện thoại, khung giờ riêng trong lịch công việc, đèn tại site.">
-<title>LeNhip · Nhịp sống của bạn</title>
+<meta name="theme-color" content="#f1f9fb"><meta name="description" content="LeNhip" data-i18n-attr="content:meta.description">
+<title data-i18n="meta.title">LeNhip</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="icon" href="./icons/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="./icons/favicon-48.png" type="image/png" sizes="48x48">
@@ -15,25 +15,28 @@
 <link rel="stylesheet" href="./views/connect-endpoints.css">
 <link rel="stylesheet" href="./views/connect-trackers.css">
 </head>
-<body>
-<a class="skip-link" href="#main">Đến nội dung chính</a>
+<!-- Chữ hiển thị nằm trong catalog (web/shared/i18n-<ngôn ngữ>.js): data-i18n điền textContent, data-i18n-attr điền thuộc tính
+     (shared/i18n.js, localizeStatic). Khung ẩn tới khi catalog của ngôn ngữ đang chọn nạp xong (lớp i18n-pending). data-fixed
+     đánh dấu chữ cố định không dịch (tên thương hiệu). -->
+<body class="i18n-pending">
+<a class="skip-link" href="#main" data-i18n="nav.skipLink"></a>
 <div class="shell">
-<aside class="sidebar" aria-label="Không gian LeNhip">
-<a href="#home" class="wordmark"><span class="brand-art" id="brand-side"></span><span class="brand-by">by LeTRON</span></a>
-<p class="sidebar-caption">KHÔNG GIAN CỦA BẠN</p>
-<nav id="desktop-nav" class="desktop-nav" aria-label="Điều hướng chính"></nav>
-<div class="sidebar-bottom"><div class="small-orbit"></div><strong>Một ngày đúng nhịp.</strong><p>Giao diện theo cách của bạn.</p><button class="button quiet" data-action="settings">Cá nhân hóa giao diện</button><span class="demo-label" id="build-label">Bản tham chiếu · Dữ liệu tổng hợp</span></div>
+<aside class="sidebar" data-i18n-attr="aria-label:shell.sidebar.label">
+<a href="#home" class="wordmark"><span class="brand-art" id="brand-side"></span><span class="brand-by" data-fixed>by LeTRON</span></a>
+<p class="sidebar-caption" data-i18n="shell.sidebar.caption"></p>
+<nav id="desktop-nav" class="desktop-nav" data-i18n-attr="aria-label:nav.ariaMain"></nav>
+<div class="sidebar-bottom"><div class="small-orbit"></div><strong data-i18n="shell.sidebar.tagline"></strong><p data-i18n="shell.sidebar.taglineSub"></p><button class="button quiet" data-action="settings" data-i18n="settings.open.sidebar"></button><span class="demo-label" id="build-label"></span></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><div class="mobile-brand"><span class="brand-art" id="brand-top"></span><span class="brand-by">by LeTRON</span></div><span class="desktop-label">Trợ lý cá nhân</span><div class="top-actions"><span class="privacy-chip" id="privacy-chip"></span><button class="icon-button" data-action="settings" aria-label="Mở cá nhân hóa" title="Cá nhân hóa" id="settings-button"></button><button class="avatar" data-action="profiles" aria-label="Tài khoản" id="profile-button">··</button></div></header>
+<header class="topbar"><div class="mobile-brand"><span class="brand-art" id="brand-top"></span><span class="brand-by" data-fixed>by LeTRON</span></div><span class="desktop-label" data-i18n="shell.topbar.label"></span><div class="top-actions"><span class="privacy-chip" id="privacy-chip"></span><button class="icon-button" data-action="settings" data-i18n-attr="aria-label:settings.open.label; title:settings.open.title" id="settings-button"></button><button class="avatar" data-action="profiles" data-i18n-attr="aria-label:account.title" id="profile-button">··</button></div></header>
 <div id="banner" class="banner" role="status" hidden></div>
-<div class="content-grid"><main id="main" tabindex="-1"></main><aside class="design-panel" aria-label="Chọn phong cách"><div class="panel-heading"><span class="eyebrow">CÁ NHÂN HÓA</span><span class="tiny-pill">5 phong cách</span></div><h2>Cùng bạn, khác biệt.</h2><p>Chọn một không gian phù hợp với nhịp sống của bạn.</p><div id="theme-options"></div><div class="panel-note"><span id="note-icon"></span><p>Tùy chọn giao diện lưu theo tài khoản trên trình duyệt này.</p></div><button class="button secondary full" data-action="settings">Tinh chỉnh của bạn <span aria-hidden="true">↗</span></button></aside></div>
-<footer class="workspace-footer">LeNhip <span>•</span> Thiết kế bởi LeDB <span>•</span> <span id="footer-build">Bản tham chiếu 0.1.0 theo LNH-SRS-001 V1.1</span></footer>
+<div class="content-grid"><main id="main" tabindex="-1"></main><aside class="design-panel" data-i18n-attr="aria-label:theme.panel.label"><div class="panel-heading"><span class="eyebrow" data-i18n="theme.panel.eyebrow"></span><span class="tiny-pill" id="theme-count"></span></div><h2 data-i18n="theme.panel.title"></h2><p data-i18n="theme.panel.subtitle"></p><div id="theme-options"></div><div class="panel-note"><span id="note-icon"></span><p data-i18n="theme.panel.note"></p></div><button class="button secondary full" data-action="settings"><span data-i18n="theme.panel.tune"></span> <span aria-hidden="true">↗</span></button></aside></div>
+<footer class="workspace-footer"><b class="footer-text" data-fixed>LeNhip</b> <span>•</span> <b class="footer-text" data-i18n="shell.footer.by"></b> <span>•</span> <span id="footer-build"></span></footer>
 </div>
 </div>
-<nav id="mobile-nav" class="mobile-nav" aria-label="Điều hướng điện thoại"></nav>
-<dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title"><div class="dialog-top"><div><span class="eyebrow">KHÔNG GIAN RIÊNG</span><h2 id="settings-title">Theo nhịp của bạn</h2></div><button class="icon-button" data-action="close-settings" aria-label="Đóng cá nhân hóa">✕</button></div><form id="settings-form"><div id="settings-fields"></div><div class="dialog-actions"><button type="button" class="button secondary" data-action="reset-settings">Khôi phục mặc định</button><button class="button primary" type="submit">Lưu tùy chọn</button></div></form><div id="privacy-settings"></div><div class="settings-tools"><button class="text-button" data-action="export">Xuất tùy chọn</button><label class="text-button import-label">Nhập tùy chọn<input id="import-file" type="file" accept=".json,application/json" hidden></label><button class="text-button" data-action="profiles">Tài khoản</button></div><p class="fine-print">Tệp xuất/nhập chỉ chứa tùy chọn giao diện, không có lịch, hội thoại hay dữ liệu sức khỏe.</p></dialog>
-<dialog id="action-dialog" class="action-dialog" aria-labelledby="action-title"><div class="dialog-top"><h2 id="action-title" tabindex="-1">LeNhip</h2><button class="icon-button" data-action="close-action" aria-label="Đóng hộp thoại">✕</button></div><div id="action-body"></div></dialog>
+<nav id="mobile-nav" class="mobile-nav" data-i18n-attr="aria-label:nav.ariaMobile"></nav>
+<dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title"><div class="dialog-top"><div><span class="eyebrow" data-i18n="settings.eyebrow"></span><h2 id="settings-title" data-i18n="settings.title"></h2></div><button class="icon-button" data-action="close-settings" data-i18n-attr="aria-label:settings.close">✕</button></div><form id="settings-form"><div id="settings-fields"></div><div class="dialog-actions"><button type="button" class="button secondary" data-action="reset-settings" data-i18n="settings.reset"></button><button class="button primary" type="submit" data-i18n="settings.save"></button></div></form><div id="privacy-settings"></div><div class="settings-tools"><button class="text-button" data-action="export" data-i18n="settings.export"></button><label class="text-button import-label"><span data-i18n="settings.import"></span><input id="import-file" type="file" accept=".json,application/json" hidden></label><button class="text-button" data-action="profiles" data-i18n="account.title"></button></div><p class="fine-print" data-i18n="settings.fileNote"></p></dialog>
+<dialog id="action-dialog" class="action-dialog" aria-labelledby="action-title"><div class="dialog-top"><h2 id="action-title" tabindex="-1"></h2><button class="icon-button" data-action="close-action" data-i18n-attr="aria-label:common.closeDialog">✕</button></div><div id="action-body"></div></dialog>
 <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
 <script type="module" src="./app.js"></script>
 </body></html>

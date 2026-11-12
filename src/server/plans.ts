@@ -32,10 +32,11 @@ function resolve(ctx: Ctx, ws: string, actor: string, input: PlanInput): Resolve
     const s = parseInstant(a.start);
     const e = parseInstant(a.end);
     const policy = exportPolicy(ctx, ws).doc.kinds["calendar.block"];
-    if (!(e > s)) throw new ApiError(400, "SCHEMA_INVALID", { detail: "Giờ kết thúc phải sau giờ bắt đầu." });
-    if (e - s > policy.max_minutes * 60_000) throw new ApiError(422, "UNSUPPORTED", { detail: `Khung giờ dài tối đa ${policy.max_minutes} phút.` });
-    if (s < now + ctx.config.calendar.minLeadMs) throw new ApiError(422, "UNSUPPORTED", { detail: "Khung giờ phải bắt đầu sau thời điểm hiện tại." });
-    if (e > now + policy.horizon_days * 86_400_000) throw new ApiError(422, "UNSUPPORTED", { detail: `Chỉ đặt trong ${policy.horizon_days} ngày tới.` });
+    // `detail` là câu tiếng Việt cho client cũ; client mới dựng câu theo ngôn ngữ của mình từ `detail_code` và `limit` (LNH-T23).
+    if (!(e > s)) throw new ApiError(400, "SCHEMA_INVALID", { detail: "Giờ kết thúc phải sau giờ bắt đầu.", extra: { detail_code: "END_BEFORE_START" } });
+    if (e - s > policy.max_minutes * 60_000) throw new ApiError(422, "UNSUPPORTED", { detail: `Khung giờ dài tối đa ${policy.max_minutes} phút.`, extra: { detail_code: "BLOCK_TOO_LONG", limit: policy.max_minutes } });
+    if (s < now + ctx.config.calendar.minLeadMs) throw new ApiError(422, "UNSUPPORTED", { detail: "Khung giờ phải bắt đầu sau thời điểm hiện tại.", extra: { detail_code: "START_IN_PAST" } });
+    if (e > now + policy.horizon_days * 86_400_000) throw new ApiError(422, "UNSUPPORTED", { detail: `Chỉ đặt trong ${policy.horizon_days} ngày tới.`, extra: { detail_code: "BEYOND_HORIZON", limit: policy.horizon_days } });
     const window: [string, string] = [iso(s), iso(e)];
     return {
       payload: {

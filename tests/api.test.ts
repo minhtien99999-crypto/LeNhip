@@ -300,3 +300,98 @@ test("phục vụ giao diện: chỉ tệp trong danh sách, có CSP; không l�
     await h.close();
   }
 });
+
+// ---------------------------------------------------------------- V1.0.0, LNH-T23: mã thay cho câu chữ, máy chủ không biết ngôn ngữ
+test("LNH-T23: lỗi mang detail_code và limit, message tiếng Việt giữ cho client cũ; máy chủ bỏ qua Accept-Language và không lưu ngôn ngữ", async () => {
+  const h = await harness();
+  try {
+    const plan = (start: string, end: string, headers?: Record<string, string>) => h.call("POST", "/v1/plans", { body: calendarPlan(start, end), headers });
+    const day = 86_400_000;
+    const cases: [string, () => Promise<{ status: number; body: any; headers: Headers }>, number, string, string, number | undefined, string][] = [
+      ["END_BEFORE_START", () => plan(vn(h.clock, "10:30"), vn(h.clock, "10:00")), 400, "SCHEMA_INVALID", "END_BEFORE_START", undefined, "Giờ kết thúc phải sau giờ bắt đầu."],
+      ["BLOCK_TOO_LONG", () => plan(vn(h.clock, "10:00"), vn(h.clock, "15:00")), 422, "UNSUPPORTED", "BLOCK_TOO_LONG", 240, "Khung giờ dài tối đa 240 phút."],
+      ["START_IN_PAST", () => plan(vn(h.clock, "08:00"), vn(h.clock, "08:30")), 422, "UNSUPPORTED", "START_IN_PAST", undefined, "Khung giờ phải bắt đầu sau thời điểm hiện tại."],
+      ["BEYOND_HORIZON", () => plan(vn(h.clock, "10:00", 20), vn(h.clock, "10:30", 20)), 422, "UNSUPPORTED", "BEYOND_HORIZON", 14, "Chỉ đặt trong 14 ngày tới."],
+      ["WINDOW_TOO_LONG", () => h.call("GET", `/v1/calendar/availability?start=${encodeURIComponent(new Date(h.clock.now()).toISOString())}&end=${encodeURIComponent(new Date(h.clock.now() + 20 * day).toISOString())}`), 400, "SCHEMA_INVALID", "WINDOW_TOO_LONG", 14, "Cửa sổ tối đa 14 ngày."],
+      ["WORKSPACE_HEADER", () => h.call("GET", "/v1/me", { headers: { "X-LeNhip-Workspace": "bad" } }), 400, "SCHEMA_INVALID", "WORKSPACE_HEADER", undefined, "Thiếu hoặc sai X-LeNhip-Workspace."],
+    ];
+    const api = JSON.parse((await import("node:fs")).readFileSync(new URL("../contracts/openapi.json", import.meta.url), "utf8")) as { components: { schemas: { Error: { properties: { detail_code: { enum: string[] }; limit: { type: string } } } } } };
+    assert.deepEqual(api.components.schemas.Error.properties.detail_code.enum.slice().sort(), cases.map((c) => c[0]).sort(), "enum detail_code của hợp đồng trùng các mã máy chủ gửi");
+    assert.equal(api.components.schemas.Error.properties.limit.type, "integer");
+    for (const [name, send, status, code, detail, limit, message] of cases) {
+      const r = await send();
+      assert.deepEqual([r.status, r.body.code, r.body.detail_code, r.body.limit, r.body.message, r.body.retryable], [status, code, detail, limit, message, false], name);
+      errShape(r.body);
+    }
+    // Lỗi không có chi tiết thì không có hai trường này.
+    const plain = await h.call("GET", "/v1/actions/act_khong_co");
+    assert.deepEqual([plain.status, plain.body.code, "detail_code" in plain.body, "limit" in plain.body], [404, "NOT_FOUND", false, false]);
+
+    // Cùng một yêu cầu với Accept-Language khác nhau cho cùng một phản hồi: máy chủ không đọc ngôn ngữ (LNH-T23).
+    const same = (b: Record<string, unknown>) => JSON.stringify({ ...b, request_id: null });
+    const langs = [undefined, "vi-VN,vi;q=0.9", "en-US,en;q=0.9", "ja", "fr-FR, de;q=0.5", "xx-invalid;;"];
+    const errors = [];
+    const answers = [];
+    const mes = [];
+    for (const lang of langs) {
+      const headers = lang === undefined ? undefined : { "Accept-Language": lang, "Content-Language": lang };
+      const e = await plan(vn(h.clock, "10:00"), vn(h.clock, "15:00"), headers);
+      errors.push(same(e.body));
+      const a = await h.call("POST", "/v1/lele/proposals", { body: { text: "xin chào", context: "work", zone: "Asia/Ho_Chi_Minh" }, headers });
+      answers.push(same(a.body));
+      const me = await h.call("GET", "/v1/me", { headers });
+      mes.push(same(me.body));
+      for (const r of [e, a, me]) assert.deepEqual([r.headers.get("content-language"), /accept-language/i.test(r.headers.get("vary") ?? "")], [null, false], "phản hồi không khai ngôn ngữ, không Vary theo ngôn ngữ");
+    }
+    for (const list of [errors, answers, mes]) assert.equal(new Set(list).size, 1, "Accept-Language không đổi phản hồi");
+    assert.match(errors[0], /Khung giờ dài tối đa 240 phút/);
+    assert.match(answers[0], /"answer_code":"HELP"/);
+    // Không bảng nào có cột ngôn ngữ; không tệp nào của máy chủ đọc header hay trường ngôn ngữ.
+    const ddl = all<{ sql: string | null }>(h.app.ctx.db, "SELECT sql FROM sqlite_master").map((r) => r.sql ?? "").join("\n");
+    assert.doesNotMatch(ddl, /\b(?:locale|language|lang)\b/i);
+    const fs = await import("node:fs");
+    const src = new URL("../src/", import.meta.url);
+    for (const file of fs.readdirSync(src, { recursive: true }) as string[]) {
+      if (!file.endsWith(".ts")) continue;
+      const code = fs.readFileSync(new URL(file, src), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      assert.doesNotMatch(code, /accept-language|content-language|navigator\.language|\blocale\s*[:=]/i, `src/${file}: máy chủ không đọc và không lưu ngôn ngữ của người dùng`);
+    }
+  } finally {
+    await h.close();
+  }
+});
+
+test("LNH-T23: LeLe trả answer_code cho mọi câu trả lời không phải đề xuất; thông báo UNKNOWN trong outbox mang mã ACTION_UNVERIFIED", async () => {
+  const h = await harness();
+  try {
+    const ask = async (text: string, context = "work") => {
+      const r = await h.call("POST", "/v1/lele/proposals", { body: { text, context, zone: "Asia/Ho_Chi_Minh" } });
+      assert.equal(r.status, 200, text);
+      assert.deepEqual(SCHEMAS.validate("LeLeResult", r.body), [], text);
+      return [r.body.type, r.body.answer_code, r.body.fallback];
+    };
+    assert.deepEqual(await ask("xin chào"), ["ANSWER", "HELP", null]);
+    assert.deepEqual(await ask("bật đèn", "home"), ["FORM", "PICK_LAMP", "device.set_power"], "hai đèn, không gọi tên: chọn trong Ngôi nhà");
+    assert.deepEqual(await ask("mở đèn bàn", "home"), ["PROPOSAL", null, null], "«mở» được nhận ra");
+    assert.deepEqual(await ask("dành 300 phút lúc 15:00"), ["FORM", "DURATION_RANGE", "calendar.block"]);
+    assert.deepEqual(await ask("tối qua tôi ngủ ít, xếp lịch nghỉ"), ["FORM", "HEALTH_LOCAL", "NONE"]);
+    assert.deepEqual(await ask("gọi 0912345678 rồi đặt 30 phút lúc 15:00"), ["FORM", "PII_BLOCKED", "NONE"]);
+    assert.deepEqual(await ask("Dành 30 phút tập trung lúc 15:30"), ["PROPOSAL", null, null]);
+
+    // Tác vụ chưa xác minh được sau một giờ: thông báo chung trong outbox có mã để thiết bị dựng câu theo ngôn ngữ của mình.
+    const hub = h.app.hubs.get("site_lab01")!;
+    hub.faults.dropAck = true;
+    hub.faults.applyCommands = false;
+    h.app.receivers.get("device.set_power")!.realAckWaitMs = 10;
+    await planAndApprove(h, lampPlan("SET_OFF"));
+    await tick(h);
+    for (const step of [10_000, 5 * 60_000, 60 * 60_000]) {
+      h.clock.advance(step);
+      await h.app.reconciler.tick();
+    }
+    const notes = all<{ payload: string }>(h.app.ctx.db, "SELECT payload FROM outbox WHERE topic = 'notify.user'").map((r) => JSON.parse(r.payload) as Record<string, string>);
+    assert.deepEqual(notes, [{ to: "dev_a", code: "ACTION_UNVERIFIED", text: "Một thao tác của bạn chưa xác minh được kết quả. Mở LeNhip để xem." }]);
+  } finally {
+    await h.close();
+  }
+});

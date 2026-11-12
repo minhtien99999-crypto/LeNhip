@@ -12,6 +12,12 @@ import { defaults, sanitizeSettings } from "../web/model.js";
 import { parseStrictJson } from "../src/core/strict-json.ts";
 
 const shared = new URL("../web/shared/", import.meta.url);
+/**
+ * LENHIP_I18N_ONLY=<tag>: các phép kiểm đọc tệp catalog trên đĩa chỉ xét bản gốc tiếng Việt và ngôn ngữ đó, để người dịch
+ * làm song song trên cùng một cây không vướng tệp dở dang của ngôn ngữ khác (xem thêm tests/i18n.test.ts).
+ */
+const ONLY = process.env.LENHIP_I18N_ONLY || null;
+const inScope = (tag: string) => !ONLY || tag === ONLY || tag === "vi";
 const plain = (s: string) => s.replace(/[  ]/g, " ");
 /** Bảng nạp giả cho một ngôn ngữ: catalog nằm trong bộ nhớ, phần không nêu thì coi như chưa có tệp. */
 const memory = (tag: string, core: Record<string, unknown>, parts: Record<string, Record<string, unknown>> = {}) => ({
@@ -113,9 +119,11 @@ test("bảng nạp khớp đúng LOCALES × (lõi + PARTS) và mỗi mục trỏ
 test("mỗi tệp catalog đúng dạng `export default <JSON chặt>;`, khóa phẳng có dấu chấm, không HTML", async () => {
   const expected = new Map<string, { tag: string; part: string }>();
   for (const l of LOCALES) for (const part of ["core", ...PARTS]) expected.set(`i18n-${l.file}${part === "core" ? "" : "-" + part}.js`, { tag: l.tag, part });
-  const files = readdirSync(shared).filter((f) => /^i18n-.*\.js$/.test(f) && f !== "i18n-loaders.js").sort();
+  const onDisk = readdirSync(shared).filter((f) => /^i18n-.*\.js$/.test(f) && f !== "i18n-loaders.js").sort();
+  for (const file of onDisk) assert.ok(expected.has(file), `${file}: tên tệp không thuộc LOCALES × (lõi + PARTS)`);
+  const files = onDisk.filter((f) => inScope(expected.get(f)!.tag));
   // Tiếng Việt và tiếng Anh phải có đủ lõi và ba phần; ngôn ngữ khác có tệp nào thì kiểm tệp đó.
-  for (const tag of ["vi", "en"]) for (const part of ["", "-msg", "-social", "-dev"]) assert.ok(files.includes(`i18n-${tag}${part}.js`), `thiếu i18n-${tag}${part}.js`);
+  for (const tag of ["vi", "en"].filter(inScope)) for (const part of ["", "-msg", "-social", "-dev"]) assert.ok(files.includes(`i18n-${tag}${part}.js`), `thiếu i18n-${tag}${part}.js`);
   const keysOf = new Map<string, Set<string>>();
   for (const file of files) {
     const info = expected.get(file);
@@ -156,7 +164,7 @@ test("mỗi tệp catalog đúng dạng `export default <JSON chặt>;`, khóa p
   // Bản gốc là tập khóa chuẩn: không ngôn ngữ nào có khóa mà tiếng Việt không có; tiếng Anh hiện đủ mọi khóa.
   const source = keysOf.get("vi") as Set<string>;
   for (const [tag, keys] of keysOf) for (const key of keys) assert.ok(source.has(key), `${tag}: khóa ${key} không có trong bản tiếng Việt`);
-  assert.deepEqual([...(keysOf.get("en") as Set<string>)].sort(), [...source].sort());
+  if (inScope("en")) assert.deepEqual([...(keysOf.get("en") as Set<string>)].sort(), [...source].sort());
 });
 
 test("t(): chuỗi có {tên}; thiếu tham số thì ném lỗi; số được định dạng theo ngôn ngữ của thông điệp", async (ctx) => {
@@ -249,7 +257,7 @@ test("ngôn ngữ chưa có tệp catalog: không ném lỗi, lùi về tiếng 
   // Bảng nạp thật, trên một bản runtime mới (chưa nạp gì): ngôn ngữ nào chưa có tệp trên đĩa thì import() bị từ chối, runtime
   // vẫn chạy bằng tiếng Việt và cảnh báo đúng một lần cho ngôn ngữ đó; ngôn ngữ đã có đủ tệp thì không cảnh báo.
   const fresh = (await import(String(new URL("../web/shared/i18n.js?ban-moi", import.meta.url)))) as typeof import("../web/shared/i18n.js");
-  for (const l of LOCALES) {
+  for (const l of LOCALES.filter((x) => inScope(x.tag))) {
     const files = ["", ...PARTS.map((p) => "-" + p)].map((suffix) => `i18n-${l.file}${suffix}.js`);
     const missing = files.filter((f) => !existsSync(new URL(f, shared)));
     const before = warn.mock.callCount();

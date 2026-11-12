@@ -191,3 +191,26 @@ body[data-layout=wide] .content-grid{grid-template-columns:minmax(0,1120px)}
 .account-nav-row+.account-nav-row{margin-block-start:10px}
 .account-nav-row>svg:first-child{color:var(--accent)}
 .account-nav-row>svg:last-child{inline-size:17px}
+
+/* ===================================================================== Ngôn ngữ (LNH-T21, LNH-T28, LNH-T29)
+   Chữ hiển thị nằm trong catalog ở kiểu chữ tự nhiên; nhãn nhỏ phía trên tiêu đề được viết hoa bằng CSS, và chỉ với hệ chữ có
+   chữ hoa (Latin, Kirin). Chữ Hán, kana, Hangul giữ nguyên, kể cả đoạn Latin lẫn trong câu (tên thương hiệu). */
+.eyebrow,.sidebar-caption{text-transform:uppercase}
+:lang(zh) .eyebrow,:lang(ja) .eyebrow,:lang(ko) .eyebrow,:lang(zh) .sidebar-caption,:lang(ja) .sidebar-caption,:lang(ko) .sidebar-caption{text-transform:none}
+/* Khung ẩn tới khi catalog của ngôn ngữ đang chọn nạp xong (app.js gỡ lớp này, muộn nhất sau 1,5 giây): không lóe chữ của
+   ngôn ngữ khác ở lần vẽ đầu. */
+.i18n-pending .shell,.i18n-pending .mobile-nav{visibility:hidden}
+/* Ô chọn ngôn ngữ: ở đầu hộp Cá nhân hóa và trên Thông báo đầu tiên. */
+.language-field label{display:flex;align-items:center;gap:8px;min-inline-size:0}
+.language-field label svg{inline-size:18px;block-size:18px;color:var(--accent)}
+.language-field label span{min-inline-size:0}
+/* Dòng báo «bản dịch máy, chưa rà soát» và phần đọc bản gốc tiếng Việt. */
+.draft-note{display:block;margin-block:8px;padding-inline-start:10px;border-inline-start:3px solid var(--gold);color:var(--text)}
+.field .draft-note{margin-block:2px 0}
+.notice-original{margin-block:4px 10px}
+.notice-original summary{min-block-size:44px;padding:13px 4px;font-size:.75rem;font-weight:600;color:var(--accent)}
+.notice-original div{font-size:.72rem;color:var(--muted);padding-inline-start:10px;border-inline-start:1px solid var(--line)}
+.notice-original p{margin-block:0 10px}
+.notice-original strong{color:var(--text)}
+/* Chân trang: chữ cố định và chữ của catalog nằm trong phần tử riêng, không nhận khoảng cách của dấu chấm ngăn. */
+.workspace-footer .footer-text{font-weight:inherit;margin:0}

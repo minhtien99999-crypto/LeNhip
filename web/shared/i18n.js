@@ -11,6 +11,33 @@
 // - Giờ luôn 24 giờ HH:MM (LNH-T27). Thời lượng dựng từ NumberFormat đơn vị và ListFormat vì Node 22 chưa có
 //   Intl.DurationFormat. Số, ngày, thứ định dạng theo ngôn ngữ đang chọn (tag của catalog).
 // - Mọi bản không phải tiếng Việt là bản dịch máy chưa rà soát (draft: true, T21).
+// - tParts() trả từng phần của thông điệp (chữ của bản dịch, giá trị tham số) để nơi gọi bọc tham số bằng HTML tin cậy của
+//   mình (<bdi>, chữ LeLe…) mà bản dịch vẫn là văn bản thuần. tSource() luôn đọc bản gốc tiếng Việt (văn bản đồng ý gốc,
+//   tiêu đề cố định của sự kiện lịch, LNH-T26). localizeStatic() điền chữ cho HTML tĩnh qua data-i18n và data-i18n-attr.
+//
+// QUY TẮC ĐẶT KHÓA (tests/i18n.test.ts kiểm phần máy kiểm được)
+// - Khóa phẳng có dấu chấm, `^[a-z][a-z0-9]*(\.[A-Za-z0-9_]+)+$`. Đoạn đầu là lớp rà soát: consent.* (pháp lý; thân văn bản được
+//   băm ở consent.<purpose_id>.body), health.* (câu về sức khỏe), state.* outcome.* reason.* grade.* (nhãn của MÃ hợp đồng, đoạn
+//   cuối là đúng mã đó), review.* (màn hình quyết định), error.<CODE>[.<DETAIL_CODE>], lele.* (lele.answer.<ANSWER_CODE>),
+//   nav.* (nhãn điều hướng: tối đa 12 ký tự với chữ Latin và Kirin, 6 với chữ Hán, kana, Hangul), settings.*, common.*, và
+//   theo màn hình: home.*, work.*, house.*, shell.*, theme.<id>.name. Các phần dùng cùng lớp sau tiền tố của mình
+//   (msg.error.<CODE>, social.state.<CODE>, msg.consent.messaging.body).
+// - Một khóa là một câu trọn vẹn có {tham_số}; không ghép câu từ nhiều khóa. Chỗ có số đếm dùng nhánh số nhiều với `n`.
+//
+// HƯỚNG DẪN CHO NGƯỜI DỊCH (một ngôn ngữ = i18n-<file>.js và ba phần -msg, -social, -dev; bản gốc là i18n-vi*.js)
+// - Giọng văn: câu ngắn, lịch sự, trung tính, nói thẳng với người dùng; viết hoa kiểu câu thường (nhãn nhỏ do CSS viết hoa).
+//   Nhãn dài tối đa 2 lần, đoạn văn 1,5 lần bản tiếng Việt.
+// - Không dịch: LeNhip, LeLe, LeDB, LeTRON, LeASO, Le-ORION, Microsoft 365, HealthKit, Health Connect, HealthSource, LNH-SLEEP-1,
+//   OIDC, Outlook, Titanium, tên header, mã (UNKNOWN…). `brand.name` và `calendar.title.PERSONAL_TIME` giữ nguyên như bản tiếng
+//   Việt; tiêu đề lịch «Thời gian cá nhân» nhắc trong câu cũng giữ nguyên tiếng Việt (LNH-T26).
+// - Tham số: giữ đúng tên trong ngoặc nhọn, dùng đủ, được đổi thứ tự. Nhánh số nhiều: đúng và đủ các loại CLDR của ngôn ngữ
+//   mình (Intl.PluralRules), nhánh `other` có đủ tham số. Không HTML, không thực thể, không ký tự ẩn hay ký tự điều khiển hướng
+//   chữ; dạng NFC; chỉ xuống dòng ở chỗ bản gốc xuống dòng. Giờ, số, ngày do runtime định dạng: không viết sẵn trong câu.
+// - Nghĩa phải giữ: state.UNKNOWN là «chưa xác minh», không bao giờ thành «thất bại» hay «đã xong»; health.* trung tính, không
+//   chẩn đoán, không khuyên điều trị; consent.* dịch sát. Sửa một consent.*.body hoặc consent.notice.head thì đổi phiên bản ở
+//   CONSENT_TEXT_VERSIONS (shared/consent-text.js) rồi chạy `node scripts/make-consent-texts.ts`.
+// - lele.example.* phải là câu lệnh mà bảng từ của chính ngôn ngữ đó nhận ra (shared/lele-lex-<file>.js).
+// - Kiểm riêng ngôn ngữ của mình: LENHIP_I18N_ONLY=<tag> node --test tests/i18n.test.ts tests/i18n-runtime.test.ts tests/lele-i18n.test.ts
 import viCore from "./i18n-vi.js";
 import viMsg from "./i18n-vi-msg.js";
 import viSocial from "./i18n-vi-social.js";
@@ -61,6 +88,8 @@ const BY_LANGUAGE = new Map(LOCALES.filter((l) => !l.tag.includes("-")).map((l) 
 
 /** @type {Map<string, Catalog>} */
 const catalogs = new Map([[SOURCE_LOCALE, /** @type {Catalog} */ ({ ...viCore, ...viMsg, ...viSocial, ...viDev })]]);
+/** Phần catalog đã nạp được của từng ngôn ngữ ("core", "msg"…); phần thiếu đang lùi về tiếng Việt. @type {Map<string, Set<string>>} */
+const loadedParts = new Map([[SOURCE_LOCALE, new Set(["core", ...PARTS])]]);
 /** @type {Map<string, Promise<void>>} */
 const loading = new Map();
 /** @type {Set<string>} */
@@ -146,6 +175,8 @@ export async function loadLocale(tag, loaders = LOADERS) {
     const merged = {};
     /** @type {string[]} */
     const missing = [];
+    /** @type {Set<string>} */
+    const got = new Set();
     await Promise.all(["core", ...PARTS].map(async (part) => {
       const file = `i18n-${info.file}${part === "core" ? "" : "-" + part}.js`;
       try {
@@ -154,12 +185,14 @@ export async function loadLocale(tag, loaders = LOADERS) {
         const data = (await load()).default;
         if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("không phải đối tượng");
         Object.assign(merged, data);
+        got.add(part);
       } catch {
         missing.push(file);
       }
     }));
     if (missing.length) warnOnce("load:" + info.tag, `i18n: chưa nạp được ${missing.sort().join(", ")}; các phần này dùng bản tiếng Việt.`);
     catalogs.set(info.tag, merged);
+    loadedParts.set(info.tag, got);
   })();
   if (loaders !== LOADERS) return job;
   loading.set(info.tag, job);
@@ -186,6 +219,15 @@ export function getLocale() {
 }
 
 /**
+ * Ngôn ngữ này đã nạp được phần catalog đó chưa. Chưa nạp (hoặc tệp chưa có) thì các khóa của phần ấy đang hiện bằng tiếng Việt.
+ * @param {string} tag
+ * @param {string} [part] "core" hoặc một phần trong PARTS
+ */
+export function hasCatalog(tag, part = "core") {
+  return loadedParts.get(tag)?.has(part) === true;
+}
+
+/**
  * Khởi động: `pref` là thiết lập đã lưu ("auto" hoặc tag); "auto" thì theo trình duyệt (LNH-T29).
  * @param {unknown} [pref]
  * @param {readonly unknown[] | string | null} [requested] mặc định navigator.languages
@@ -195,9 +237,9 @@ export async function initI18n(pref = "auto", requested) {
   return setLocale(resolveLocale(pref, requested ?? nav?.languages ?? nav?.language));
 }
 
-/** @param {string} key @returns {{ tag: string, message: Message } | null} */
-function lookup(key) {
-  for (const tag of active === SOURCE_LOCALE ? [SOURCE_LOCALE] : [active, SOURCE_LOCALE]) {
+/** @param {string} key @param {readonly string[]} [tags] thứ tự tra @returns {{ tag: string, message: Message } | null} */
+function lookup(key, tags = active === SOURCE_LOCALE ? [SOURCE_LOCALE] : [active, SOURCE_LOCALE]) {
+  for (const tag of tags) {
     const catalog = catalogs.get(tag);
     if (catalog && Object.hasOwn(catalog, key)) return { tag, message: catalog[key] };
   }
@@ -207,6 +249,20 @@ function lookup(key) {
 /** Có khóa này trong ngôn ngữ đang chọn hoặc trong bản gốc không. @param {string} key */
 export function hasMessage(key) {
   return lookup(key) !== null;
+}
+
+/** Bản gốc tiếng Việt có khóa này không (bất kể ngôn ngữ đang chọn). @param {string} key */
+export function hasSourceMessage(key) {
+  return lookup(key, [SOURCE_LOCALE]) !== null;
+}
+
+/**
+ * Tag của catalog đang cung cấp khóa này: ngôn ngữ đang chọn, hoặc "vi" khi khóa thiếu ở đó; null khi không đâu có.
+ * Văn bản đồng ý dùng hàm này để ghi đúng phiên bản của văn bản thật sự hiện ra (LNH-T25).
+ * @param {string} key
+ */
+export function messageLocale(key) {
+  return lookup(key)?.tag ?? null;
 }
 
 /** @type {Map<string, Intl.PluralRules>} */
@@ -238,17 +294,15 @@ function dateFormat(tag, options) {
   return f;
 }
 
+/** @typedef {{ type: "text", value: string } | { type: "param", name: string, value: string }} MessagePart */
+
 /**
- * Văn bản thuần của một khóa. Số trong tham số được định dạng theo ngôn ngữ của thông điệp; muốn giữ nguyên thì truyền chuỗi.
+ * @param {{ tag: string, message: Message }} found
  * @param {string} key
- * @param {Params} [params] thông điệp số nhiều cần `n` là số
+ * @param {Params} [params]
+ * @returns {MessagePart[]}
  */
-export function t(key, params) {
-  const found = lookup(key);
-  if (!found) {
-    warnOnce("key:" + key, `i18n: thiếu khóa ${key}`);
-    return key;
-  }
+function partsOf(found, key, params) {
   let text;
   if (typeof found.message === "string") {
     text = found.message;
@@ -259,11 +313,65 @@ export function t(key, params) {
     if (typeof branch !== "string") throw new Error(`i18n: khóa ${key} thiếu nhánh other`);
     text = branch;
   }
-  return text.replace(PLACEHOLDER, (_, /** @type {string} */ name) => {
+  /** @type {MessagePart[]} */
+  const parts = [];
+  let last = 0;
+  for (const m of text.matchAll(PLACEHOLDER)) {
+    const name = m[1];
     const value = params && Object.hasOwn(params, name) ? params[name] : undefined;
     if (value === undefined || value === null) throw new Error(`i18n: thiếu tham số {${name}} của khóa ${key}`);
-    return typeof value === "number" ? numberFormat(found.tag, undefined).format(value) : String(value);
-  });
+    if (m.index > last) parts.push({ type: "text", value: text.slice(last, m.index) });
+    parts.push({ type: "param", name, value: typeof value === "number" ? numberFormat(found.tag, undefined).format(value) : String(value) });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ type: "text", value: text.slice(last) });
+  return parts;
+}
+
+/**
+ * Các phần của một thông điệp theo thứ tự của bản dịch: chữ của bản dịch (`text`) và giá trị tham số (`param`, kèm tên).
+ * Nơi gọi dùng để chèn HTML tin cậy của mình vào chỗ một tham số (tên từ dữ liệu trong <bdi>, chữ LeLe, đoạn tiếng Việt có
+ * lang="vi") hoặc để định kiểu riêng phần đơn vị; phần `text` vẫn phải được thoát ký tự khi ghép vào HTML.
+ * Thiếu khóa: một phần `text` là chính khóa (và cảnh báo một lần), như t().
+ * @param {string} key
+ * @param {Params} [params]
+ * @returns {MessagePart[]}
+ */
+export function tParts(key, params) {
+  const found = lookup(key);
+  if (!found) {
+    warnOnce("key:" + key, `i18n: thiếu khóa ${key}`);
+    return [{ type: "text", value: key }];
+  }
+  return partsOf(found, key, params);
+}
+
+/**
+ * Văn bản thuần của một khóa. Số trong tham số được định dạng theo ngôn ngữ của thông điệp; muốn giữ nguyên thì truyền chuỗi.
+ * @param {string} key
+ * @param {Params} [params] thông điệp số nhiều cần `n` là số
+ */
+export function t(key, params) {
+  let out = "";
+  for (const part of tParts(key, params)) out += part.value;
+  return out;
+}
+
+/**
+ * Như t() nhưng luôn đọc bản gốc tiếng Việt, bất kể ngôn ngữ đang chọn: văn bản đồng ý gốc đặt cạnh bản dịch (LNH-T21) và
+ * tiêu đề cố định mà máy chủ ghi vào lịch (LNH-T26). Nơi hiển thị đặt lang="vi" cho đoạn này.
+ * @param {string} key
+ * @param {Params} [params]
+ */
+export function tSource(key, params) {
+  const found = lookup(key, [SOURCE_LOCALE]);
+  if (!found) {
+    warnOnce("key:" + key, `i18n: thiếu khóa ${key}`);
+    return key;
+  }
+  let out = "";
+  for (const part of partsOf(found, key, params)) out += part.value;
+  return out;
 }
 
 /** @param {number | bigint} value @param {Intl.NumberFormatOptions} [options] */
@@ -309,6 +417,26 @@ export function formatWeekday(value, style = "long", timeZone) {
   return dateFormat(active, { weekday: style, timeZone: calendar ? "UTC" : timeZone }).format(date);
 }
 
+/** Ngày Chủ nhật 2026-11-15 và sáu ngày kế tiếp: đủ bảy thứ để xét tên hẹp của một ngôn ngữ có trùng nhau không. */
+const WEEK_PROBE = [15, 16, 17, 18, 19, 20, 21].map((day) => new Date(Date.UTC(2026, 10, day)));
+/** @type {Map<string, "narrow" | "short">} */
+const compactStyle = new Map();
+/**
+ * Tên thứ gọn cho nhãn cột biểu đồ. Dùng dạng hẹp khi bảy tên hẹp của ngôn ngữ khác nhau từng đôi (tiếng Việt «CN, T2…T7»,
+ * tiếng Nhật «日, 月…»); ngôn ngữ có tên hẹp trùng nhau (tiếng Anh «S M T W T F S») thì dùng dạng ngắn («Sun, Mon…»).
+ * @param {Date | number | string} value thời điểm hoặc ngày theo lịch "YYYY-MM-DD"
+ * @param {string} [timeZone] múi IANA cho thời điểm
+ */
+export function formatWeekdayCompact(value, timeZone) {
+  let style = compactStyle.get(active);
+  if (!style) {
+    const narrow = dateFormat(active, { weekday: "narrow", timeZone: "UTC" });
+    style = new Set(WEEK_PROBE.map((d) => narrow.format(d))).size === 7 ? "narrow" : "short";
+    compactStyle.set(active, style);
+  }
+  return formatWeekday(value, style, timeZone);
+}
+
 /**
  * Giờ luôn ở dạng 24 giờ HH:MM, không phụ thuộc ngôn ngữ (LNH-T27).
  * @param {Date | number | string} value thời điểm
@@ -334,6 +462,43 @@ export function formatList(items, options = { type: "conjunction", style: "long"
   return f.format(items);
 }
 
+/** @typedef {{ type: "number" | "unit" | "literal", value: string }} DurationPart */
+
+/**
+ * Thời lượng từ số phút ở dạng từng phần: số, đơn vị, và chữ nối (khoảng trắng, dấu phẩy của danh sách). Giao diện dùng để
+ * định kiểu riêng phần đơn vị mà không phải đọc lại chuỗi đã định dạng. Ghép mọi `value` lại đúng bằng formatDuration().
+ * @param {number} minutes làm tròn tới phút; phải ≥ 0
+ * @param {{ unit?: "long" | "short" | "narrow", list?: "long" | "short" | "narrow" }} [o]
+ * @returns {DurationPart[]}
+ */
+export function formatDurationParts(minutes, o = {}) {
+  if (typeof minutes !== "number" || !Number.isFinite(minutes) || minutes < 0) throw new RangeError("i18n: thời lượng phải là số phút không âm");
+  const total = Math.round(minutes);
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  const unitDisplay = o.unit ?? "short";
+  /** @type {Intl.NumberFormatPart[][]} */
+  const pieces = [];
+  if (hours > 0) pieces.push(numberFormat(active, { style: "unit", unit: "hour", unitDisplay }).formatToParts(hours));
+  if (rest > 0 || hours === 0) pieces.push(numberFormat(active, { style: "unit", unit: "minute", unitDisplay }).formatToParts(rest));
+  const listOptions = /** @type {Intl.ListFormatOptions} */ ({ type: "unit", style: o.list ?? "narrow" });
+  const id = active + "|" + JSON.stringify(listOptions);
+  let list = listCache.get(id);
+  if (!list) listCache.set(id, (list = new Intl.ListFormat(active, listOptions)));
+  /** @type {DurationPart[]} */
+  const out = [];
+  let index = 0;
+  // Phần tử của danh sách chỉ để giữ chỗ; mỗi chỗ được thay bằng các phần của số có đơn vị tương ứng.
+  for (const part of list.formatToParts(pieces.map((_, i) => String(i)))) {
+    if (part.type !== "element") {
+      out.push({ type: "literal", value: part.value });
+      continue;
+    }
+    for (const p of pieces[index++]) out.push({ type: p.type === "unit" ? "unit" : p.type === "literal" ? "literal" : "number", value: p.value });
+  }
+  return out;
+}
+
 /**
  * Thời lượng từ số phút: giờ và phút, bỏ phần bằng 0 (0 phút vẫn in "0 phút"). Mặc định đơn vị ngắn, nối kiểu hẹp:
  * tiếng Việt "7 giờ 30 phút", tiếng Anh "7 hr 30 min".
@@ -341,14 +506,39 @@ export function formatList(items, options = { type: "conjunction", style: "long"
  * @param {{ unit?: "long" | "short" | "narrow", list?: "long" | "short" | "narrow" }} [o]
  */
 export function formatDuration(minutes, o = {}) {
-  if (typeof minutes !== "number" || !Number.isFinite(minutes) || minutes < 0) throw new RangeError("i18n: thời lượng phải là số phút không âm");
-  const total = Math.round(minutes);
-  const hours = Math.floor(total / 60);
-  const rest = total % 60;
-  const unitDisplay = o.unit ?? "short";
-  /** @type {string[]} */
-  const parts = [];
-  if (hours > 0) parts.push(numberFormat(active, { style: "unit", unit: "hour", unitDisplay }).format(hours));
-  if (rest > 0 || hours === 0) parts.push(numberFormat(active, { style: "unit", unit: "minute", unitDisplay }).format(rest));
-  return formatList(parts, { type: "unit", style: o.list ?? "narrow" });
+  let out = "";
+  for (const part of formatDurationParts(minutes, o)) out += part.value;
+  return out;
+}
+
+/** Chữ "Language" cố định đặt cạnh nhãn ô chọn ngôn ngữ, để người không đọc được ngôn ngữ đang hiện vẫn tìm ra ô này. */
+export const LANGUAGE_WORD = "Language";
+
+/** Thuộc tính mà data-i18n-attr được phép đặt: chỉ thuộc tính chứa văn bản, không bao giờ là địa chỉ hay mã. */
+const STATIC_ATTRIBUTES = new Set(["aria-label", "title", "placeholder", "alt", "content"]);
+
+/**
+ * Điền chữ cho HTML tĩnh (web/index.html) theo ngôn ngữ đang chọn:
+ *   <span data-i18n="khóa"></span>                         → textContent
+ *   <nav data-i18n-attr="aria-label:khóa; title:khóa2">    → setAttribute (chỉ aria-label, title, placeholder, alt, content)
+ * Gọi lại sau khi đổi ngôn ngữ. Không dùng innerHTML: bản dịch luôn là văn bản thuần.
+ * @param {{ querySelectorAll(selector: string): Iterable<{ getAttribute(name: string): string | null, setAttribute(name: string, value: string): void, textContent: string | null }> }} root document hoặc một phần tử
+ * @param {(key: string) => string} [translate] mặc định t()
+ */
+export function localizeStatic(root, translate = t) {
+  for (const el of root.querySelectorAll("[data-i18n]")) {
+    const text = translate(String(el.getAttribute("data-i18n")));
+    if (el.textContent !== text) el.textContent = text;
+  }
+  for (const el of root.querySelectorAll("[data-i18n-attr]")) {
+    for (const pair of String(el.getAttribute("data-i18n-attr")).split(";")) {
+      if (!pair.trim()) continue;
+      const cut = pair.indexOf(":");
+      const attr = pair.slice(0, cut).trim();
+      const key = pair.slice(cut + 1).trim();
+      if (cut < 1 || !key || !STATIC_ATTRIBUTES.has(attr)) throw new Error(`i18n: data-i18n-attr không hợp lệ: ${pair.trim().slice(0, 80)}`);
+      const text = translate(key);
+      if (el.getAttribute(attr) !== text) el.setAttribute(attr, text);
+    }
+  }
 }

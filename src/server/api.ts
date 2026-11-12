@@ -108,7 +108,7 @@ async function availability(c: Call): Promise<Stored> {
   const s = parseInstant(start);
   const e = parseInstant(end);
   if (!start.endsWith("Z") || !end.endsWith("Z") || Number.isNaN(s) || Number.isNaN(e) || e <= s) throw new ApiError(400, "SCHEMA_INVALID");
-  if (e - s > ctx.config.calendar.horizonDays * 86_400_000) throw new ApiError(400, "SCHEMA_INVALID", { detail: "Cửa sổ tối đa 14 ngày." });
+  if (e - s > ctx.config.calendar.horizonDays * 86_400_000) throw new ApiError(400, "SCHEMA_INVALID", { detail: "Cửa sổ tối đa 14 ngày.", extra: { detail_code: "WINDOW_TOO_LONG", limit: ctx.config.calendar.horizonDays } });
   if (!activeGrant(ctx, c.ws, c.p.sub, "calendar.block", null)) throw new ApiError(403, "FORBIDDEN");
   if (!consentGranted(ctx, c.ws, c.p.sub, "calendar_link")) throw new ApiError(403, "CONSENT_REQUIRED");
   if (!ctx.control.moduleOn("calendar")) throw new ApiError(503, "MODULE_DISABLED");
@@ -317,6 +317,14 @@ export const CORE_ROUTES: Route[] = [
       requireMember(ctx, c.ws, c.p.sub);
       if (!ctx.control.moduleOn("lele")) throw new ApiError(503, "MODULE_DISABLED");
       const b = c.body as { text: string; context: "work" | "home"; zone: string };
+      // Phép chặn dùng chung với thiết bị chạy trước mọi tra cứu (LNH-T24): câu có từ sức khỏe hoặc dữ liệu cá nhân của bất kỳ
+      // ngôn ngữ nào được trả lời bằng mã ngay tại đây. Câu chữ không được ghi vào sổ, log hay bảng nào: nhật ký chỉ giữ
+      // {type, engine}, bảng idem_keys giữ mã băm của yêu cầu và phản hồi (phản hồi không chứa câu của người dùng).
+      const screened = c.d.gateway.screen(b.text);
+      if (screened) {
+        audit(ctx.db, nowIso(ctx), { workspace_id: c.ws, actor: c.p.sub, action: "lele.propose", request_id: c.requestId, data: { type: screened.type, engine: screened.engine } });
+        return { status: 200, body: screened, resource: { type: "lele", id: c.requestId } };
+      }
       const devs = all<{ site: string; device_ref: string; name: string }>(ctx.db,
         "SELECT d.site_id AS site, d.device_ref, d.name FROM devices d JOIN grants g ON g.resource = d.site_id AND g.scope = 'home.control' AND g.status = 'ACTIVE' WHERE g.workspace_id = ? AND g.user_id = ? AND d.status = 'ACTIVE'",
         c.ws, c.p.sub);
@@ -504,7 +512,7 @@ export function createHandler(d: ApiDeps) {
       const params = Object.fromEntries(route.keys.map((k, i) => [k, m[i + 1]]));
       const p = d.verifier.verify(req.headers.authorization, d.ctx.clock.now());
       const ws = String(req.headers["x-lenhip-workspace"] ?? "");
-      if (!/^ws_[a-z0-9_]{1,40}$/.test(ws)) throw new ApiError(400, "SCHEMA_INVALID", { detail: "Thiếu hoặc sai X-LeNhip-Workspace." });
+      if (!/^ws_[a-z0-9_]{1,40}$/.test(ws)) throw new ApiError(400, "SCHEMA_INVALID", { detail: "Thiếu hoặc sai X-LeNhip-Workspace.", extra: { detail_code: "WORKSPACE_HEADER" } });
       rateLimit(`u:${p.sub}`, d.ctx.clock.now());
       let body: unknown = undefined;
       if (method === "POST") {

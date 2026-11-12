@@ -302,6 +302,20 @@ export function sleepSentence(summary) {
   return `Trong ${summary.sleep_observed_days} ngày có dữ liệu, thời lượng ngủ trung bình là ${formatDuration(summary.sleep_average_seconds)}.`;
 }
 
+/**
+ * Cùng câu trung tính với sleepSentence() ở dạng khóa catalog + tham số, để giao diện dựng câu theo ngôn ngữ đang chọn
+ * (LNH-T22) mà không phân tích lại câu tiếng Việt. Điều kiện chọn câu giống hệt sleepSentence(); `durationMinutes` là thời
+ * lượng trung bình đã làm tròn xuống phút như formatDuration(), null khi chưa đủ ngày. Thuật toán LNH-SLEEP-1 không đổi.
+ * @param {{ sleep_observed_days: number, sleep_average_seconds: number | null }} summary
+ * @returns {{ key: string, params: Record<string, number>, durationMinutes: number | null }}
+ */
+export function sleepMessage(summary) {
+  if (summary.sleep_average_seconds === null) {
+    return { key: "health.sleep.sentence.insufficient", params: { n: summary.sleep_observed_days, total: COMPLETED_DAYS, min: MIN_OBSERVED_DAYS }, durationMinutes: null };
+  }
+  return { key: "health.sleep.sentence.average", params: { n: summary.sleep_observed_days }, durationMinutes: Math.floor(summary.sleep_average_seconds / 60) };
+}
+
 /** @param {number} seconds */
 export function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);
