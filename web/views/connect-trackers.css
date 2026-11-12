@@ -1,3 +1,92 @@
-/* Kiểu riêng của phần Thiết bị theo dõi (web/views/connect-trackers.js). Viết ở đây, không sửa styles.css.
+/* Kiểu riêng của phần Thiết bị theo dõi (web/views/connect-trackers.js, LNH-T52..LNH-T56). Viết ở đây, không sửa styles.css.
    Quy ước: token màu của phong cách, thuộc tính logic (inline/block), mốc 700/701, 1180/1181, 1500 px, và đặt mọi bộ chọn dưới
-   .connect-section[data-section=trackers] hoặc một lớp có tiền tố tracker-. */
+   .connect-section[data-section=trackers] hoặc một lớp có tiền tố tracker-. Vùng bấm tối thiểu 44 px. Không màu cứng. */
+
+/* Phần này nhiều nội dung hơn hai phần kia nên chiếm trọn một hàng của lưới Kết nối. */
+.connect-section[data-section=trackers]{grid-column:1/-1;min-inline-size:0}
+.connect-section[data-section=trackers] .section-heading{flex-wrap:wrap}
+.connect-section[data-section=trackers] p{margin-block:0 10px}
+/* Chữ nhỏ của phần này dùng màu chữ chính, phân cấp bằng cỡ chữ: --muted trên --surface-soft chỉ đạt tương phản 3,9–4,1 ở
+   orbit, calm và flow, dưới mức 4,5 cho chữ nhỏ. Các lớp dùng chung giữ nguyên hình dạng, chỉ đổi màu chữ trong phần này. */
+.connect-section[data-section=trackers] :is(.fine-print,.tiny-pill,.status-chip.muted,.stat-label){color:var(--text)}
+.tracker-lead{margin-block:12px 8px;font-size:.78rem;color:var(--text)}
+.tracker-lead svg{color:var(--accent)}
+
+/* Ba thẻ: một cột trên điện thoại và ở cỡ chữ lớn, ba cột khi đủ chỗ. */
+.tracker-cards{display:grid;gap:14px;margin-block:16px 22px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media(min-width:701px){body:not(.large-text) .tracker-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1181px){body:not(.large-text) .tracker-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tracker-card{min-inline-size:0;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);padding:18px;font-size:.8rem}
+.tracker-card-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin-block-end:10px}
+.tracker-card h3{display:flex;align-items:center;gap:10px;margin:0;font-size:.95rem;min-inline-size:0;outline-offset:4px}
+.tracker-card h3 svg{color:var(--accent)}
+.tracker-card .fine-print{font-size:.72rem}
+.tracker-list{margin:0 0 10px;padding-inline-start:18px;display:grid;gap:6px;color:var(--text);font-size:.74rem}
+.tracker-list li::marker{color:var(--accent)}
+
+/* Dòng trạng thái của thẻ (role=status): luôn có trong trang, chỉ chiếm chỗ khi có chữ. */
+.tracker-status{margin:0;padding:10px 12px;border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--surface);color:var(--text);font-size:.76rem}
+.tracker-status:empty{display:none}
+.tracker-status:not(:empty){margin-block:10px}
+.tracker-note{color:var(--text);font-size:.78rem}
+.tracker-body{display:grid;gap:10px;justify-items:start;min-inline-size:0}
+.tracker-body>*{max-inline-size:100%;min-inline-size:0}
+.tracker-body .button{min-block-size:46px}
+.tracker-body .button-row{margin-block-start:4px}
+.tracker-body p{margin:0}
+
+/* Nhịp tim trực tiếp: một ô số liệu (số lớn, đơn vị nhỏ) và đường vẽ 60 giây. Chữ dùng màu chữ, chỉ nét vẽ dùng màu nhấn. */
+.tracker-live{display:grid;gap:8px;inline-size:100%;justify-items:start}
+.tracker-live-value{font-size:2.4rem;font-weight:750;line-height:1.1;letter-spacing:-.6px;color:var(--text);overflow-wrap:break-word}
+.tracker-live-value small{font-size:.78rem;font-weight:500;letter-spacing:0;color:var(--text)}
+svg.tracker-trace{display:block;inline-size:100%;block-size:auto;aspect-ratio:240/64;max-block-size:120px;stroke:none;fill:none;border-radius:10px;background:var(--surface)}
+svg.tracker-trace polyline{stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;fill:none;vector-effect:non-scaling-stroke}
+svg.tracker-trace circle{fill:var(--accent);stroke:var(--surface);stroke-width:2;vector-effect:non-scaling-stroke}
+svg.tracker-trace .tracker-trace-base{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+
+/* Nhập tệp */
+.tracker-file{inline-size:100%;margin:0}
+.tracker-file input[type=file]{min-block-size:48px;padding:8px;background:var(--surface);cursor:pointer;max-inline-size:100%}
+.tracker-file input[type=file]::file-selector-button{font:inherit;font-weight:650;font-size:.76rem;min-block-size:32px;margin-inline-end:10px;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);cursor:pointer}
+.tracker-progress{inline-size:100%;block-size:12px;accent-color:var(--accent)}
+.tracker-sources{inline-size:100%;margin:0;padding:0;border:0;display:grid;gap:8px;min-inline-size:0}
+.tracker-sources legend{padding:0;margin-block-end:8px;font-weight:650;font-size:.78rem}
+.tracker-source{display:flex;align-items:flex-start;gap:12px;min-block-size:48px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.tracker-source:has(input:checked){border-color:var(--accent)}
+.tracker-source:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:3px}
+.tracker-source input{inline-size:22px;block-size:22px;margin:2px 0 0;accent-color:var(--accent);flex-shrink:0}
+.tracker-source span{display:grid;gap:2px;min-inline-size:0}
+.tracker-source small{color:var(--text);font-size:.7rem}
+.tracker-imported{display:grid;gap:10px;inline-size:100%;justify-items:start}
+.tracker-active{display:flex;align-items:flex-start;gap:8px;font-weight:650;color:var(--text)}
+.tracker-active svg{color:var(--accent);inline-size:18px;block-size:18px;margin-block-start:2px}
+.tracker-facts{margin:0;display:grid;gap:8px;inline-size:100%}
+.tracker-facts div{display:grid;gap:2px;padding-block-end:8px;border-block-end:1px solid var(--line)}
+.tracker-facts div:last-child{border-block-end:0;padding-block-end:0}
+.tracker-facts dt{color:var(--text);font-size:.68rem;font-weight:650}
+.tracker-facts dd{margin:0;font-size:.8rem}
+
+/* Danh mục theo đường kết nối */
+.tracker-subtitle{margin-block:0 6px;font-size:.95rem}
+.tracker-group{border:1px solid var(--line);border-radius:14px;margin-block-start:10px;background:var(--surface)}
+.tracker-group summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-block-size:48px;padding:10px 16px;cursor:pointer;font-weight:650;font-size:.85rem;border-radius:14px}
+.tracker-group summary::marker{content:""}
+.tracker-group summary::-webkit-details-marker{display:none}
+.tracker-group summary::before{content:"";inline-size:8px;block-size:8px;border-inline-end:2px solid var(--accent);border-block-end:2px solid var(--accent);transform:rotate(-45deg);flex-shrink:0;transition:transform .2s}
+.tracker-group[open] summary::before{transform:rotate(45deg)}
+.tracker-group-name{flex:1;min-inline-size:0}
+.tracker-group>.fine-print{margin:0;padding:0 16px 10px}
+.tracker-rows{list-style:none;margin:0;padding:0 16px 8px;display:grid;gap:0}
+@media(min-width:1181px){body:not(.large-text) .tracker-rows{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}}
+.tracker-row{display:grid;gap:4px;padding-block:12px;border-block-start:1px solid var(--line);min-inline-size:0;align-content:start}
+.tracker-row-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.tracker-row-head strong{font-size:.82rem;min-inline-size:0}
+.tracker-row-what{font-size:.76rem}
+.tracker-row .fine-print{font-size:.7rem}
+
+@media(max-width:700px){
+  .tracker-card{padding:16px}
+  .tracker-live-value{font-size:2.1rem}
+  .tracker-body .button-row .button{flex:1 1 100%}
+}
+.large-text .tracker-body .button-row .button{flex:1 1 100%}

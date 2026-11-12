@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE HealthData [
+<!-- DỮ LIỆU TỔNG HỢP cho kiểm thử LeNhip (LNH-T55). Không phải tệp xuất của người thật; mọi tên nguồn là tên bịa. -->
+<!ELEMENT HealthData (ExportDate,Me,(Record|Correlation|Workout|ActivitySummary)*)>
+<!ATTLIST HealthData
+  locale CDATA #REQUIRED
+>
+<!ELEMENT Record (MetadataEntry*)>
+<!ATTLIST Record
+  type          CDATA #REQUIRED
+  unit          CDATA #IMPLIED
+  value         CDATA #IMPLIED
+  sourceName    CDATA #REQUIRED
+  sourceVersion CDATA #IMPLIED
+  device        CDATA #IMPLIED
+  creationDate  CDATA #IMPLIED
+  startDate     CDATA #REQUIRED
+  endDate       CDATA #REQUIRED
+>
+<!ELEMENT MetadataEntry EMPTY>
+<!ATTLIST MetadataEntry
+  key   CDATA #REQUIRED
+  value CDATA #REQUIRED
+>
+]>
+<HealthData locale="vi_VN">
+ <ExportDate value="2026-11-11 10:00:00 +0700"/>
+ <Me HKCharacteristicTypeIdentifierBiologicalSex="HKBiologicalSexNotSet"/>
+
+ <!-- Nguồn A «Đồng hồ mẫu»: giấc ngủ có giai đoạn (giá trị mới) và bước chân -->
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" sourceVersion="11.0" device="&lt;&lt;HKDevice: 0x0&gt;, name:Đồng hồ mẫu, manufacturer:Hãng mẫu, model:Mẫu&gt;" creationDate="2026-11-09 06:35:00 +0700" startDate="2026-11-08 23:30:00 +0700" endDate="2026-11-09 06:30:00 +0700" value="HKCategoryValueSleepAnalysisAsleepUnspecified"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-09 13:30:00 +0700" startDate="2026-11-09 13:00:00 +0700" endDate="2026-11-09 13:25:00 +0700" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-10 07:15:00 +0700" startDate="2026-11-09 22:50:00 +0700" endDate="2026-11-10 07:10:00 +0700" value="HKCategoryValueSleepAnalysisInBed"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-10 07:15:00 +0700" startDate="2026-11-09 23:00:00 +0700" endDate="2026-11-10 01:00:00 +0700" value="HKCategoryValueSleepAnalysisAsleepCore">
+  <MetadataEntry key="HKTimeZone" value="Asia/Ho_Chi_Minh"/>
+ </Record>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-10 07:15:00 +0700" startDate="2026-11-10 01:00:00 +0700" endDate="2026-11-10 02:00:00 +0700" value="HKCategoryValueSleepAnalysisAsleepDeep"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-10 07:15:00 +0700" startDate="2026-11-10 02:00:00 +0700" endDate="2026-11-10 02:20:00 +0700" value="HKCategoryValueSleepAnalysisAwake"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-10 07:15:00 +0700" startDate="2026-11-10 02:20:00 +0700" endDate="2026-11-10 03:30:00 +0700" value="HKCategoryValueSleepAnalysisAsleepREM"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-10 07:15:00 +0700" startDate="2026-11-10 03:30:00 +0700" endDate="2026-11-10 06:40:00 +0700" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-11 05:50:00 +0700" startDate="2026-11-10 23:15:00 +0700" endDate="2026-11-11 05:45:00 +0700" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" creationDate="2026-11-07 23:35:00 +0700" startDate="2026-11-07 23:00:00 +0700" endDate="2026-11-07 23:30:00 +0700" value="HKCategoryValueSleepAnalysisSomethingNew"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-09 08:10:00 +0700" startDate="2026-11-09 08:00:00 +0700" endDate="2026-11-09 08:10:00 +0700" value="500"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-09 12:15:00 +0700" startDate="2026-11-09 12:00:00 +0700" endDate="2026-11-09 12:15:00 +0700" value="1500"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-10 00:05:00 +0700" startDate="2026-11-09 23:50:00 +0700" endDate="2026-11-10 00:05:00 +0700" value="300"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-10 09:10:00 +0700" startDate="2026-11-10 09:00:00 +0700" endDate="2026-11-10 09:10:00 +0700" value="812"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-10 18:20:00 +0700" startDate="2026-11-10 18:00:00 +0700" endDate="2026-11-10 18:20:00 +0700" value="2000"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-11 00:00:00 +0700" startDate="2026-11-10 23:45:00 +0700" endDate="2026-11-11 00:00:00 +0700" value="400"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-11 07:05:00 +0700" startDate="2026-11-11 07:00:00 +0700" endDate="2026-11-11 07:05:00 +0700" value="120"/>
+ <Record type="HKQuantityTypeIdentifierHeartRate" sourceName="Đồng hồ mẫu" unit="count/min" creationDate="2026-11-10 09:00:05 +0700" startDate="2026-11-10 09:00:00 +0700" endDate="2026-11-10 09:00:00 +0700" value="64"/>
+
+ <!-- Nguồn B «Điện thoại mẫu»: giá trị giấc ngủ kiểu cũ (InBed, Asleep) và bước chân trùng giờ với nguồn A -->
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Điện thoại mẫu" creationDate="2026-11-10 06:55:00 +0700" startDate="2026-11-09 22:40:00 +0700" endDate="2026-11-10 06:50:00 +0700" value="HKCategoryValueSleepAnalysisInBed"/>
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Điện thoại mẫu" creationDate="2026-11-10 06:55:00 +0700" startDate="2026-11-09 23:10:00 +0700" endDate="2026-11-10 06:10:00 +0700" value="HKCategoryValueSleepAnalysisAsleep"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Điện thoại mẫu" unit="count" creationDate="2026-11-09 10:30:00 +0700" startDate="2026-11-09 10:00:00 +0700" endDate="2026-11-09 10:30:00 +0700" value="1800"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Điện thoại mẫu" unit="count" creationDate="2026-11-10 09:10:00 +0700" startDate="2026-11-10 09:00:00 +0700" endDate="2026-11-10 09:10:00 +0700" value="700"/>
+
+ <!-- Nguồn C: tên có ký tự phải thoát, thuộc tính viết bằng nháy đơn; chỉ có bước chân -->
+ <Record type='HKQuantityTypeIdentifierStepCount' sourceName='Ứng dụng mẫu &amp; đo bước' unit='count' creationDate='2026-11-10 20:30:00 +0700' startDate='2026-11-10 20:00:00 +0700' endDate='2026-11-10 20:30:00 +0700' value='950'/>
+
+ <!-- Bản ghi phải bị bỏ: trước cửa sổ, ngày giờ sai dạng, ở tương lai, giá trị không nguyên -->
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-10-20 09:10:00 +0700" startDate="2026-10-20 09:00:00 +0700" endDate="2026-10-20 09:10:00 +0700" value="9999"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-11-10T09:00:00+07:00" endDate="2026-11-10T09:10:00+07:00" value="8888"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-12 09:10:00 +0700" startDate="2026-11-12 09:00:00 +0700" endDate="2026-11-12 09:10:00 +0700" value="7777"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" creationDate="2026-11-10 10:10:00 +0700" startDate="2026-11-10 10:00:00 +0700" endDate="2026-11-10 10:10:00 +0700" value="12.5"/>
+
+ <!-- Tên loại nằm trong giá trị của thẻ khác: không phải bản ghi -->
+ <Workout workoutActivityType="HKWorkoutActivityTypeWalking" duration="30" durationUnit="min" sourceName="Đồng hồ mẫu" startDate="2026-11-10 17:30:00 +0700" endDate="2026-11-10 18:00:00 +0700">
+  <MetadataEntry key="GhiChuMau" value="HKCategoryTypeIdentifierSleepAnalysis"/>
+  <MetadataEntry key="GhiChuMau2" value="HKQuantityTypeIdentifierStepCount"/>
+ </Workout>
+</HealthData>

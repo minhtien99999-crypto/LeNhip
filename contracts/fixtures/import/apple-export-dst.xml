@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DỮ LIỆU TỔNG HỢP cho kiểm thử LeNhip (LNH-T55): hai đêm đổi giờ của America/New_York năm 2026. Không phải tệp của người thật. -->
+<HealthData locale="en_US">
+ <ExportDate value="2026-11-03 10:00:00 -0500"/>
+ <!-- Đêm lùi giờ 31/10 → 01/11: 23:00 EDT tới 07:00 EST là 9 giờ thật -->
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" startDate="2026-10-31 23:00:00 -0400" endDate="2026-11-01 07:00:00 -0500" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-11-01 01:30:00 -0400" endDate="2026-11-01 01:40:00 -0400" value="100"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-11-01 01:30:00 -0500" endDate="2026-11-01 01:40:00 -0500" value="200"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-11-01 23:45:00 -0500" endDate="2026-11-02 00:00:00 -0500" value="300"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-11-01 23:55:00 -0500" endDate="2026-11-02 00:05:00 -0500" value="400"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-11-02 04:30:00 +0000" endDate="2026-11-02 04:40:00 +0000" value="50"/>
+ <!-- Đêm vặn giờ lên 07/03 → 08/03: 23:00 EST tới 07:00 EDT là 7 giờ thật -->
+ <Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Đồng hồ mẫu" startDate="2026-03-07 23:00:00 -0500" endDate="2026-03-08 07:00:00 -0400" value="HKCategoryValueSleepAnalysisAsleepCore"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-03-07 23:50:00 -0500" endDate="2026-03-08 00:00:00 -0500" value="30"/>
+ <Record type="HKQuantityTypeIdentifierStepCount" sourceName="Đồng hồ mẫu" unit="count" startDate="2026-03-08 03:10:00 -0400" endDate="2026-03-08 03:20:00 -0400" value="70"/>
+</HealthData>

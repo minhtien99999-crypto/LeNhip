@@ -1,0 +1,9 @@
+[
+  {"sleepStartTimestampGMT":"2026-11-09T15:28:00.0","sleepEndTimestampGMT":"2026-11-09T23:30:00.0","calendarDate":"2026-11-10","sleepWindowConfirmationType":"ENHANCED_CONFIRMED_FINAL","deepSleepSeconds":600,"lightSleepSeconds":19440,"remSleepSeconds":8460,"awakeSleepSeconds":420,"unmeasurableSeconds":0,"retro":false},
+  {"sleepStartTimestampGMT":"2026-11-08T16:00:00.0","sleepEndTimestampGMT":"2026-11-08T23:00:00.0","calendarDate":"2026-11-09","sleepWindowConfirmationType":"ENHANCED_CONFIRMED_FINAL","deepSleepSeconds":3600,"lightSleepSeconds":14400,"remSleepSeconds":5400,"awakeSleepSeconds":1800,"unmeasurableSeconds":0,"retro":false},
+  {"sleepStartTimestampGMT":"2026-11-07T16:00:00.0","sleepEndTimestampGMT":"2026-11-07T22:00:00.0","calendarDate":"2026-11-08","sleepWindowConfirmationType":"UNCONFIRMED","retro":false},
+  {"sleepStartTimestampGMT":"2026-11-06T16:00:00.0","sleepEndTimestampGMT":"2026-11-06T22:00:00.0","calendarDate":"2026-11-07","sleepWindowConfirmationType":"ENHANCED_CONFIRMED_FINAL","retro":false},
+  {"sleepStartTimestampGMT":"2019-08-04T20:28:00.0","sleepEndTimestampGMT":"2019-08-05T04:30:00.0","calendarDate":"2019-08-05","sleepWindowConfirmationType":"ENHANCED_CONFIRMED_FINAL","deepSleepSeconds":600,"lightSleepSeconds":19440,"remSleepSeconds":8460,"awakeSleepSeconds":420,"unmeasurableSeconds":0,"retro":false},
+  {"sleepStartTimestampGMT":"khong-ro","sleepEndTimestampGMT":"2026-11-05T22:00:00.0","calendarDate":"2026-11-06","sleepWindowConfirmationType":"ENHANCED_CONFIRMED_FINAL","deepSleepSeconds":600,"lightSleepSeconds":19440,"remSleepSeconds":8460,"awakeSleepSeconds":420,"retro":false},
+  {"calendarDate":"2026-11-04","note":"TỔNG HỢP: mục không có thời điểm ngủ"}
+]
