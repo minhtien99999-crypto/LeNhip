@@ -35,12 +35,27 @@ export function restoreLedgerFile(backupPath: string, ledgerPath: string) {
   copyFileSync(backupPath, ledgerPath);
 }
 
+/** Loại dòng của sổ thu hồi mà lõi tự nạp lại. Loại khác phải có mô-đun khai trong ServerModule.revocations. */
+export const CORE_REVOCATIONS: readonly string[] = ["grant_revoked", "consent_withdrawn", "binding_changed", "member_deleted"];
+
+/**
+ * Mô-đun ghi một dòng vào sổ thu hồi (mất một quyền, gỡ một thiết bị, chặn…) để restore không làm sống lại thứ đã thu hồi.
+ * Chỉ nhận loại dòng đã có bên nạp lại: một dòng không ai nạp lại được là một thu hồi sẽ mất sau restore.
+ */
+export function journalRevocation(ctx: Ctx, type: string, at: string, data: Record<string, unknown>) {
+  if (!CORE_REVOCATIONS.includes(type) && !ctx.modules.some((m) => m.revocations && Object.hasOwn(m.revocations, type))) {
+    throw new Error(`sổ thu hồi: loại ${type} chưa có bên nạp lại (ServerModule.revocations)`);
+  }
+  return ctx.revocations.append(type, at, data);
+}
+
 /** Bước 2b: nạp lại thu hồi và tombstone từ kho độc lập. Không ghi thêm vào kho đó (lặp lại an toàn). */
 export function applyRevocations(ctx: Ctx) {
   const { entries } = ctx.revocations.readAll();
   let applied = 0;
   tx(ctx.db, () => {
     for (const e of entries) {
+      // Phần của mô-đun chạy sau phần của lõi cho cùng dòng (cuối vòng lặp), theo đúng thứ tự của sổ.
       if (e.type === "grant_revoked") {
         const r = run(ctx.db, "UPDATE grants SET status = 'REVOKED', revoked_at = COALESCE(revoked_at, ?), revoked_by = COALESCE(revoked_by, 'recovery') WHERE id = ? AND status = 'ACTIVE'", e.at, e.grant as string);
         if (Number(r.changes)) {
@@ -67,8 +82,13 @@ export function applyRevocations(ctx: Ctx) {
         run(ctx.db, "UPDATE calendar_links SET status = 'UNLINKED', tenant_id = '-', object_id = '-' WHERE workspace_id = ? AND user_id = ?", e.workspace_id as string, e.user_id as string);
         if (Number(r.changes)) applied++;
       }
+      for (const m of ctx.modules) {
+        const replay = m.revocations && Object.hasOwn(m.revocations, e.type) ? m.revocations[e.type] : undefined;
+        if (replay?.(ctx, e)) applied++;
+      }
     }
     // Plan/action chưa claim của chủ thể bị thu hồi trở thành stale ở lần duyệt hoặc cấp permit kế tiếp (snapshot).
+    if (ctx.revocations.readAll().entries.length !== entries.length) throw new Error("nạp lại sổ thu hồi không được ghi thêm vào sổ đó");
   });
   return { entries: entries.length, applied };
 }

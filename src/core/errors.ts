@@ -33,6 +33,18 @@ export const MESSAGES: Record<string, string> = {
   INTERNAL: "Lỗi máy chủ.",
 };
 
+/**
+ * Mã lỗi do mô-đun đóng góp (ServerModule.errors trong src/server/modules.ts): mỗi mô-đun khai mã của mình trong tệp của nó, không
+ * sửa bảng MESSAGES ở trên. Đăng ký lặp lại cùng nội dung là hợp lệ (mỗi lần dựng app); cùng mã với nội dung khác là lỗi lập trình.
+ */
+export function registerMessages(codes: Record<string, string>) {
+  for (const [code, message] of Object.entries(codes)) {
+    if (!/^[A-Z][A-Z0-9_]{2,63}$/.test(code)) throw new Error(`mã lỗi không hợp lệ: ${code}`);
+    if (Object.hasOwn(MESSAGES, code) && MESSAGES[code] !== message) throw new Error(`mã lỗi ${code} đã có với nội dung khác`);
+    MESSAGES[code] = message;
+  }
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;

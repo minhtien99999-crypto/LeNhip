@@ -6,22 +6,26 @@ import { createPrivateKey, createPublicKey, randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { systemClock, type Clock } from "../core/clock.ts";
 import { generateEs256, type EcKeyPair } from "../core/crypto.ts";
-import { SchemaSet, type Schema } from "../core/schema.ts";
+import { SchemaSet } from "../core/schema.ts";
 import { CONFIG, type Ctx } from "./context.ts";
 import { ControlStore } from "./control.ts";
 import { AppendJournal } from "./journal.ts";
 import { openLedger } from "./store.ts";
+import { loadOpenApi } from "./openapi.ts";
 import { PermitIssuer, TrustStore } from "./permit.ts";
 import { Receiver, type DispatchAdapter } from "./receiver.ts";
+import type { ActionRow } from "./machine.ts";
 import { Dispatcher, type WorkerIdentity } from "./worker.ts";
 import { Reconciler } from "./reconciler.ts";
 import { Idempotency, purgeIdempotency } from "./idempotency.ts";
 import { purgeExports } from "./privacy.ts";
 import { LocalRulesProvider, ModelGateway, type ModelProvider } from "./lele.ts";
 import { DevIssuer, OidcVerifier } from "./auth.ts";
-import { createHandler, type Metrics } from "./api.ts";
-import { DEV_USERS, seedDemo, seedMocks } from "./seed.ts";
-import type { Kind } from "./authority.ts";
+import { CORE_ROUTES, createHandler, type Metrics } from "./api.ts";
+import { DEV_USERS, seedDemo, seedMocks, seedModuleFlags } from "./seed.ts";
+import { KINDS, ensureKindPolicies } from "./authority.ts";
+import { registerMessages } from "../core/errors.ts";
+import { MODULES, validateModules, type ServerModule } from "./modules.ts";
 import { MockGraph, type GraphClient } from "../adapters/graph-mock.ts";
 import { CalendarAdapter } from "../adapters/calendar.ts";
 import { MockMatterHub } from "../adapters/matter-mock.ts";
@@ -32,8 +36,8 @@ export const AUTHORITY_ISSUER = "https://authority.lenhip.ledb.internal";
 export const SIM_ISSUER = "https://sim-authority.lenhip.ledb.internal";
 export const API_AUDIENCE = "lenhip-api";
 
-const openapi = JSON.parse(readFileSync(new URL("../../contracts/openapi.json", import.meta.url), "utf8")) as { components: { schemas: Record<string, Schema> } };
-export const SCHEMAS = new SchemaSet(openapi.components.schemas);
+/** Schema của hợp đồng đã ghép (lõi + mảnh của mô-đun, xem openapi.ts): máy chủ kiểm thân yêu cầu bằng chính các schema này. */
+export const SCHEMAS = new SchemaSet(loadOpenApi().components.schemas);
 
 /** Khóa ký permit của bản tham chiếu: tệp 0600 trong thư mục dữ liệu. Môi trường thật dùng KMS (LNH-D06). */
 function loadKey(dir: string, name: string): EcKeyPair {
@@ -50,6 +54,24 @@ function loadKey(dir: string, name: string): EcKeyPair {
   return k;
 }
 
+/**
+ * Đích giả lập (KindSpec.trust "sim") chỉ được đưa ra bằng chứng hạng SIMULATED (LNH-T19, LNH-T44). Bằng chứng hạng khác từ một
+ * đích giả lập sẽ bị đọc như tác động thật, nên adapter bị chặn ngay tại đây: lần đọc trước I/O thành không dùng được, kết quả
+ * thực thi và lần đọc lại thành chưa xác định. Không có đường nào để một tác vụ mô phỏng kết thúc với bằng chứng không ghi mô phỏng.
+ */
+function simulatedOnly(adapter: DispatchAdapter): DispatchAdapter {
+  const check = <T extends object>(r: T): T => {
+    const grade = "evidence" in r ? (r.evidence as { grade?: string } | undefined)?.grade : undefined;
+    if (grade !== undefined && grade !== "SIMULATED") throw new Error(`đích giả lập ${adapter.kind} trả bằng chứng hạng ${grade}`);
+    return r;
+  };
+  return Object.assign(Object.create(adapter) as DispatchAdapter, {
+    precheck: async (row: ActionRow) => check(await adapter.precheck(row)),
+    execute: async (row: ActionRow) => check(await adapter.execute(row)),
+    readback: async (row: ActionRow) => check(await adapter.readback(row)),
+  });
+}
+
 export interface AppOptions {
   dataDir: string;
   clock?: Clock;
@@ -60,11 +82,18 @@ export interface AppOptions {
   oidc?: { issuer: string; audience: string; keys: Map<string, import("node:crypto").KeyObject> };
   provider?: ModelProvider;
   config?: Partial<typeof CONFIG>;
+  /** Mô-đun của app; mặc định là sổ đăng ký MODULES. Kiểm thử truyền mô-đun giả vào đây. */
+  modules?: readonly ServerModule[];
+  /** Thế giới bên ngoài giả lập của các mô-đun (KindSpec.adapter nhận nó); kiểm thử truyền lại để giữ qua khởi động lại. */
+  world?: Map<string, unknown>;
 }
 
 export function createApp(o: AppOptions) {
   mkdirSync(o.dataDir, { recursive: true });
   const clock = o.clock ?? systemClock;
+  const modules = o.modules ?? MODULES;
+  validateModules(modules, { routes: CORE_ROUTES, kinds: KINDS });
+  for (const m of modules) if (m.errors) registerMessages(m.errors);
   const ctx: Ctx = {
     db: openLedger(join(o.dataDir, "ledger.db")),
     clock,
@@ -72,8 +101,14 @@ export function createApp(o: AppOptions) {
     barrier: new AppendJournal(join(o.dataDir, "barrier.jsonl")),
     revocations: new AppendJournal(join(o.dataDir, "revocations.jsonl")),
     config: { ...CONFIG, ...(o.config ?? {}) },
+    modules,
   };
-  if (o.seed) seedDemo(ctx);
+  if (o.seed) {
+    seedDemo(ctx);
+    seedModuleFlags(ctx);
+  }
+  ensureKindPolicies(ctx);
+  if (o.seed) for (const m of modules) m.seed?.(ctx);
 
   const issuer = new PermitIssuer(AUTHORITY_ISSUER, loadKey(o.dataDir, "permit-key"));
   const simIssuer = new PermitIssuer(SIM_ISSUER, loadKey(o.dataDir, "sim-permit-key"));
@@ -89,13 +124,26 @@ export function createApp(o: AppOptions) {
   const calendar = new CalendarAdapter(ctx, graph);
   const site = new SiteGatewayAdapter(ctx, hubs);
   const robot = new RobotSimAdapter(ctx);
-  const adapters = new Map<Kind, DispatchAdapter>([["calendar.block", calendar], ["device.set_power", site], ["robot.simulate", robot]]);
-  const receivers = new Map<Kind, Receiver>([
+  const adapters = new Map<string, DispatchAdapter>([["calendar.block", calendar], ["device.set_power", site], ["robot.simulate", robot]]);
+  const receivers = new Map<string, Receiver>([
     ["calendar.block", new Receiver(ctx, calendar, trust, AUTHORITY_ISSUER)],
     ["device.set_power", new Receiver(ctx, site, trust, AUTHORITY_ISSUER)],
     ["robot.simulate", new Receiver(ctx, robot, simTrust, SIM_ISSUER)],
   ]);
-  const issuers = new Map<Kind, PermitIssuer>([["calendar.block", issuer], ["device.set_power", issuer], ["robot.simulate", simIssuer]]);
+  const issuers = new Map<string, PermitIssuer>([["calendar.block", issuer], ["device.set_power", issuer], ["robot.simulate", simIssuer]]);
+  // Loại tác vụ của mô-đun: một lần khai, vào đủ cả ba bảng. Thiếu receiver hoặc issuer thì hàng outbox của loại đó không bao
+  // giờ được giao và chặn các loại khác; thiếu adapter thì reconciler không đọc lại, tác vụ cũng không bao giờ thành UNKNOWN.
+  const world = o.world ?? new Map<string, unknown>();
+  for (const m of modules) {
+    for (const k of m.kinds ?? []) {
+      const sim = k.trust === "sim";
+      const adapter = sim ? simulatedOnly(k.adapter(ctx, world)) : k.adapter(ctx, world);
+      if (adapter.kind !== k.kind) throw new Error(`mô-đun ${m.name}: adapter của ${k.kind} khai loại ${adapter.kind}`);
+      adapters.set(k.kind, adapter);
+      receivers.set(k.kind, new Receiver(ctx, adapter, sim ? simTrust : trust, sim ? SIM_ISSUER : AUTHORITY_ISSUER));
+      issuers.set(k.kind, sim ? simIssuer : issuer);
+    }
+  }
 
   // Chứng chỉ mTLS của worker: bản tham chiếu giữ một chuỗi byte cố định làm "DER" để tính x5t#S256; môi trường thật lấy từ
   // tlsSocket.getPeerCertificate().raw (LNH-D06).
@@ -112,7 +160,7 @@ export function createApp(o: AppOptions) {
   const metrics: Metrics = { requests: 0, recent: [], policyDenials: 0 };
   const handle = createHandler({
     ctx, schemas: SCHEMAS, idem, verifier, dev, devUsers: DEV_USERS.map((u) => ({ sub: u.sub, name: u.name })), gateway, calendar, metrics,
-    dispatched: () => dispatcher.dispatched, webRoot: new URL("../../web/", import.meta.url),
+    dispatched: () => dispatcher.dispatched, webRoot: new URL("../../web/", import.meta.url), modules,
   });
 
   let running = false;
@@ -131,6 +179,17 @@ export function createApp(o: AppOptions) {
       purgeIdempotency(ctx);
       purgeExports(ctx);
       errorRateBreaker();
+      // Việc định kỳ của mô-đun chạy sau cùng: lỗi của một mô-đun không chặn phát lệnh, đối soát hay cầu dao ở trên, cũng không
+      // chặn mô-đun khác (ví dụ việc dọn dữ liệu hết hạn của nó). Lỗi vẫn được ném ra sau khi mọi mô-đun đã chạy.
+      const failed: unknown[] = [];
+      for (const m of modules) {
+        try {
+          await m.onTick?.(ctx, clock.now());
+        } catch (e) {
+          failed.push(e);
+        }
+      }
+      if (failed.length) throw failed.length === 1 ? failed[0] : new AggregateError(failed, "onTick của nhiều mô-đun lỗi");
     } finally {
       running = false;
     }
@@ -155,7 +214,7 @@ export function createApp(o: AppOptions) {
     ctx.db.close();
   }
 
-  return { ctx, issuer, simIssuer, trust, simTrust, graph, hubs, adapters, receivers, issuers, identity, dispatcher, reconciler, dev, verifier, idem, gateway, metrics, handle, tick, start, close };
+  return { ctx, issuer, simIssuer, trust, simTrust, graph, hubs, world, adapters, receivers, issuers, identity, dispatcher, reconciler, dev, verifier, idem, gateway, metrics, handle, tick, start, close };
 }
 
 export type App = ReturnType<typeof createApp>;

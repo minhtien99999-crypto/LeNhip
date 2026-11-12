@@ -7,14 +7,36 @@ import { type Ctx, nowIso } from "./context.ts";
 import { apply, type ActionRow } from "./machine.ts";
 import { all, audit, one, run, tx } from "./store.ts";
 import type { ModuleName } from "./control.ts";
+import type { KindSpec } from "./modules.ts";
 
+/** Ba loại tác vụ của lõi. Loại do mô-đun khai (KindSpec trong modules.ts) là chuỗi khác, tra bằng kindRule(). */
 export type Kind = "calendar.block" | "device.set_power" | "robot.simulate";
-export type Purpose = "calendar_link" | "home_control" | "beta_telemetry";
+/** Mục đích đồng ý có xử lý phía máy chủ. Hai mục cuối thêm ở V1.0.0 (LNH-T36, LNH-T45), bảng consents nhận chúng từ migration 0002. */
+export type Purpose = "calendar_link" | "home_control" | "beta_telemetry" | "messaging" | "social_post";
+/** Phạm vi quyền. Hai mục cuối thêm ở V1.0.0 (LNH-T36, LNH-T45), bảng grants nhận chúng từ migration 0002. */
+export type GrantScope = "calendar.block" | "home.control" | "robot.simulate" | "messaging.use" | "social.post";
 
 export const KINDS: Kind[] = ["calendar.block", "device.set_power", "robot.simulate"];
-export const SCOPE_FOR: Record<Kind, string> = { "calendar.block": "calendar.block", "device.set_power": "home.control", "robot.simulate": "robot.simulate" };
+export const PURPOSES: readonly Purpose[] = ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post"];
+export const GRANT_SCOPES: readonly GrantScope[] = ["calendar.block", "home.control", "robot.simulate", "messaging.use", "social.post"];
+export const SCOPE_FOR: Record<Kind, GrantScope> = { "calendar.block": "calendar.block", "device.set_power": "home.control", "robot.simulate": "robot.simulate" };
 export const PURPOSE_FOR: Record<Kind, Purpose | null> = { "calendar.block": "calendar_link", "device.set_power": "home_control", "robot.simulate": null };
 export const MODULE_FOR: Record<Kind, ModuleName> = { "calendar.block": "calendar", "device.set_power": "home", "robot.simulate": "robot" };
+
+/** Loại tác vụ do một mô-đun khai, nếu có. */
+export function moduleKind(ctx: Ctx, kind: string): KindSpec | undefined {
+  for (const m of ctx.modules) for (const k of m.kinds ?? []) if (k.kind === kind) return k;
+  return undefined;
+}
+
+/** Quyền, mục đích đồng ý và cờ mô-đun của một loại tác vụ, lõi hay mô-đun. Loại không ai khai trả undefined: bên gọi phải từ chối. */
+export function kindRule(ctx: Ctx, kind: string): { scope: GrantScope; purpose: Purpose | null; module: ModuleName } | undefined {
+  if (Object.hasOwn(SCOPE_FOR, kind)) {
+    const k = kind as Kind;
+    return { scope: SCOPE_FOR[k], purpose: PURPOSE_FOR[k], module: MODULE_FOR[k] };
+  }
+  return moduleKind(ctx, kind);
+}
 
 export const DEFAULT_EXPORT_POLICY = {
   policy_version: "2026-11-11.1",
@@ -79,7 +101,22 @@ export interface CalendarLinkRow {
   linked_at: string;
 }
 
+/** Chính sách xuất của một workspace: ba loại của lõi cùng mục của các loại do mô-đun khai. */
+export type ExportPolicyDoc = typeof DEFAULT_EXPORT_POLICY & { kinds: Record<string, { purpose: string | null; fields: string[]; residual_inference: string }> };
+
+/** Mục chính sách xuất của một loại do mô-đun khai, cùng dạng với ba mục của lõi. */
+export const policyEntry = (k: KindSpec) => ({ purpose: k.purpose, fields: k.exportPolicy.fields, residual_inference: k.exportPolicy.residual_inference });
+
+/** Chính sách xuất cho workspace mới: mặc định của lõi cộng mục của mọi loại tác vụ đã đăng ký. */
+export function defaultExportPolicy(ctx: Ctx): ExportPolicyDoc {
+  const kinds: ExportPolicyDoc["kinds"] = { ...DEFAULT_EXPORT_POLICY.kinds };
+  for (const m of ctx.modules) for (const k of m.kinds ?? []) kinds[k.kind] = policyEntry(k);
+  return { ...DEFAULT_EXPORT_POLICY, kinds };
+}
+
 export const member = (ctx: Ctx, ws: string, user: string) => one<MemberRow>(ctx.db, "SELECT * FROM members WHERE workspace_id = ? AND user_id = ?", ws, user);
+/** Thành viên còn ACTIVE; dùng cho `readable` của route (phát lại idempotent vẫn qua quyền đọc hiện hành). */
+export const isActiveMember = (ctx: Ctx, ws: string, user: string) => member(ctx, ws, user)?.status === "ACTIVE";
 export const roles = (m: MemberRow) => JSON.parse(m.roles) as string[];
 
 /** Thành viên ACTIVE của workspace; người ngoài miền nhận 404 đồng nhất (SRS mục 12: sai workspace/device trả lỗi đồng nhất). */
@@ -125,7 +162,7 @@ export const device = (ctx: Ctx, ref: string) => one<DeviceRow>(ctx.db, "SELECT 
 export function exportPolicy(ctx: Ctx, ws: string) {
   const w = one<{ export_policy: string; export_policy_digest: string }>(ctx.db, "SELECT export_policy, export_policy_digest FROM workspaces WHERE id = ?", ws);
   if (!w) throw new ApiError(404, "NOT_FOUND");
-  return { doc: JSON.parse(w.export_policy) as typeof DEFAULT_EXPORT_POLICY, digest: w.export_policy_digest };
+  return { doc: JSON.parse(w.export_policy) as ExportPolicyDoc, digest: w.export_policy_digest };
 }
 
 export interface Snapshot {
@@ -135,23 +172,39 @@ export interface Snapshot {
   stale: string | null;
 }
 
+/**
+ * Cổng của một mô-đun cho route không đi qua createPlan, theo đúng thứ tự của createPlan: thành viên (404) → cờ mô-đun (503) →
+ * quyền (403) → đồng ý (403). Handler của mô-đun gọi hàm này thay cho requireMember.
+ */
+export function requireModuleGate(ctx: Ctx, ws: string, user: string, gate: { module: ModuleName; scope: GrantScope; purpose: Purpose | null }): MemberRow {
+  const m = requireMember(ctx, ws, user);
+  if (!ctx.control.moduleOn(gate.module)) throw new ApiError(503, "MODULE_DISABLED");
+  if (!activeGrant(ctx, ws, user, gate.scope, null)) throw new ApiError(403, "FORBIDDEN");
+  if (gate.purpose && !consentGranted(ctx, ws, user, gate.purpose)) throw new ApiError(403, "CONSENT_REQUIRED");
+  return m;
+}
+
 /** Snapshot hiện hành của Authority cho một plan/action: dùng khi duyệt, khi cấp permit và tại receiver trước claim. */
 export function snapshotFor(ctx: Ctx, r: Pick<ActionRow, "workspace_id" | "actor" | "kind" | "target_ref" | "site_id" | "authz_version" | "export_policy_digest" | "target_binding_version">): Snapshot {
-  const kind = r.kind as Kind;
+  const kind = r.kind;
+  const rule = kindRule(ctx, kind);
   const m = member(ctx, r.workspace_id, r.actor);
   const policy = exportPolicy(ctx, r.workspace_id);
   let binding: number | null = null;
   let stale: string | null = null;
   if (!m || m.status !== "ACTIVE") stale = "MEMBER_INACTIVE";
-  else if (!activeGrant(ctx, r.workspace_id, r.actor, SCOPE_FOR[kind], kind === "device.set_power" ? r.site_id : null)) stale = "GRANT_REVOKED";
-  else if (PURPOSE_FOR[kind] && !consentGranted(ctx, r.workspace_id, r.actor, PURPOSE_FOR[kind] as Purpose)) stale = "CONSENT_REVOKED";
+  // Loại không còn ai khai (mô-đun đã gỡ): không có quyền nào để đối chiếu, coi như đích không dùng được.
+  else if (!rule) stale = "TARGET_UNAVAILABLE";
+  else if (!activeGrant(ctx, r.workspace_id, r.actor, rule.scope, kind === "device.set_power" ? r.site_id : null)) stale = "GRANT_REVOKED";
+  else if (rule.purpose && !consentGranted(ctx, r.workspace_id, r.actor, rule.purpose)) stale = "CONSENT_REVOKED";
   if (kind === "calendar.block") {
     const link = calendarLink(ctx, r.workspace_id, r.actor);
     binding = link && link.status === "ACTIVE" && link.id === r.target_ref ? link.binding_version : null;
   } else if (kind === "device.set_power") {
     const d = device(ctx, r.target_ref);
     binding = d && d.status === "ACTIVE" && d.workspace_id === r.workspace_id && d.site_id === r.site_id ? d.binding_version : null;
-  } else binding = 1;
+  } else if (kind === "robot.simulate") binding = 1;
+  else binding = moduleKind(ctx, kind)?.binding(ctx, r) ?? null;
   if (!stale && binding === null) stale = "TARGET_UNAVAILABLE";
   if (!stale && m && m.authz_version !== r.authz_version) stale = "AUTHZ_CHANGED";
   if (!stale && policy.digest !== r.export_policy_digest) stale = "POLICY_CHANGED";
@@ -217,13 +270,20 @@ export function recordConsent(ctx: Ctx, ws: string, user: string, b: { purpose_i
     run(ctx.db, "INSERT INTO consents (id, workspace_id, user_id, purpose_id, text_version, text_hash, choice, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       id, ws, user, b.purpose_id, b.text_version, b.text_hash, b.choice, at);
     // Đổi từ đồng ý sang từ chối là một thay đổi quyền như rút lại.
-    if (prev && prev.choice === "GRANTED" && !prev.withdrawn_at && b.choice === "DECLINED") {
+    const revoked = !!prev && prev.choice === "GRANTED" && !prev.withdrawn_at && b.choice === "DECLINED";
+    if (revoked) {
       bumpAuthz(ctx, ws, user, "CONSENT_REVOKED", user, { purpose: b.purpose_id });
       ctx.revocations.append("consent_withdrawn", at, { workspace_id: ws, user_id: user, purpose_id: b.purpose_id });
     }
     audit(ctx.db, at, { workspace_id: ws, actor: user, action: "consent.record", target: b.purpose_id, request_id: requestId, data: { choice: b.choice, text_version: b.text_version } });
+    if (revoked) consentWithdrawn(ctx, ws, user, b.purpose_id as Purpose, at);
     return consentView(one<ConsentRow>(ctx.db, "SELECT * FROM consents WHERE id = ?", id) as ConsentRow);
   });
+}
+
+/** Báo cho các mô-đun một đồng ý vừa mất hiệu lực. Gọi trong giao dịch của thao tác, sau khi lõi đã ghi xong phần của mình. */
+export function consentWithdrawn(ctx: Ctx, ws: string, user: string, purpose: Purpose, at: string) {
+  for (const m of ctx.modules) m.privacy?.onConsentWithdrawn?.(ctx, ws, user, purpose, at);
 }
 
 export function withdrawConsent(ctx: Ctx, ws: string, user: string, purpose: Purpose, requestId: string | null) {
@@ -233,17 +293,19 @@ export function withdrawConsent(ctx: Ctx, ws: string, user: string, purpose: Pur
     if (c.choice === "GRANTED" && !c.withdrawn_at) {
       const at = nowIso(ctx);
       run(ctx.db, "UPDATE consents SET withdrawn_at = ? WHERE id = ?", at, c.id);
-      const kinds = (Object.entries(PURPOSE_FOR) as [Kind, Purpose | null][]).filter(([, p]) => p === purpose).map(([k]) => k);
+      const kinds: string[] = (Object.entries(PURPOSE_FOR) as [Kind, Purpose | null][]).filter(([, p]) => p === purpose).map(([k]) => k);
+      for (const m of ctx.modules) for (const k of m.kinds ?? []) if (k.purpose === purpose) kinds.push(k.kind);
       bumpAuthz(ctx, ws, user, "CONSENT_REVOKED", user, { purpose }, kinds.length ? { sql: `kind IN (${kinds.map(() => "?").join(",")})`, args: kinds } : undefined);
       ctx.revocations.append("consent_withdrawn", at, { workspace_id: ws, user_id: user, purpose_id: purpose });
       audit(ctx.db, at, { workspace_id: ws, actor: user, action: "consent.withdraw", target: purpose, request_id: requestId });
+      consentWithdrawn(ctx, ws, user, purpose, at);
     }
     return consentView(one<ConsentRow>(ctx.db, "SELECT * FROM consents WHERE id = ?", c.id) as ConsentRow);
   });
 }
 
 /** Đổi chính sách xuất của workspace: digest mới làm mọi approval cũ stale dù quyền scope giữ nguyên (SRS mục 14). */
-export function setExportPolicy(ctx: Ctx, ws: string, doc: typeof DEFAULT_EXPORT_POLICY, by: string) {
+export function setExportPolicy(ctx: Ctx, ws: string, doc: ExportPolicyDoc, by: string) {
   return tx(ctx.db, () => {
     const digest = digestJcs(doc);
     run(ctx.db, "UPDATE workspaces SET export_policy = ?, export_policy_digest = ? WHERE id = ?", JSON.stringify(doc), digest, ws);
@@ -252,6 +314,27 @@ export function setExportPolicy(ctx: Ctx, ws: string, doc: typeof DEFAULT_EXPORT
     audit(ctx.db, nowIso(ctx), { workspace_id: ws, actor: by, action: "policy.export.change", data: { digest, invalidated: n } });
     return digest;
   });
+}
+
+/**
+ * Thêm vào chính sách xuất của các workspace đã có mục của những loại tác vụ mới đăng ký (khi khởi động). Một loại mới là một
+ * miền xuất mới (SRS mục 14): digest đổi, nên mọi plan chưa claim của workspace đó bị vô hiệu như mọi lần đổi chính sách.
+ * Workspace đã đủ mục thì không đổi gì.
+ */
+export function ensureKindPolicies(ctx: Ctx) {
+  const specs = ctx.modules.flatMap((m) => m.kinds ?? []);
+  if (!specs.length) return 0;
+  let changed = 0;
+  for (const w of all<{ id: string }>(ctx.db, "SELECT id FROM workspaces ORDER BY id")) {
+    const { doc } = exportPolicy(ctx, w.id);
+    const missing = specs.filter((k) => !Object.hasOwn(doc.kinds, k.kind));
+    if (!missing.length) continue;
+    const kinds = { ...doc.kinds };
+    for (const k of missing) kinds[k.kind] = policyEntry(k);
+    setExportPolicy(ctx, w.id, { ...doc, kinds }, "system:modules");
+    changed++;
+  }
+  return changed;
 }
 
 /**

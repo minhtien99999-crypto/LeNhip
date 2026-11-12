@@ -3,7 +3,8 @@
 import { digestJcs, uuid } from "../core/crypto.ts";
 import { zonedToInstant, localDate } from "../../web/shared/zone.js";
 import { type Ctx, nowIso } from "./context.ts";
-import { DEFAULT_EXPORT_POLICY } from "./authority.ts";
+import { defaultExportPolicy } from "./authority.ts";
+import { OPT_IN_MODULES } from "./control.ts";
 import type { MockGraph } from "../adapters/graph-mock.ts";
 import type { MockMatterHub } from "../adapters/matter-mock.ts";
 import { one, run, tx } from "./store.ts";
@@ -23,9 +24,10 @@ export const DEMO_DEVICES = [
 export function seedDemo(ctx: Ctx) {
   if (one(ctx.db, "SELECT 1 FROM workspaces WHERE id = ?", DEMO_WS)) return false;
   const at = nowIso(ctx);
+  const policy = defaultExportPolicy(ctx);
   tx(ctx.db, () => {
     run(ctx.db, "INSERT INTO workspaces (id, name, export_policy, export_policy_digest, created_at) VALUES (?, ?, ?, ?, ?)",
-      DEMO_WS, "LeDB · Dogfood (dữ liệu tổng hợp)", JSON.stringify(DEFAULT_EXPORT_POLICY), digestJcs(DEFAULT_EXPORT_POLICY), at);
+      DEMO_WS, "LeDB · Dogfood (dữ liệu tổng hợp)", JSON.stringify(policy), digestJcs(policy), at);
     for (const u of DEV_USERS) {
       run(ctx.db, "INSERT INTO members (workspace_id, user_id, display_name, roles, status) VALUES (?, ?, ?, ?, 'ACTIVE')", DEMO_WS, u.sub, u.name, JSON.stringify(u.roles));
     }
@@ -49,6 +51,16 @@ export function seedDemo(ctx: Ctx) {
     }
   });
   return true;
+}
+
+/**
+ * Chế độ dev và kiểm thử bật sẵn các mô-đun của V1.0.0 (ở mọi nơi khác chúng tắt cho tới khi được đặt rõ, LNH-F27). Chỉ đặt cờ
+ * chưa từng được đặt, nên chạy lại ở mỗi lần khởi động được, thư mục dữ liệu của 0.1.0 cũng nhận, và cờ vận hành viên đã tắt
+ * thì vẫn tắt.
+ */
+export function seedModuleFlags(ctx: Ctx) {
+  const set = ctx.control.get().modules;
+  for (const m of OPT_IN_MODULES) if (set[m] === undefined) ctx.control.setModule(nowIso(ctx), "dev-seed", m, true, "dữ liệu mẫu của chế độ dev");
 }
 
 /** Thiết bị và lịch giả lập tương ứng với dữ liệu tổng hợp. */

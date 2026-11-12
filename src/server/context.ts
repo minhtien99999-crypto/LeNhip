@@ -3,6 +3,7 @@ import type { Clock } from "../core/clock.ts";
 import { DAY, HOUR, MINUTE, SECOND } from "../core/clock.ts";
 import type { ControlStore } from "./control.ts";
 import type { AppendJournal } from "./journal.ts";
+import type { ServerModule } from "./modules.ts";
 import type { Db } from "./store.ts";
 
 export const CONFIG = {
@@ -45,6 +46,8 @@ export interface Ctx {
   /** Sổ thu hồi độc lập: tombstone xóa, thu hồi quyền/đồng ý, đổi binding; nạp lại trước khi phục vụ bản restore. */
   revocations: AppendJournal;
   config: Config;
+  /** Các mô-đun đã đăng ký của app này (src/server/modules.ts); lõi gọi hook của chúng qua đây. */
+  modules: readonly ServerModule[];
 }
 
 export const nowIso = (ctx: Ctx) => new Date(ctx.clock.now()).toISOString();

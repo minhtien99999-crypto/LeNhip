@@ -1,6 +1,8 @@
 // Máy trạng thái theo sự kiện (SRS mục 18–19). Bảng cạnh đọc thẳng từ contracts/state_transitions.csv: hợp đồng là nguồn duy
 // nhất. Mỗi mutation CAS theo revision, tăng revision đúng một lần, gắn event_id duy nhất; sự kiện lặp lại (cùng event_id) trả
 // bản đã biết. Mọi cạnh không có trong bảng bị từ chối.
+// Tệp CSV chứa nhiều máy: máy tác vụ là các hàng có `from` thuộc 12 trạng thái tác vụ; mỗi máy khác dùng một tiền tố trạng thái
+// riêng (ví dụ THREAD_ của hội thoại, LNH-T33) và được nạp bằng transitionsFor(tiền tố). Máy khác không đi qua apply() ở đây.
 import { readFileSync } from "node:fs";
 import { ApiError } from "../core/errors.ts";
 import { uuid } from "../core/crypto.ts";
@@ -11,14 +13,20 @@ export type State =
   | "VERIFIED" | "FAILED" | "CONFLICT" | "REJECTED" | "EXPIRED" | "CANCELED";
 export type ActorKind = "API" | "USER" | "AUTHORITY" | "SCHEDULER" | "RECEIVER" | "ADAPTER" | "VERIFIER" | "RECONCILER";
 
+export const ACTION_STATES: readonly State[] = [
+  "DRAFT", "PENDING_APPROVAL", "AUTHORIZED", "DISPATCHING", "ACKED", "UNKNOWN", "VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED",
+];
 export const TERMINAL: ReadonlySet<State> = new Set(["VERIFIED", "FAILED", "CONFLICT", "REJECTED", "EXPIRED", "CANCELED"]);
 
-export interface Transition {
-  from: State;
+/** Một cạnh của bảng hợp đồng. Máy tác vụ dùng State và ActorKind; máy khác (theo tiền tố) dùng chuỗi của riêng nó. */
+export interface Transition<S extends string = State, A extends string = ActorKind> {
+  from: S;
   event: string;
-  actor: ActorKind;
-  to: State;
+  actor: A;
+  to: S;
   guard: string;
+  /** Cột ref: mục SRS hoặc mã LNH-T quyết định cạnh này. */
+  ref: string;
 }
 
 function parseCsv(text: string): string[][] {
@@ -44,18 +52,63 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
-export function loadTransitions(): Transition[] {
-  const rows = parseCsv(readFileSync(new URL("../../contracts/state_transitions.csv", import.meta.url), "utf8"));
-  const [head, ...body] = rows;
-  const idx = (k: string) => head.indexOf(k);
-  return body.map((r) => ({ from: r[idx("from")] as State, event: r[idx("event")], actor: r[idx("actor")] as ActorKind, to: r[idx("to")] as State, guard: r[idx("guard")] }));
+const CSV_URL = new URL("../../contracts/state_transitions.csv", import.meta.url);
+
+/** Mọi hàng của bảng hợp đồng, chưa chia theo máy. `text` chỉ truyền khi kiểm thử. */
+export function parseTransitions(text: string = readFileSync(CSV_URL, "utf8")): Transition<string, string>[] {
+  const [head, ...body] = parseCsv(text);
+  const idx = (k: string) => {
+    const i = head.indexOf(k);
+    if (i < 0) throw new Error(`state_transitions.csv thiếu cột ${k}`);
+    return i;
+  };
+  const cols = { from: idx("from"), event: idx("event"), actor: idx("actor"), to: idx("to"), guard: idx("guard"), ref: idx("ref") };
+  return body.map((r) => ({ from: r[cols.from], event: r[cols.event], actor: r[cols.actor], to: r[cols.to], guard: r[cols.guard], ref: r[cols.ref] ?? "" }));
+}
+
+const isActionState = (s: string) => (ACTION_STATES as readonly string[]).includes(s);
+
+/** Tên máy của một trạng thái: "" cho máy tác vụ, còn lại là tiền tố tới hết dấu gạch dưới đầu tiên (THREAD_ACTIVE → THREAD_). */
+export function machineOf(state: string): string {
+  if (isActionState(state)) return "";
+  const i = state.indexOf("_");
+  if (i < 1) throw new Error(`trạng thái ${state} không thuộc máy nào (thiếu tiền tố)`);
+  return state.slice(0, i + 1);
+}
+
+/** Máy tác vụ: các hàng có `from` là trạng thái tác vụ. Hàng của máy khác (có tiền tố riêng) không lọt vào đây. */
+export function loadTransitions(text?: string): Transition[] {
+  return parseTransitions(text).filter((t) => isActionState(t.from)) as Transition[];
+}
+
+/**
+ * Bảng cạnh của một máy khác, nhận diện bằng tiền tố trạng thái, ví dụ transitionsFor("THREAD_"). Tiền tố có dạng CHỮ_HOA_ và
+ * không được trùng đầu tên một trạng thái tác vụ; cạnh đi ra ngoài tiền tố bị từ chối ngay khi nạp. Trả mảng rỗng nếu chưa có hàng.
+ */
+export function transitionsFor(prefix: string, text?: string): Transition<string, string>[] {
+  if (!/^[A-Z][A-Z0-9]*_$/.test(prefix)) throw new Error(`tiền tố máy trạng thái không hợp lệ: ${prefix}`);
+  if (ACTION_STATES.some((s) => s.startsWith(prefix))) throw new Error(`tiền tố ${prefix} trùng trạng thái của máy tác vụ`);
+  const rows = parseTransitions(text).filter((t) => t.from.startsWith(prefix));
+  for (const t of rows) if (!t.to.startsWith(prefix)) throw new Error(`cạnh ${t.from} → ${t.to} ra ngoài máy ${prefix}`);
+  return rows;
+}
+
+/** Tra cạnh theo (trạng thái, sự kiện, actor). Hai hàng cùng khóa là lỗi của bảng hợp đồng. */
+export function indexTransitions<S extends string, A extends string>(rows: Transition<S, A>[]) {
+  const table = new Map<string, Transition<S, A>>();
+  for (const t of rows) {
+    const k = `${t.from}|${t.event}|${t.actor}`;
+    if (table.has(k)) throw new Error(`state_transitions.csv có hai hàng cho ${k}`);
+    table.set(k, t);
+  }
+  return (from: S, event: string, actor: A): Transition<S, A> | undefined => table.get(`${from}|${event}|${actor}`);
 }
 
 export const TRANSITIONS = loadTransitions();
-const TABLE = new Map(TRANSITIONS.map((t) => [`${t.from}|${t.event}|${t.actor}`, t]));
+const actionLookup = indexTransitions(TRANSITIONS);
 
 export function lookup(from: State, event: string, actor: ActorKind): Transition | undefined {
-  return TABLE.get(`${from}|${event}|${actor}`);
+  return actionLookup(from, event, actor);
 }
 
 /** Các cột được phép đổi cùng một sự kiện (tránh ghi tùy ý vào sổ). */

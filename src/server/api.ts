@@ -10,8 +10,8 @@ import type { SchemaSet } from "../core/schema.ts";
 import { parseInstant } from "../../web/shared/zone.js";
 import { type Ctx, nowIso } from "./context.ts";
 import {
-  activeGrant, calendarLink, consentGranted, consentView, grantsOf, latestConsent, member, recordConsent, requireMember, requireRole, revokeGrant, roles,
-  withdrawConsent, changeBinding, type ConsentRow, type Purpose,
+  PURPOSES, activeGrant, calendarLink, consentGranted, consentView, grantsOf, isActiveMember, latestConsent, member, moduleKind, recordConsent, requireMember, requireRole,
+  revokeGrant, roles, withdrawConsent, changeBinding, type ConsentRow, type Purpose,
 } from "./authority.ts";
 import { approvePlan, cancelAction, closePlan, createPlan, getAction, getPlan, listActions, actionView, type PlanInput } from "./plans.ts";
 import { getByActionId, getRow, type ActionRow } from "./machine.ts";
@@ -22,6 +22,7 @@ import type { ModelGateway } from "./lele.ts";
 import type { OidcVerifier, DevIssuer, Principal } from "./auth.ts";
 import type { CalendarAdapter } from "../adapters/calendar.ts";
 import type { ModuleName } from "./control.ts";
+import { MODULES, type ServerModule } from "./modules.ts";
 import { all, audit, one, run, tx } from "./store.ts";
 
 export interface Metrics {
@@ -42,9 +43,12 @@ export interface ApiDeps {
   metrics: Metrics;
   dispatched: () => number;
   webRoot: URL;
+  /** Mô-đun của app này: route và đường dev của chúng được phục vụ cùng route lõi. */
+  modules: readonly ServerModule[];
 }
 
-interface Call {
+/** Một lời gọi /v1 đã qua xác thực, kiểm workspace, giới hạn tốc độ và (với POST) schema thân. */
+export interface Call {
   d: ApiDeps;
   p: Principal;
   ws: string;
@@ -54,13 +58,21 @@ interface Call {
   requestId: string;
 }
 
-interface Route {
+/**
+ * Một thao tác /v1, của lõi hay của mô-đun (ServerModule.routes). Mọi route đi cùng một đường: so khớp → xác thực → workspace →
+ * giới hạn tốc độ theo người dùng → (POST) đọc thân, kiểm schema, idempotency → handler. Route nào cũng phải có trong OpenAPI.
+ */
+export interface Route {
   method: "GET" | "POST";
+  /** Bắt đầu bằng /v1/; tham số dạng {ten_tham_so}, chỉ khớp [A-Za-z0-9_-]{1,128}. Route khai trước thắng khi hai mẫu cùng khớp. */
   path: string;
+  /** POST: tên schema thân trong OpenAPI (components.schemas). Thân rỗng dùng "Empty" cùng optionalBody. */
   schema?: string;
   optionalBody?: boolean;
+  /** POST: handler có await. Khi đó nó chạy ngoài giao dịch và bản ghi khóa idempotency chỉ được ghi sau khi nó xong. */
   async?: boolean;
   handler: (c: Call) => Stored | Promise<Stored>;
+  /** POST: quyền đọc hiện hành của người gọi với tài nguyên đã trả; phát lại idempotent chỉ trả bản cũ khi hàm này cho phép. */
   readable?: (c: Call, r: { type: string; id: string } | null) => boolean;
 }
 
@@ -71,12 +83,10 @@ function me(c: Call) {
   const { ctx } = c.d;
   const m = requireMember(ctx, c.ws, c.p.sub);
   const w = one<{ id: string; name: string }>(ctx.db, "SELECT id, name FROM workspaces WHERE id = ?", c.ws) as { id: string; name: string };
-  const purposes: Purpose[] = ["calendar_link", "home_control", "beta_telemetry"];
-  const consents = purposes.map((pp) => latestConsent(ctx, c.ws, c.p.sub, pp)).filter((x): x is ConsentRow => !!x).map(consentView);
+  const consents = PURPOSES.map((pp) => latestConsent(ctx, c.ws, c.p.sub, pp)).filter((x): x is ConsentRow => !!x).map(consentView);
   const link = calendarLink(ctx, c.ws, c.p.sub);
   const sites = all<{ id: string; name: string }>(ctx.db,
     "SELECT s.id, s.name FROM sites s JOIN grants g ON g.resource = s.id AND g.scope = 'home.control' AND g.status = 'ACTIVE' WHERE g.workspace_id = ? AND g.user_id = ? ORDER BY s.id", c.ws, c.p.sub);
-  const mods = ctx.control.get().modules;
   return {
     user: { id: m.user_id, name: m.display_name },
     workspace: w,
@@ -85,7 +95,7 @@ function me(c: Call) {
     consents,
     calendar: { linked: !!link && link.status === "ACTIVE", account: link && link.status === "ACTIVE" ? link.id : null },
     sites,
-    modules: { calendar: mods.calendar !== false, home: mods.home !== false, robot: mods.robot !== false, lele: mods.lele !== false },
+    modules: ctx.control.modules(),
     dispatch_open: ctx.control.dispatchOpen(),
   };
 }
@@ -191,7 +201,7 @@ function unknownList(c: Call): Stored {
 
 function flagsView(c: Call) {
   const s = c.d.ctx.control.get();
-  return { modules: { ...s.modules }, sites: { ...s.sites }, dispatch: { open: !s.dispatch.locked, locked_reason: s.dispatch.reason, recovery_epoch: s.recovery_epoch } };
+  return { modules: c.d.ctx.control.modules(), sites: { ...s.sites }, dispatch: { open: !s.dispatch.locked, locked_reason: s.dispatch.reason, recovery_epoch: s.recovery_epoch } };
 }
 
 function metricsView(c: Call) {
@@ -226,12 +236,10 @@ const ownPlan = (c: Call, r: { type: string; id: string } | null) => {
   const m = member(c.d.ctx, c.ws, c.p.sub);
   return !!row && row.workspace_id === c.ws && row.actor === c.p.sub && !!m && m.status === "ACTIVE";
 };
-const isMember = (c: Call) => {
-  const m = member(c.d.ctx, c.ws, c.p.sub);
-  return !!m && m.status === "ACTIVE";
-};
+const isMember = (c: Call) => isActiveMember(c.d.ctx, c.ws, c.p.sub);
 
-export const ROUTES: Route[] = [
+/** Route của lõi. Mô-đun không thêm vào đây: nó khai `routes` của mình trong tệp riêng và đăng ký ở modules.ts. */
+export const CORE_ROUTES: Route[] = [
   { method: "GET", path: "/v1/me", handler: (c) => ({ status: 200, body: me(c) }) },
   {
     method: "POST", path: "/v1/plans", schema: "PlanInput", readable: ownPlan,
@@ -288,7 +296,7 @@ export const ROUTES: Route[] = [
     handler: (c) => {
       requireMember(c.d.ctx, c.ws, c.p.sub);
       const purpose = c.params.purpose_id as Purpose;
-      if (!["calendar_link", "home_control", "beta_telemetry"].includes(purpose)) throw new ApiError(404, "NOT_FOUND");
+      if (!PURPOSES.includes(purpose)) throw new ApiError(404, "NOT_FOUND");
       const r = withdrawConsent(c.d.ctx, c.ws, c.p.sub, purpose, c.requestId);
       return { status: 200, body: r, resource: { type: "consent", id: r.id } };
     },
@@ -344,8 +352,9 @@ export const ROUTES: Route[] = [
       const b = c.body as { grade: "PROVIDER_READBACK" | "DEVICE_REPORTED" | "PHYSICAL_OBSERVED"; result: "MATCH" | "CONFLICT" | "NO_EFFECT"; source: string; observed_at: string; note: string };
       if (b.result === "NO_EFFECT" && row.state === "ACKED") throw new ApiError(409, "INVALID_TRANSITION", { extra: { state: row.state } });
       const evidence = { grade: b.grade, source: `operator:${b.source}`, observed_at: b.observed_at, data: { note: b.note, operator: c.p.sub } };
-      const outcome = row.kind === "calendar.block" ? "EVENT_CREATED" : row.kind === "robot.simulate" ? "SIMULATED" : "APPLIED";
-      const rb: Readback = b.result === "MATCH" ? { result: "MATCH", evidence, outcome } : b.result === "CONFLICT" ? { result: "CONFLICT", evidence, event_created: row.kind === "calendar.block", outcome: row.kind === "calendar.block" ? "EVENT_CHANGED" : "NO_EFFECT" } : { result: "NO_EFFECT", evidence };
+      const outcomes = moduleKind(ctx, row.kind)?.outcomes;
+      const outcome = row.kind === "calendar.block" ? "EVENT_CREATED" : row.kind === "robot.simulate" ? "SIMULATED" : outcomes?.match ?? "APPLIED";
+      const rb: Readback = b.result === "MATCH" ? { result: "MATCH", evidence, outcome } : b.result === "CONFLICT" ? { result: "CONFLICT", evidence, event_created: row.kind === "calendar.block", outcome: row.kind === "calendar.block" ? "EVENT_CHANGED" : outcomes?.conflict ?? "NO_EFFECT" } : { result: "NO_EFFECT", evidence };
       const next = resolveWithEvidence(ctx, row.id, rb, `operator:${c.p.sub}`) as ActionRow;
       audit(ctx.db, nowIso(ctx), { workspace_id: c.ws, actor: c.p.sub, action: "ops.evidence", target: c.params.action_id, request_id: c.requestId, data: { grade: b.grade, result: b.result } });
       return { status: 200, body: actionView(ctx, next), resource: { type: "action", id: c.params.action_id } };
@@ -381,7 +390,12 @@ export const ROUTES: Route[] = [
   })),
 ];
 
-const compiled = ROUTES.map((r) => {
+const routesOf = (modules: readonly ServerModule[]) => [...CORE_ROUTES, ...modules.flatMap((m) => m.routes ?? [])];
+
+/** Mọi route của bản đang phát hành (lõi + MODULES): đối chiếu với OpenAPI trong scripts/check-contracts.ts. */
+export const ROUTES: Route[] = routesOf(MODULES);
+
+const compile = (routes: Route[]) => routes.map((r) => {
   const keys: string[] = [];
   const re = new RegExp("^" + r.path.replace(/\{([a-z_]+)\}/g, (_, k) => (keys.push(k), "([A-Za-z0-9_-]{1,128})")) + "$");
   return { ...r, re, keys };
@@ -420,6 +434,8 @@ function send(res: ServerResponse, status: number, body: unknown, headers: Recor
 }
 
 export function createHandler(d: ApiDeps) {
+  const compiled = compile(routesOf(d.modules));
+  const devRoutes = new Map(d.modules.flatMap((m) => m.devRoutes ?? []).map((r) => [r.path, r]));
   const buckets = new Map<string, { tokens: number; at: number }>();
   function rateLimit(key: string, now: number) {
     const { perSecond, burst } = d.ctx.config.rateLimit;
@@ -455,6 +471,16 @@ export function createHandler(d: ApiDeps) {
           const u = d.devUsers.find((x) => x.sub === b?.sub);
           if (!u) throw new ApiError(404, "NOT_FOUND");
           return send(res, (status = 200), { token: d.dev.mint(u.sub, u.name, d.ctx.clock.now()), expires_in: 900 });
+        }
+        // Đường dev của mô-đun (ServerModule.devRoutes): chỉ GET, chỉ khi có issuer phát triển; chuyển hướng chỉ trong cùng gốc.
+        const devRoute = method === "GET" ? devRoutes.get(url.pathname) : undefined;
+        if (devRoute) {
+          rateLimit(`dev:${req.socket.remoteAddress}`, d.ctx.clock.now());
+          const out = devRoute.handler(d, url.searchParams);
+          if (out.status === 200) return send(res, (status = 200), out.body);
+          if (!/^\/(?![/\\])[\x21-\x7e]*$/.test(out.location)) throw new Error("đường dev chỉ được chuyển hướng trong cùng gốc");
+          res.writeHead((status = 302), { ...SECURITY_HEADERS, Location: out.location, "Cache-Control": "no-store" });
+          return res.end();
         }
         throw new ApiError(404, "NOT_FOUND");
       }

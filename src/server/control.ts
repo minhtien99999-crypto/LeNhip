@@ -4,12 +4,19 @@
 import { closeSync, existsSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 
-export type ModuleName = "calendar" | "home" | "robot" | "lele";
+export type ModuleName = "calendar" | "home" | "robot" | "lele" | "messaging" | "social" | "trackers";
+
+/** Bốn mô-đun của 0.1.0: cờ thiếu được đọc là bật, như trước nay (kill switch chỉ tắt khi đặt rõ false). */
+export const LEGACY_MODULES: readonly ModuleName[] = ["calendar", "home", "robot", "lele"];
+/** Mô-đun thêm ở V1.0.0 (LNH-F27): chỉ bật khi cờ được đặt rõ true; cờ thiếu, kể cả trong control.json cũ, là tắt. */
+export const OPT_IN_MODULES: readonly ModuleName[] = ["messaging", "social", "trackers"];
+export const MODULE_NAMES: readonly ModuleName[] = [...LEGACY_MODULES, ...OPT_IN_MODULES];
 
 export interface ControlState {
   recovery_epoch: number;
   dispatch: { locked: boolean; reason: string | null; since: string | null };
-  modules: Record<ModuleName, boolean>;
+  /** Chỉ chứa cờ đã được đặt rõ. Giá trị hiệu lực của cờ thiếu do moduleOn() quyết định. */
+  modules: Partial<Record<ModuleName, boolean>>;
   sites: Record<string, boolean>;
   receivers_allowlist: string[] | null;
   history: { at: string; by: string; change: string }[];
@@ -97,7 +104,12 @@ export class ControlStore {
   }
 
   moduleOn(m: ModuleName) {
-    return this.state.modules[m] !== false;
+    return OPT_IN_MODULES.includes(m) ? this.state.modules[m] === true : this.state.modules[m] !== false;
+  }
+
+  /** Giá trị hiệu lực của mọi cờ mô-đun, kể cả cờ chưa từng được đặt. */
+  modules(): Record<ModuleName, boolean> {
+    return Object.fromEntries(MODULE_NAMES.map((m) => [m, this.moduleOn(m)])) as Record<ModuleName, boolean>;
   }
 
   siteOn(site: string) {

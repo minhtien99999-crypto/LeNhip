@@ -1,10 +1,23 @@
 // Sổ thực thi (execution ledger) của bản tham chiếu: SQLite một tệp, WAL, synchronous=FULL, mọi thay đổi trong giao dịch.
 // SRS mục 21 (DR01) yêu cầu PostgreSQL synchronous replication hai miền lỗi ở môi trường thật; lớp này giữ đúng các bảng và
 // bất biến để chuyển sang Postgres (docs/RA_SOAT_LENHIP_V1_1.md, LNH-D04). Migration chỉ thêm, có mã băm để chặn sửa ngầm.
+// 0001 nằm nguyên trong tệp này (không sửa một byte nào); từ 0002 mỗi migration là một tệp trong ./migrations/, đăng ký bằng
+// một dòng ở ./migrations/index.ts.
 import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
+import { LATER_MIGRATIONS } from "./migrations/index.ts";
 
 export type Db = DatabaseSync;
+
+/**
+ * Một migration. `sha256` (hex của đúng chuỗi sql, UTF-8) khóa nội dung ngay trong mã: sql khác mã băm thì máy chủ không chạy.
+ * Sau khi một migration đã chạy trên bất kỳ sổ nào còn giữ, không sửa nó nữa; cần đổi thì thêm migration mới.
+ */
+export interface Migration {
+  id: string;
+  sql: string;
+  sha256: string;
+}
 
 const MIGRATIONS: { id: string; sql: string }[] = [
   {
@@ -295,6 +308,12 @@ CREATE TABLE audit (
   },
 ];
 
+/** Mã băm đã phát hành của 0001 (bản 0.1.0, commit 4b33ccc). Chuỗi sql ở trên phải cho đúng giá trị này. */
+const LEDGER_0001_SHA256 = "15490e1db0354166bbfb7b7ee9e37ea8b9466bfef0dd6d663a76bed6d0ac0ccb";
+
+/** Mọi migration theo thứ tự áp dụng: 0001 ở trên, rồi các tệp trong ./migrations/. */
+export const ALL_MIGRATIONS: readonly Migration[] = [{ ...MIGRATIONS[0], sha256: LEDGER_0001_SHA256 }, ...LATER_MIGRATIONS];
+
 export function openLedger(path: string): Db {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
@@ -302,11 +321,19 @@ export function openLedger(path: string): Db {
   return db;
 }
 
-function migrate(db: Db) {
+/** Áp các migration chưa chạy, theo thứ tự của danh sách. `list` chỉ truyền khi kiểm thử nâng cấp từ một bản cũ. */
+export function migrate(db: Db, list: readonly Migration[] = ALL_MIGRATIONS) {
+  let last = "";
+  for (const m of list) {
+    if (!/^\d{4}_[a-z0-9_]+$/.test(m.id)) throw new Error(`migration ${m.id}: tên phải có dạng NNNN_ten`);
+    if (m.id.slice(0, 4) <= last) throw new Error(`migration ${m.id}: số phải tăng dần và không trùng`);
+    last = m.id.slice(0, 4);
+  }
   db.exec("CREATE TABLE IF NOT EXISTS migrations (id TEXT PRIMARY KEY, digest TEXT NOT NULL, applied_at TEXT NOT NULL)");
   const done = new Map((db.prepare("SELECT id, digest FROM migrations").all() as { id: string; digest: string }[]).map((r) => [r.id, r.digest]));
-  for (const m of MIGRATIONS) {
+  for (const m of list) {
     const digest = createHash("sha256").update(m.sql).digest("hex");
+    if (m.sha256 !== digest) throw new Error(`migration ${m.id}: nội dung khác mã băm đã khóa (sql hiện có sha256 ${digest})`);
     const prev = done.get(m.id);
     if (prev) {
       if (prev !== digest) throw new Error(`migration ${m.id} đã phát hành bị sửa`);

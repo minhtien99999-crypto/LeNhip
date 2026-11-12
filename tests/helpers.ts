@@ -83,7 +83,8 @@ export async function harness(opts: Partial<AppOptions> & { consents?: boolean; 
       } catch {
         /* đã đóng (ví dụ trước khi restore tệp sổ) */
       }
-      app = createApp({ dataDir: dir, clock, dev: true, seed: true, graph: app.graph, hubs: app.hubs, config: { rateLimit: { perSecond: 1000, burst: 100000 } }, ...opts, ...more });
+      // Thế giới bên ngoài giả lập (lịch, đèn, và `world` của các mô-đun) sống qua lần khởi động lại; trạng thái trong bộ nhớ của app thì không.
+      app = createApp({ dataDir: dir, clock, dev: true, seed: true, graph: app.graph, hubs: app.hubs, world: app.world, config: { rateLimit: { perSecond: 1000, burst: 100000 } }, ...opts, ...more });
       server = createServer((req, res) => void app.handle(req, res));
       await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     },

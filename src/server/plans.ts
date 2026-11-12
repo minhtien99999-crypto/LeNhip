@@ -5,25 +5,15 @@ import { ApiError } from "../core/errors.ts";
 import { digestJcs, supportCode, uuid } from "../core/crypto.ts";
 import { parseInstant } from "../../web/shared/zone.js";
 import { type Ctx, nowIso } from "./context.ts";
-import {
-  type Kind, MODULE_FOR, PURPOSE_FOR, SCOPE_FOR, activeGrant, calendarLink, consentGranted, device, exportPolicy, requireMember, snapshotFor,
-} from "./authority.ts";
+import { activeGrant, calendarLink, consentGranted, device, exportPolicy, kindRule, moduleKind, requireMember, snapshotFor } from "./authority.ts";
 import { apply, getByActionId, getRow, type ActionRow, TERMINAL } from "./machine.ts";
+import type { KindInput, Resolved } from "./modules.ts";
 import { all, audit, one, run, tx } from "./store.ts";
 
 export type PlanInput =
   | { kind: "calendar.block"; schema_version: 1; workspace_ref: string; args: { calendar_ref: "primary"; start: string; end: string; zone: string; title_code: "PERSONAL_TIME"; visibility: "private" } }
   | { kind: "device.set_power"; schema_version: 1; workspace_ref: string; args: { site: string; device_ref: string; command: "SET_ON" | "SET_OFF" } }
   | { kind: "robot.simulate"; schema_version: 1; workspace_ref: string; args: { scenario: "DELIVER_DOCUMENT" } };
-
-interface Resolved {
-  payload: Record<string, unknown>;
-  target_ref: string;
-  site_id: string | null;
-  resource_key: string;
-  window: [string, string] | null;
-  binding: number;
-}
 
 const iso = (ms: number) => new Date(ms).toISOString();
 
@@ -118,19 +108,22 @@ export function actionView(ctx: Ctx, r: ActionRow) {
   };
 }
 
-export function createPlan(ctx: Ctx, actor: string, ws: string, input: PlanInput, requestId: string | null) {
+/** `input` là PlanInput của lõi, hoặc KindInput của một loại do mô-đun khai (KindSpec trong modules.ts). */
+export function createPlan(ctx: Ctx, actor: string, ws: string, input: PlanInput | KindInput, requestId: string | null) {
   const m = requireMember(ctx, ws, actor);
   if (input.workspace_ref !== ws) throw new ApiError(404, "NOT_FOUND");
-  const kind = input.kind as Kind;
-  if (!ctx.control.moduleOn(MODULE_FOR[kind])) throw new ApiError(503, "MODULE_DISABLED");
+  const kind: string = input.kind;
+  const rule = kindRule(ctx, kind);
+  if (!rule) throw new ApiError(422, "UNSUPPORTED");
+  if (!ctx.control.moduleOn(rule.module)) throw new ApiError(503, "MODULE_DISABLED");
   const policy = exportPolicy(ctx, ws);
-  if (!(kind in policy.doc.kinds)) throw new ApiError(422, "UNSUPPORTED");
+  if (!Object.hasOwn(policy.doc.kinds, kind)) throw new ApiError(422, "UNSUPPORTED");
   const resource = kind === "device.set_power" ? (input.args as { site: string }).site : null;
-  if (!activeGrant(ctx, ws, actor, SCOPE_FOR[kind], resource)) throw new ApiError(403, "FORBIDDEN");
-  const purpose = PURPOSE_FOR[kind];
-  if (purpose && !consentGranted(ctx, ws, actor, purpose)) throw new ApiError(403, "CONSENT_REQUIRED");
+  if (!activeGrant(ctx, ws, actor, rule.scope, resource)) throw new ApiError(403, "FORBIDDEN");
+  if (rule.purpose && !consentGranted(ctx, ws, actor, rule.purpose)) throw new ApiError(403, "CONSENT_REQUIRED");
   return tx(ctx.db, () => {
-    const r = resolve(ctx, ws, actor, input);
+    const spec = moduleKind(ctx, kind);
+    const r = spec ? spec.resolve(ctx, ws, actor, input as KindInput) : resolve(ctx, ws, actor, input as PlanInput);
     const lock = lockedBy(ctx, r.resource_key, r.window);
     if (lock) throw new ApiError(409, "RESOURCE_LOCKED", { extra: { resource_id: lock.action_id ?? lock.id } });
     const now = ctx.clock.now();
@@ -177,7 +170,8 @@ export function approvePlan(ctx: Ctx, actor: string, ws: string, planId: string,
     if (body.plan_version !== r.plan_version || r.revision !== r.plan_version) throw new ApiError(409, "PLAN_STALE", { extra: { state: r.state } });
     if (body.approved_digest !== r.payload_digest) throw new ApiError(409, "DIGEST_MISMATCH");
     if (!ctx.control.dispatchOpen()) throw new ApiError(503, "DISPATCH_CLOSED", { retryable: true });
-    if (!ctx.control.moduleOn(MODULE_FOR[r.kind as Kind])) throw new ApiError(503, "MODULE_DISABLED");
+    const rule = kindRule(ctx, r.kind);
+    if (!rule || !ctx.control.moduleOn(rule.module)) throw new ApiError(503, "MODULE_DISABLED");
     const snap = snapshotFor(ctx, r);
     if (snap.stale) {
       apply(ctx.db, { planId, event: "invalidate", actorKind: "AUTHORITY", at, set: { reason: snap.stale }, data: { reason: snap.stale } });

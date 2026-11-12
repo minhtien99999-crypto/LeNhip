@@ -5,7 +5,7 @@
 import { ApiError } from "../core/errors.ts";
 import { digestJcs, uuid } from "../core/crypto.ts";
 import { type Ctx } from "./context.ts";
-import { snapshotFor, type Kind } from "./authority.ts";
+import { snapshotFor } from "./authority.ts";
 import { apply, getByActionId, getRow, type ActionRow } from "./machine.ts";
 import { JournalUnavailable } from "./journal.ts";
 import { PermitError, verifyPermit, type PermitClaims, type TrustStore } from "./permit.ts";
@@ -24,7 +24,8 @@ export type ExecResult =
   | { result: "NO_EFFECT"; reason: string; evidence: Evidence };
 /** Adapter của một loại đích. Credential của nhà cung cấp chỉ nằm trong adapter (SRS mục 12: worker giữ credential adapter). */
 export interface DispatchAdapter {
-  readonly kind: Kind;
+  /** Một trong ba loại của lõi, hoặc loại do mô-đun khai (KindSpec.kind trong modules.ts). */
+  readonly kind: string;
   audience(row: ActionRow): string;
   /** Receiver chỉ nhận permit có audience thuộc họ của mình (lịch: một audience; đèn: lenhip:site:<site>). */
   servesAudience(aud: string): boolean;

@@ -4,7 +4,6 @@
 import { createHash } from "node:crypto";
 import { uuid } from "../core/crypto.ts";
 import { type Ctx, nowIso } from "./context.ts";
-import type { Kind } from "./authority.ts";
 import { apply, getRow, type ActionRow, TERMINAL } from "./machine.ts";
 import { expireDue } from "./plans.ts";
 import type { DispatchAdapter } from "./receiver.ts";
@@ -37,10 +36,10 @@ export function nextUnknownRead(ctx: Ctx, row: ActionRow, attempts: number, now:
 
 export class Reconciler {
   private readonly ctx: Ctx;
-  private readonly adapters: Map<Kind, DispatchAdapter>;
+  private readonly adapters: Map<string, DispatchAdapter>;
   stats = { reads: 0, resolved: 0, unknown: 0, tickets: 0, escalated: 0, manual: 0 };
 
-  constructor(ctx: Ctx, adapters: Map<Kind, DispatchAdapter>) {
+  constructor(ctx: Ctx, adapters: Map<string, DispatchAdapter>) {
     this.ctx = ctx;
     this.adapters = adapters;
   }
@@ -64,7 +63,7 @@ export class Reconciler {
     const now = ctx.clock.now();
     // 1. Đang phát hoặc đã ACK: đọc theo lịch của adapter, quá hạn thì UNKNOWN.
     for (const row of all<ActionRow>(ctx.db, "SELECT * FROM actions WHERE state IN ('DISPATCHING','ACKED') ORDER BY dispatch_claimed_at")) {
-      const adapter = this.adapters.get(row.kind as Kind);
+      const adapter = this.adapters.get(row.kind);
       if (!adapter) continue;
       const deadline = Date.parse(row.unknown_after as string);
       const check = one<{ next_at: string | null; attempts: number }>(ctx.db, "SELECT next_at, attempts FROM checks WHERE plan_id = ?", row.id);
@@ -106,7 +105,7 @@ export class Reconciler {
     }
     // 2. UNKNOWN: đọc theo lịch SLA, không phát lại.
     for (const row of all<ActionRow>(ctx.db, "SELECT * FROM actions WHERE state = 'UNKNOWN'")) {
-      const adapter = this.adapters.get(row.kind as Kind);
+      const adapter = this.adapters.get(row.kind);
       const check = one<{ next_at: string | null; attempts: number }>(ctx.db, "SELECT next_at, attempts FROM checks WHERE plan_id = ?", row.id);
       const due = check?.next_at ? Date.parse(check.next_at) : now;
       if (adapter && now >= due && !row.imported) {

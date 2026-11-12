@@ -2,7 +2,7 @@
 // trình permit cho receiver qua mTLS. Outbox có thể giao lại; receiver chỉ tiêu thụ một lần (CAS claim + jti).
 import { certThumbprint } from "../core/crypto.ts";
 import { type Ctx, nowIso } from "./context.ts";
-import { MODULE_FOR, snapshotFor, type Kind } from "./authority.ts";
+import { kindRule, snapshotFor } from "./authority.ts";
 import { apply, getRow, type ActionRow } from "./machine.ts";
 import { PermitError, type PermitIssuer } from "./permit.ts";
 import type { Receiver } from "./receiver.ts";
@@ -18,7 +18,8 @@ export function issuePermit(ctx: Ctx, issuer: PermitIssuer, receiver: Receiver, 
   const now = ctx.clock.now();
   if (row.state !== "AUTHORIZED") throw new PermitError("PERMIT_REVISION", row.state);
   if (now > Date.parse(row.dispatch_deadline as string)) throw new PermitError("PERMIT_EXPIRED", "dispatch window");
-  if (!ctx.control.dispatchOpen() || !ctx.control.moduleOn(MODULE_FOR[row.kind as Kind])) throw new PermitError("DISPATCH_CLOSED");
+  const rule = kindRule(ctx, row.kind);
+  if (!ctx.control.dispatchOpen() || !rule || !ctx.control.moduleOn(rule.module)) throw new PermitError("DISPATCH_CLOSED");
   if (row.site_id && !ctx.control.siteOn(row.site_id)) throw new PermitError("DISPATCH_CLOSED", "site");
   const snap = snapshotFor(ctx, row);
   if (snap.stale) throw new PermitError("PERMIT_STALE", snap.stale);
@@ -40,13 +41,13 @@ export function issuePermit(ctx: Ctx, issuer: PermitIssuer, receiver: Receiver, 
 
 export class Dispatcher {
   private readonly ctx: Ctx;
-  private readonly issuers: Map<Kind, PermitIssuer>;
-  private readonly receivers: Map<Kind, Receiver>;
+  private readonly issuers: Map<string, PermitIssuer>;
+  private readonly receivers: Map<string, Receiver>;
   private readonly identity: WorkerIdentity;
   lastErrors: { plan_id: string; code: string }[] = [];
   dispatched = 0;
 
-  constructor(ctx: Ctx, issuers: Map<Kind, PermitIssuer>, receivers: Map<Kind, Receiver>, identity: WorkerIdentity) {
+  constructor(ctx: Ctx, issuers: Map<string, PermitIssuer>, receivers: Map<string, Receiver>, identity: WorkerIdentity) {
     this.ctx = ctx;
     this.issuers = issuers;
     this.receivers = receivers;
@@ -65,9 +66,8 @@ export class Dispatcher {
         done();
         continue;
       }
-      const kind = row.kind as Kind;
-      const receiver = this.receivers.get(kind);
-      const issuer = this.issuers.get(kind);
+      const receiver = this.receivers.get(row.kind);
+      const issuer = this.issuers.get(row.kind);
       if (!receiver || !issuer) continue;
       try {
         const { token } = issuePermit(ctx, issuer, receiver, row, this.identity);

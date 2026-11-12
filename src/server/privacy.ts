@@ -7,7 +7,7 @@ import { ApiError } from "../core/errors.ts";
 import { uuid } from "../core/crypto.ts";
 import { addDays, weekdayOf, zonedToInstant, localDate } from "../../web/shared/zone.js";
 import { type Ctx, nowIso } from "./context.ts";
-import { bumpAuthz, consentView, requireMember, type ConsentRow, type Purpose } from "./authority.ts";
+import { bumpAuthz, consentView, consentWithdrawn, requireMember, type ConsentRow, type Purpose } from "./authority.ts";
 import { all, audit, one, run, tx } from "./store.ts";
 
 export type PrivacyType = "ACCESS" | "CORRECT" | "RESTRICT" | "WITHDRAW" | "DELETE" | "EXPORT";
@@ -85,6 +85,9 @@ function restrict(ctx: Ctx, ws: string, user: string) {
     ctx.revocations.append("consent_withdrawn", at, { workspace_id: ws, user_id: user, purpose_id: c.purpose_id });
   }
   bumpAuthz(ctx, ws, user, "PRIVACY_RESTRICT", user, { purposes: active.map((c) => c.purpose_id as Purpose) });
+  // Mô-đun: từng đồng ý vừa bị rút, rồi việc hạn chế nói chung (kể cả khi người đó không có đồng ý nào đang hiệu lực).
+  for (const c of active) consentWithdrawn(ctx, ws, user, c.purpose_id, at);
+  for (const m of ctx.modules) m.privacy?.onRestrict?.(ctx, ws, user, at);
 }
 
 function makeExport(ctx: Ctx, ws: string, user: string, requestId: string) {
@@ -93,12 +96,16 @@ function makeExport(ctx: Ctx, ws: string, user: string, requestId: string) {
   const actions = all<Record<string, unknown>>(ctx.db,
     "SELECT action_id, id AS plan_id, kind, state, outcome, evidence_grade, created_at, authorized_at, terminal_at FROM actions WHERE workspace_id = ? AND actor = ? ORDER BY created_at", ws, user);
   const consents = all<ConsentRow>(ctx.db, "SELECT * FROM consents WHERE workspace_id = ? AND user_id = ? ORDER BY at", ws, user).map(consentView);
+  // Phần của từng mô-đun (ServerModule.privacy.exportFor), theo tên mô-đun. Chưa mô-đun nào có dữ liệu thì không có khóa `modules`.
+  const modules: Record<string, unknown> = {};
+  for (const m of ctx.modules) if (m.privacy?.exportFor) modules[m.name] = m.privacy.exportFor(ctx, ws, user);
   const body = {
     generated_at: iso(now), workspace_id: ws, subject: user,
     scope: "Dữ liệu phía máy chủ LeNhip. Dữ liệu sức khỏe nằm trên điện thoại: xuất bằng chức năng exportLocalData() của app.",
     actions, consents,
     grants: all(ctx.db, "SELECT id, scope, resource, status, created_at, revoked_at FROM grants WHERE workspace_id = ? AND user_id = ?", ws, user),
     privacy_requests: all(ctx.db, "SELECT id, type, status, received_at FROM privacy_requests WHERE workspace_id = ? AND user_id = ?", ws, user),
+    ...(Object.keys(modules).length ? { modules } : {}),
   };
   run(ctx.db, "INSERT INTO exports (token_hash, request_id, workspace_id, user_id, body, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
     createHash("sha256").update(token).digest("hex"), requestId, ws, user, JSON.stringify(body), iso(now), iso(now + ctx.config.exportLinkMs));
@@ -145,6 +152,8 @@ export function deleteUserData(ctx: Ctx, ws: string, user: string) {
     run(ctx.db, "UPDATE actions SET input = '{}' WHERE workspace_id = ? AND actor = ?", ws, user);
     run(ctx.db, "UPDATE idem_keys SET body = NULL, status = NULL, tombstone = 1 WHERE workspace_id = ? AND actor = ?", ws, user);
     run(ctx.db, "UPDATE exports SET body = NULL WHERE workspace_id = ? AND user_id = ?", ws, user);
+    // Mô-đun xóa phần của mình trong cùng giao dịch, trước tombstone: lỗi ở đây thì không có gì được coi là đã xóa.
+    for (const m of ctx.modules) m.privacy?.deleteFor?.(ctx, ws, user, at);
     ctx.revocations.append("member_deleted", at, { workspace_id: ws, user_id: user });
     audit(ctx.db, at, { workspace_id: ws, actor: "privacy.delete", action: "member.delete", target: createHash("sha256").update(`${ws}:${user}`).digest("hex").slice(0, 16) });
   });
