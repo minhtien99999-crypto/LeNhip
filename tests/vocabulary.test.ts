@@ -44,6 +44,8 @@ test("quyền mới: messaging.use và social.post hiện trong /v1/me và thu h
   const h = await harness();
   try {
     const at = new Date(h.clock.now()).toISOString();
+    // Dữ liệu mẫu của mô-đun có thể đã cấp sẵn hai quyền này cho tài khoản thử: bỏ đi để ca này kiểm đúng hai quyền chèn dưới đây.
+    run(h.app.ctx.db, "DELETE FROM grants WHERE user_id = 'dev_a' AND scope IN ('messaging.use', 'social.post')");
     for (const [id, scope] of [["gr_msg_a", "messaging.use"], ["gr_soc_a", "social.post"]] as const) {
       run(h.app.ctx.db, "INSERT INTO grants (id, workspace_id, user_id, scope, resource, status, created_at) VALUES (?, ?, 'dev_a', ?, NULL, 'ACTIVE', ?)", id, WS, scope, at);
     }

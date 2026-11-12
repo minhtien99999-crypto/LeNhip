@@ -1,4 +1,99 @@
-/* Kiểu riêng của màn hình Tin nhắn (web/views/messages.js). Nhánh nhắn tin viết ở đây, không sửa styles.css.
-   Quy ước: dùng token màu của phong cách (--bg, --surface, --surface-soft, --text, --muted, --line, --accent, --accent-ink),
-   thuộc tính logic (inline/block) thay cho left/right, mốc 700/701, 1180/1181, 1500 px, và đặt mọi bộ chọn dưới
-   body[data-view=messages] hoặc một lớp có tiền tố msg-. */
+/* Kiểu riêng của màn hình Tin nhắn (web/views/messages.js) và các lớp msg- dùng chung với phần «Thiết bị của tôi».
+   Chỉ dùng token màu của phong cách (--bg, --surface, --surface-soft, --text, --muted, --line, --accent, --accent-ink, --gold),
+   thuộc tính logic (inline/block), vùng bấm từ 44 px. Tới 980 px và khi cỡ chữ từ 150 % (.large-text): một cột, danh sách →
+   hội thoại. Từ 981 px: danh sách 300 px và hội thoại cạnh nhau. */
+/* Mọi lưới một cột dùng minmax(0,1fr): ô soạn có bề ngang nội tại lớn ở cỡ chữ 200 %, không được đẩy rộng cột. */
+.msg-root{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-inline-size:0}
+.msg-heading{flex-wrap:wrap}
+.msg-heading h1{margin-block-end:0}
+.msg-sr{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* Bước đồng ý và bước đăng ký thiết bị */
+.msg-step{max-inline-size:720px;margin-block-start:0}
+.msg-step h2{margin-block-start:0}
+.msg-step p{font-size:.85rem;line-height:1.6}
+.msg-step .consent-row{border-block-end:0}
+.msg-kinds{border:1px solid var(--line);border-radius:14px;padding:8px 14px 10px;margin:14px 0;display:grid;gap:2px;min-inline-size:0}
+.msg-kinds legend{font-size:.8rem;font-weight:600;padding-inline:6px}
+.msg-kind{display:flex;align-items:center;gap:12px;min-block-size:44px;font-size:.85rem;cursor:pointer}
+.msg-kind input{inline-size:22px;block-size:22px;margin:0;accent-color:var(--accent);flex-shrink:0}
+.msg-kind svg{color:var(--accent)}
+.msg-error{margin-block:10px;padding-inline-start:10px;border-inline-start:3px solid var(--gold);font-size:.8rem;color:var(--text)}
+.msg-note{margin:0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface-soft);color:var(--text);font-size:.78rem;line-height:1.5}
+.msg-note p{margin:0;font-size:inherit}
+.msg-note.warn{border-style:dashed;border-color:var(--gold)}
+.msg-step .msg-note{margin-block-end:16px}
+.msg-actions{display:flex;flex-wrap:wrap;gap:10px;margin-block-start:10px}
+
+/* Hai khung */
+.msg-panes{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;min-inline-size:0}
+.msg-list,.msg-thread{min-inline-size:0}
+.msg-root[data-msg-pane=list] .msg-thread,.msg-root[data-msg-pane=thread] .msg-list{display:none}
+@media (min-width:981px){
+  body:not(.large-text) .msg-panes{grid-template-columns:minmax(260px,300px) minmax(0,1fr)}
+  body:not(.large-text) .msg-root .msg-panes>.msg-list,body:not(.large-text) .msg-root .msg-panes>.msg-thread{display:block}
+  body:not(.large-text) .msg-back{display:none}
+  body:not(.large-text) .msg-log{min-block-size:220px}
+}
+
+/* Danh sách hội thoại và người có thể nhắn tin */
+.msg-h{font-size:.95rem;letter-spacing:0;margin-block:20px 8px}
+.msg-list>.msg-h:first-child{margin-block-start:0}
+.msg-items,.msg-people{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.msg-item{inline-size:100%;min-block-size:56px;display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid transparent;border-radius:14px;background:transparent;color:var(--text);text-align:start}
+.msg-item[aria-current=true]{background:var(--surface-soft);border-color:var(--line)}
+.msg-avatar{inline-size:36px;block-size:36px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:var(--surface-soft);color:var(--accent);font-weight:700;font-size:.85rem}
+.msg-item-copy{flex:1;min-inline-size:0;display:grid;gap:2px}
+.msg-item-copy strong{font-size:.85rem;overflow-wrap:break-word}
+.msg-item-copy small{font-size:.68rem;color:var(--muted)}
+.msg-unread{flex-shrink:0;min-inline-size:22px;block-size:22px;padding-inline:6px;border-radius:11px;background:var(--accent);color:var(--accent-ink);font-size:.66rem;font-weight:700;line-height:22px;text-align:center}
+.msg-unread.dot{min-inline-size:10px;inline-size:10px;block-size:10px;padding:0}
+.msg-people li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+.msg-person{min-inline-size:0;font-size:.85rem;overflow-wrap:break-word}
+.msg-share{display:flex;align-items:flex-start;gap:12px;min-block-size:48px;margin-block-start:18px;padding-block-start:14px;border-block-start:1px solid var(--line);cursor:pointer}
+.msg-share input{inline-size:22px;block-size:22px;margin-block:3px 0;margin-inline:0;accent-color:var(--accent);flex-shrink:0}
+.msg-share strong{display:block;font-size:.8rem}
+.msg-share small{display:block;margin-block-start:3px;font-size:.68rem;color:var(--muted)}
+
+/* Hội thoại */
+.msg-pick{padding-block:36px;text-align:center;color:var(--muted)}
+.msg-body{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-inline-size:0}
+.msg-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.msg-head-copy{flex:1 1 140px;min-inline-size:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.msg-title{margin:0;font-size:1.1rem;overflow-wrap:break-word}
+.msg-back{min-inline-size:46px;padding-inline:10px}
+.msg-menu{position:relative}
+.msg-menu summary{list-style:none;cursor:pointer}
+.msg-menu summary::-webkit-details-marker{display:none}
+.msg-menu-items{position:absolute;inset-block-start:calc(100% + 6px);inset-inline-end:0;z-index:5;display:grid;gap:8px;min-inline-size:200px;max-inline-size:calc(100vw - 48px);padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow)}
+.msg-menu-items .button{justify-content:flex-start}
+.msg-notices{display:grid;gap:8px}
+.msg-notices:empty,.msg-state:empty{display:none}
+.msg-log-empty{color:var(--muted);font-size:.8rem}
+.msg-log{display:flex;flex-direction:column;gap:10px;min-block-size:96px;max-block-size:min(52dvh,560px);overflow-y:auto;padding:4px}
+.msg-bubble{position:relative;display:grid;gap:4px;align-self:flex-start;max-inline-size:min(80%,560px);padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface-soft);color:var(--text)}
+.msg-bubble.mine{align-self:flex-end;border-color:transparent;background:var(--accent);color:var(--accent-ink)}
+.msg-bubble.mine[data-status=UNCERTAIN],.msg-bubble.mine[data-status=REJECTED],.msg-bubble.mine[data-status=WAITING]{border:1px dashed var(--muted);background:var(--surface);color:var(--text)}
+.msg-text{margin:0;font-size:.85rem;line-height:1.45;white-space:pre-wrap}
+.msg-text.muted{font-style:italic}
+.msg-meta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;font-size:.66rem}
+.msg-status{font-weight:700}
+.msg-status-note{flex-basis:100%}
+.msg-bubble.mine .text-button{color:var(--accent);text-decoration:underline;font-size:.72rem}
+.msg-state{padding-block-start:12px;border-block-start:1px solid var(--line);font-size:.82rem}
+.msg-state p{margin:0 0 6px}
+
+/* Ô soạn */
+.msg-composer{padding-block-start:12px;border-block-start:1px solid var(--line)}
+.msg-composer-row{display:flex;align-items:flex-end;gap:10px}
+.msg-composer textarea{flex:1;min-inline-size:0;min-block-size:48px;max-block-size:40dvh;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-soft);color:var(--text);font-size:.85rem;line-height:1.4;resize:vertical}
+.msg-send{flex-shrink:0;min-block-size:48px}
+.msg-hint{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-block:8px 0}
+.msg-hint .over{font-weight:700;color:var(--text)}
+.large-text .msg-composer-row{flex-wrap:wrap;justify-content:flex-end}
+.large-text .msg-composer textarea{flex-basis:100%}
+.large-text .msg-bubble{max-inline-size:94%}
+
+/* Hộp mã an toàn */
+.msg-safety-code{display:flex;flex-wrap:wrap;gap:6px 18px;margin-block:4px 14px;font-size:1.25rem;font-weight:700;letter-spacing:2px;font-variant-numeric:tabular-nums;overflow-wrap:normal}
+.msg-safety-state{font-size:.8rem;font-weight:600}

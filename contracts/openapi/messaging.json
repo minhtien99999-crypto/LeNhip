@@ -1,0 +1,1473 @@
+{
+  "paths": {
+    "/v1/messages/people": {
+      "get": {
+        "operationId": "listMessagePeople",
+        "description": "Những thành viên cùng workspace mà người gọi có thể mời nhắn tin: còn quyền messaging.use, còn đồng ý messaging, có ít nhất một điểm nhận tin, không chặn hai chiều (LNH-T33). Danh bạ duy nhất là thành viên của workspace.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgPeople"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/endpoints": {
+      "get": {
+        "operationId": "listMessageEndpoints",
+        "description": "«Thiết bị của tôi» (LNH-T30): các điểm nhận tin của chính người gọi, đang dùng và đã gỡ trong 30 ngày. Máy chủ không lưu tên máy hay user agent; loại máy do người dùng chọn.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thiết bị của tôi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgEndpointList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "registerMessageEndpoint",
+        "description": "Đăng ký trình duyệt này làm một điểm nhận tin với khóa công khai P-256 của nó. Cần đăng nhập mới trong 300 giây (401 REAUTH_REQUIRED). Tối đa 5 điểm đang dùng (422 ENDPOINT_LIMIT). Đăng ký lại đúng khóa đang dùng của mình trả 200 với điểm đã có; khóa đã gỡ hoặc của người khác trả 409.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MsgEndpointCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Điểm nhận tin đã có với đúng khóa này",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgEndpoint"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Đã đăng ký",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgEndpoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/endpoints/{endpoint_id}/revoke": {
+      "post": {
+        "operationId": "revokeMessageEndpoint",
+        "description": "Gỡ một thiết bị của chính mình: các phong bì đang chờ của nó bị xóa, việc gỡ được ghi vào sổ thu hồi độc lập. Gỡ lần hai trả lại đúng trạng thái đã gỡ.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgEndpointId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã gỡ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgEndpoint"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads": {
+      "post": {
+        "operationId": "requestMessageThread",
+        "description": "Gửi lời mời nhắn tin tới một người trong danh sách people. Lời mời không mang chữ nào. Người ngoài danh sách (kể cả người đã chặn) là 404. Đã có hội thoại đang mời hoặc đang mở, hoặc chưa được phép mời lại: 409 INVALID_TRANSITION kèm resource_id. Tối đa 10 lời mời đang chờ (429).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MsgThreadCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "THREAD_REQUESTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/accept": {
+      "post": {
+        "operationId": "acceptMessageThread",
+        "description": "Người được mời chấp nhận: hội thoại thành THREAD_ACTIVE. Người mời không còn dùng được nhắn tin thì 409 RECIPIENT_UNAVAILABLE. Cạnh không có trong contracts/state_transitions.csv trả 409 INVALID_TRANSITION.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hội thoại sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/decline": {
+      "post": {
+        "operationId": "declineMessageThread",
+        "description": "Người được mời từ chối: THREAD_CLOSED; chỉ người từ chối được mời lại. Cạnh không có trong contracts/state_transitions.csv trả 409 INVALID_TRANSITION.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hội thoại sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/withdraw": {
+      "post": {
+        "operationId": "withdrawMessageThread",
+        "description": "Người mời rút lời mời: THREAD_CLOSED. Cạnh không có trong contracts/state_transitions.csv trả 409 INVALID_TRANSITION.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hội thoại sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/block": {
+      "post": {
+        "operationId": "blockMessageThread",
+        "description": "Chặn người kia: THREAD_BLOCKED. Phong bì đang chờ giao tới người chặn bị xóa. Người bị chặn thấy hội thoại là THREAD_CLOSED. Cạnh không có trong contracts/state_transitions.csv trả 409 INVALID_TRANSITION.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hội thoại sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/unblock": {
+      "post": {
+        "operationId": "unblockMessageThread",
+        "description": "Người đã chặn bỏ chặn: THREAD_CLOSED; chỉ người đó được mời lại. Cạnh không có trong contracts/state_transitions.csv trả 409 INVALID_TRANSITION.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hội thoại sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/keys": {
+      "get": {
+        "operationId": "getMessageThreadKeys",
+        "description": "Khóa công khai của mọi điểm nhận tin đang dùng của cả hai người và mã băm key_set. Thiết bị tự tính lại key_set và so với khóa đã ghim trước khi niêm phong. Chỉ khi hội thoại đang mở và người kia còn nhận được tin; nếu không: 409 RECIPIENT_UNAVAILABLE.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tập khóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThreadKeys"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/messages": {
+      "post": {
+        "operationId": "sendMessage",
+        "description": "Gửi một tin đã mã hóa đầu cuối (LNH-MSG-1). Máy chủ chỉ nhận bản mã. Không phải một kế hoạch: không gì ngoài LeNhip thay đổi (LNH-T34). 409 DUPLICATE_MESSAGE (kèm resource_id) khi client_ref này của thiết bị đã được lưu; 409 KEYS_CHANGED khi tập khóa đã đổi, không lưu gì; 409 RECIPIENT_UNAVAILABLE khi không gửi được tới người kia; 429 kèm Retry-After khi quá 30 tin một phút hoặc 500 tin một ngày. Phản hồi chỉ có mã và thời điểm.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MsgSend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Máy chủ đã nhận",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgSent"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/threads/{thread_id}/read": {
+      "post": {
+        "operationId": "markMessageThreadRead",
+        "description": "Nâng mốc đã đọc của chính mình tới through_seq. Người kia chỉ thấy mốc này khi share=true, và không bao giờ vượt quá mốc đã tới thiết bị (LNH-T35). Mốc chỉ tăng.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/MsgThreadId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MsgRead"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hội thoại sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgThread"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/inbox": {
+      "get": {
+        "operationId": "getMessageInbox",
+        "description": "Hộp thư của một điểm nhận tin: các hội thoại của người gọi, các thiết bị của họ và tối đa 50 tin còn chờ thiết bị này, cũ trước. Thăm dò bằng GET thường (LNH-T35): gửi lại etag lần trước; không có gì đổi thì chỉ nhận {etag, changed:false}. Đọc hộp thư không đổi gì ở máy chủ; phong bì chỉ bị xóa khi thiết bị xác nhận đã lưu (ack).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+            }
+          },
+          {
+            "name": "etag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Digest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hộp thư",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgInbox"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/ack": {
+      "post": {
+        "operationId": "ackMessages",
+        "description": "Thiết bị xác nhận đã lưu các tin này: phong bì của nó bị xóa khỏi máy chủ, và nếu tin do người kia gửi thì mốc đã tới thiết bị tăng. Mã lạ hoặc đã xác nhận bị bỏ qua.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MsgAck"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Số phong bì vừa xóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgAcked"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/messages/reports": {
+      "post": {
+        "operationId": "reportMessageThread",
+        "description": "Báo cáo người kia trong một hội thoại, với một trong ba lý do và tùy chọn mã một tin của họ. Không kèm nội dung: máy chủ không đọc được tin. Tối đa 20 báo cáo một ngày (429).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MsgReportCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã ghi nhận",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgReportCreated"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/ops/messages/reports": {
+      "get": {
+        "operationId": "listMessageReports",
+        "description": "Vai WORKSPACE_ADMIN: các báo cáo trong 30 ngày, số báo cáo theo người bị báo cáo và mã quyền messaging.use đang hiệu lực của họ. Tạm ngừng một người là POST /v1/grants/{grant_id}/revoke.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Báo cáo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MsgOpsReports"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "MsgThreadId": {
+        "name": "thread_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^th_[A-Za-z0-9_-]{6,64}$"
+        }
+      },
+      "MsgEndpointId": {
+        "name": "endpoint_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+        }
+      }
+    },
+    "schemas": {
+      "MsgEndpointCreate": {
+        "type": "object",
+        "description": "Không có tên máy, user agent hay mô tả tự do: loại máy là một trong năm giá trị do người dùng chọn.",
+        "additionalProperties": false,
+        "required": [
+          "public_key",
+          "kind"
+        ],
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{87}$",
+            "description": "Khóa công khai P-256, điểm không nén 65 byte (0x04 ‖ X ‖ Y), base64url không padding."
+          },
+          "kind": {
+            "enum": [
+              "PHONE",
+              "TABLET",
+              "LAPTOP",
+              "DESKTOP",
+              "OTHER"
+            ]
+          }
+        }
+      },
+      "MsgEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "endpoint_id",
+          "kind",
+          "key_id",
+          "status",
+          "created_at",
+          "revoked_at"
+        ],
+        "properties": {
+          "endpoint_id": {
+            "type": "string",
+            "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+          },
+          "kind": {
+            "enum": [
+              "PHONE",
+              "TABLET",
+              "LAPTOP",
+              "DESKTOP",
+              "OTHER"
+            ]
+          },
+          "key_id": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcTime"
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MsgEndpointList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "endpoints",
+          "limit"
+        ],
+        "properties": {
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MsgEndpoint"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "MsgPeople": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "people"
+        ],
+        "properties": {
+          "people": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "user_id",
+                "name"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "MsgThreadCreate": {
+        "type": "object",
+        "description": "Chỉ có mã người được mời; lời mời không mang chữ.",
+        "additionalProperties": false,
+        "required": [
+          "peer"
+        ],
+        "properties": {
+          "peer": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+          }
+        }
+      },
+      "MsgThread": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "thread_id",
+          "state",
+          "peer",
+          "role",
+          "can_request",
+          "key_set",
+          "last_seq",
+          "delivered_seq",
+          "read_seq",
+          "peer_delivered_seq",
+          "peer_read_seq",
+          "created_at"
+        ],
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^th_[A-Za-z0-9_-]{6,64}$"
+          },
+          "state": {
+            "enum": [
+              "THREAD_REQUESTED",
+              "THREAD_ACTIVE",
+              "THREAD_CLOSED",
+              "THREAD_BLOCKED"
+            ],
+            "description": "Trạng thái người gọi được thấy. THREAD_BLOCKED chỉ hiện với người đã chặn; người bị chặn thấy THREAD_CLOSED."
+          },
+          "peer": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "user_id",
+              "name"
+            ],
+            "properties": {
+              "user_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "role": {
+            "enum": [
+              "REQUESTER",
+              "ADDRESSEE"
+            ],
+            "description": "Vai của người gọi với lời mời gần nhất."
+          },
+          "can_request": {
+            "type": "boolean",
+            "description": "Người gọi được gửi lời mời mới cho hội thoại đã đóng này."
+          },
+          "key_set": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "description": "Mã băm tập khóa hiện hành khi người gọi gửi được tới người kia ngay lúc này (cùng giá trị với GET …/keys); null khi không gửi được. Chỉ là gợi ý để thiết bị biết tập khóa đã đổi: thiết bị lấy lại khóa và tự tính lại mã băm trước khi dùng."
+          },
+          "last_seq": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "delivered_seq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tin của người kia đã được một thiết bị của người gọi xác nhận lưu, liên tục tới số này."
+          },
+          "read_seq": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "peer_delivered_seq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Bằng chứng «đã tới thiết bị» cho tin của người gọi."
+          },
+          "peer_read_seq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Bằng chứng «đã xem»: chỉ tăng khi người kia bật chia sẻ."
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcTime"
+          }
+        }
+      },
+      "MsgThreadKeys": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "thread_id",
+          "endpoints",
+          "key_set"
+        ],
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^th_[A-Za-z0-9_-]{6,64}$"
+          },
+          "endpoints": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "endpoint_id",
+                "public_key",
+                "user_id"
+              ],
+              "properties": {
+                "endpoint_id": {
+                  "type": "string",
+                  "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+                },
+                "public_key": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{87}$",
+                  "description": "Khóa công khai P-256, điểm không nén 65 byte (0x04 ‖ X ‖ Y), base64url không padding."
+                },
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+                }
+              }
+            }
+          },
+          "key_set": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      },
+      "MsgEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "endpoint_id",
+          "enc",
+          "wrapped"
+        ],
+        "properties": {
+          "endpoint_id": {
+            "type": "string",
+            "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+          },
+          "enc": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{87}$",
+            "description": "Khóa tạm của HPKE, 65 byte."
+          },
+          "wrapped": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{64}$",
+            "description": "Khóa nội dung đã niêm phong, 48 byte."
+          }
+        }
+      },
+      "MsgSend": {
+        "type": "object",
+        "description": "Thân của LNH-MSG-1 (web/shared/msg-crypto.js, fixture contracts/fixtures/msg/lnh-msg-1.json). Không có trường nào mang chữ đọc được; mọi trường lạ bị từ chối.",
+        "additionalProperties": false,
+        "required": [
+          "client_ref",
+          "sender_endpoint",
+          "key_set",
+          "iv",
+          "ct",
+          "envelopes"
+        ],
+        "properties": {
+          "client_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{22,64}$",
+            "description": "Mã do thiết bị đặt, duy nhất cho mỗi tin của thiết bị đó; giữ nguyên khi niêm phong lại."
+          },
+          "sender_endpoint": {
+            "type": "string",
+            "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+          },
+          "key_set": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "iv": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{16}$"
+          },
+          "ct": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{363,16064}$",
+            "description": "Bản mã AES-256-GCM kèm thẻ 16 byte; phần đã đệm là bội số của 256 byte, tối đa 12.032 byte."
+          },
+          "envelopes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/MsgEnvelope"
+            }
+          }
+        }
+      },
+      "MsgSent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "message_id",
+          "seq",
+          "sent_at"
+        ],
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "pattern": "^msg_[A-Za-z0-9_-]{6,64}$"
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sent_at": {
+            "$ref": "#/components/schemas/UtcTime"
+          }
+        }
+      },
+      "MsgInboxMessage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "message_id",
+          "thread_id",
+          "seq",
+          "sender_user",
+          "sender_endpoint",
+          "client_ref",
+          "iv",
+          "ct",
+          "enc",
+          "wrapped",
+          "sent_at"
+        ],
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "pattern": "^msg_[A-Za-z0-9_-]{6,64}$"
+          },
+          "thread_id": {
+            "type": "string",
+            "pattern": "^th_[A-Za-z0-9_-]{6,64}$"
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sender_user": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+          },
+          "sender_endpoint": {
+            "type": "string",
+            "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+          },
+          "client_ref": {
+            "type": "string"
+          },
+          "iv": {
+            "type": "string"
+          },
+          "ct": {
+            "type": "string"
+          },
+          "enc": {
+            "type": "string"
+          },
+          "wrapped": {
+            "type": "string"
+          },
+          "sent_at": {
+            "$ref": "#/components/schemas/UtcTime"
+          }
+        }
+      },
+      "MsgInbox": {
+        "type": "object",
+        "description": "Khi changed=false chỉ có etag và changed. Khi changed=true có đủ threads, endpoints, messages và more.",
+        "additionalProperties": false,
+        "required": [
+          "etag",
+          "changed"
+        ],
+        "properties": {
+          "etag": {
+            "$ref": "#/components/schemas/Digest"
+          },
+          "changed": {
+            "type": "boolean"
+          },
+          "threads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MsgThread"
+            }
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MsgEndpoint"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/MsgInboxMessage"
+            }
+          },
+          "more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MsgAck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "endpoint_id",
+          "message_ids"
+        ],
+        "properties": {
+          "endpoint_id": {
+            "type": "string",
+            "pattern": "^mep_[A-Za-z0-9_-]{6,64}$"
+          },
+          "message_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "pattern": "^msg_[A-Za-z0-9_-]{6,64}$"
+            }
+          }
+        }
+      },
+      "MsgAcked": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "acked"
+        ],
+        "properties": {
+          "acked": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MsgRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "through_seq",
+          "share"
+        ],
+        "properties": {
+          "through_seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "share": {
+            "type": "boolean",
+            "description": "true: cho người kia thấy mốc đã đọc này."
+          }
+        }
+      },
+      "MsgReportCreate": {
+        "type": "object",
+        "description": "Không có trường chữ tự do: báo cáo không kèm nội dung.",
+        "additionalProperties": false,
+        "required": [
+          "thread_id",
+          "reason"
+        ],
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "pattern": "^th_[A-Za-z0-9_-]{6,64}$"
+          },
+          "reason": {
+            "enum": [
+              "SPAM",
+              "HARASSMENT",
+              "OTHER"
+            ]
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^msg_[A-Za-z0-9_-]{6,64}$"
+          }
+        }
+      },
+      "MsgReportCreated": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "report_id"
+        ],
+        "properties": {
+          "report_id": {
+            "type": "string",
+            "pattern": "^rp_[A-Za-z0-9_-]{6,64}$"
+          }
+        }
+      },
+      "MsgOpsReports": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reports",
+          "reported"
+        ],
+        "properties": {
+          "reports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "report_id",
+                "reporter",
+                "reported",
+                "thread_id",
+                "message_id",
+                "reason",
+                "at"
+              ],
+              "properties": {
+                "report_id": {
+                  "type": "string",
+                  "pattern": "^rp_[A-Za-z0-9_-]{6,64}$"
+                },
+                "reporter": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+                },
+                "reported": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+                },
+                "thread_id": {
+                  "type": "string",
+                  "pattern": "^th_[A-Za-z0-9_-]{6,64}$"
+                },
+                "message_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "enum": [
+                    "SPAM",
+                    "HARASSMENT",
+                    "OTHER"
+                  ]
+                },
+                "at": {
+                  "$ref": "#/components/schemas/UtcTime"
+                }
+              }
+            }
+          },
+          "reported": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "user_id",
+                "count",
+                "grant_id"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "grant_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

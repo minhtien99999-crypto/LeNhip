@@ -145,40 +145,7 @@ await run("khung giao diện", async (t) => {
   ok((await navIds(only.page, "desktop-nav")).join() === "home,health,work,house,connect" && (await only.page.$$eval(".connect-grid > section", (els) => els.map((e) => e.dataset.section))).join() === "trackers" && (await only.page.getAttribute("body", "data-view")) === "connect", "chỉ bật trackers: có Kết nối với một phần Thiết bị theo dõi, không có Tin nhắn; mở thẳng được bằng #connect");
   await only.context.close();
 
-  // ---------------------------------------------------------------- màn hình có trạng thái: không dựng lại khi render nền
-  await desk.click("#desktop-nav button[data-nav=messages]");
-  ok((await desk.textContent("main")).includes("Phần nhắn tin chưa có trong bản dựng này") && (await desk.$("main button, main form")) === null, "Tin nhắn (giữ chỗ): nói rõ chưa có phần nhắn tin, không có nút gửi");
-  await desk.click("#shell-draft");
-  await desk.keyboard.type("nháp đang gõ dở");
-  await desk.evaluate(() => {
-    const box = document.getElementById("shell-draft");
-    box.setSelectionRange(4, 9);
-    box.dataset.probe = "nút-ban-đầu";
-    window.__sameBox = box;
-  });
-  const draft = () => desk.evaluate(() => {
-    const box = document.getElementById("shell-draft");
-    return { same: box === window.__sameBox, value: box?.value, focused: document.activeElement === box, selection: [box?.selectionStart, box?.selectionEnd].join("-") };
-  });
-  const kept = (d) => d.same && d.value === "nháp đang gõ dở" && d.focused && d.selection === "4-9";
-  await first.context.setOffline(true);
-  await desk.waitForSelector("#banner:not([hidden])");
-  const whileOffline = await draft();
-  await first.context.setOffline(false);
-  await desk.waitForSelector("#banner", { state: "hidden" });
-  await desk.waitForTimeout(300);
-  const afterOnline = await draft();
-  ok(kept(whileOffline) && kept(afterOnline), "ô đang soạn trong màn hình có trạng thái: chữ, con trỏ và focus còn nguyên qua hai lần render nền (mất mạng, có mạng lại và nạp lại /v1/me)");
-  await desk.click("#settings-button");
-  await desk.check("#settings-form input[name=compact]");
-  await desk.click("#settings-form button[type=submit]");
-  await desk.waitForSelector("body.compact", { state: "attached" });
-  const afterSettings = await draft();
-  ok(afterSettings.same && afterSettings.value === "nháp đang gõ dở", "lưu Cá nhân hóa (render lại cả trang): ô đang soạn không bị dựng lại, chữ còn nguyên");
-  await shot(desk, "messages-desktop");
-  await desk.click("#desktop-nav button[data-nav=home]");
-  await desk.click("#desktop-nav button[data-nav=messages]");
-  ok((await desk.inputValue("#shell-draft")) === "", "rời màn hình rồi quay lại: màn hình được mount mới");
+  // Màn hình có trạng thái thật (Tin nhắn) giữ chữ đang soạn qua các lần render nền: xét ở scripts/e2e-messages.mjs.
 
   // ---------------------------------------------------------------- hợp đồng của sổ đăng ký, đo bằng một mô-đun thử
   const probe = await t.open({ modules: ALL, wait: false });

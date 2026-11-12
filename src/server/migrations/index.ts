@@ -11,10 +11,12 @@
 import type { Migration } from "../store.ts";
 import { m0002 } from "./0002_v1_authority.ts";
 // ── 0003 nhắn tin: dòng import đặt ngay dưới dòng này ──
+import { m0003 } from "./0003_messaging.ts";
 // ── 0004 mạng xã hội: dòng import đặt ngay dưới dòng này ──
 
 export const LATER_MIGRATIONS: Migration[] = [
   m0002,
   // ── 0003 nhắn tin: một dòng `m0003,` đặt ngay dưới dòng này ──
+  m0003,
   // ── 0004 mạng xã hội: một dòng `m0004,` đặt ngay dưới dòng này ──
 ];

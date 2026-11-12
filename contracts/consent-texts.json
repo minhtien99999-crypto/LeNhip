@@ -6,5 +6,7 @@
   {"purpose_id":"home_control","locale":"vi","text_version":"v1-2026-11-11","sha256":"N_b1B1VQqw-L89adKpZaq47OfK7hIufDP-I4iCnnWeA"},
   {"purpose_id":"home_control","locale":"en","text_version":"v1-2026-11-11.en","sha256":"6sDuCeM0vGrlqFeoLnSnZIEMIUmz88c9wBbgKPC7XdY"},
   {"purpose_id":"beta_telemetry","locale":"vi","text_version":"v1-2026-11-11","sha256":"SnhbVdsdmKfXl0emCc-5dNSUqPGMnoJh2l1Ws8JDaVc"},
-  {"purpose_id":"beta_telemetry","locale":"en","text_version":"v1-2026-11-11.en","sha256":"-ETVcdM9cRa8otI-i75nZUJ_dlGtl8gsSZtIdpl1rCg"}
+  {"purpose_id":"beta_telemetry","locale":"en","text_version":"v1-2026-11-11.en","sha256":"-ETVcdM9cRa8otI-i75nZUJ_dlGtl8gsSZtIdpl1rCg"},
+  {"purpose_id":"messaging","locale":"vi","text_version":"v1-2026-11-11","sha256":"N5248E3UL82VLLXabk9xIGKbyOUu2T75W4oPDkndcOs"},
+  {"purpose_id":"messaging","locale":"en","text_version":"v1-2026-11-11.en","sha256":"vxeopg-crrCEItFEsNz_rLYnhMtBHSXAZ9nxkPBfp0g"}
 ]

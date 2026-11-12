@@ -160,10 +160,12 @@ export function validateModules(modules: readonly ServerModule[], core: { routes
 // Mỗi mô-đun có mốc riêng để các nhánh làm song song không sửa cùng một dòng. Thêm mô-đun khác: thêm một cặp mốc mới ở cuối.
 // Thiết bị theo dõi không có mô-đun máy chủ (LNH-T53: máy chủ không có API nào về thiết bị theo dõi); nó chỉ có cờ `trackers`.
 // ── nhắn tin và «Thiết bị của tôi»: dòng import đặt ngay dưới dòng này ──
+import { messaging } from "./messaging.ts";
 // ── mạng xã hội: dòng import đặt ngay dưới dòng này ──
 
 /** Thứ tự trong mảng là thứ tự so khớp route (route lõi luôn trước) và thứ tự gọi hook. */
 export const MODULES: ServerModule[] = [
   // ── nhắn tin và «Thiết bị của tôi»: một dòng đặt ngay dưới dòng này ──
+  messaging,
   // ── mạng xã hội: một dòng đặt ngay dưới dòng này ──
 ];

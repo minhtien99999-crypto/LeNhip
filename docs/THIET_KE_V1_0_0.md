@@ -12,8 +12,8 @@ các mã `LNH-…` mới (từ F20, T20, Q08, D13) định nghĩa ở đây.
   không bị cấm. Yêu cầu 3, 4, 5 là mô-đun và loại máy mới: **cần SRS V1.2** (LNH-F20). Vì vậy mỗi phần mới có cờ riêng,
   **mặc định tắt**; chỉ dữ liệu mẫu ở chế độ dev bật sẵn.
 - «Tất cả mạng xã hội» và «tất cả thiết bị theo dõi» không làm thật được từ một bản web tham chiếu (LNH-F21, LNH-F22).
-  Bản này dựng khung, danh mục có ghi mức bằng chứng, đường dùng được ngay không cần thỏa thuận, và bộ giả lập cho phần
-  cần đăng ký. Không chỗ nào giả vờ đã kết nối.
+  Bản này dựng khung, danh mục có ghi mức bằng chứng và đường dùng được ngay không cần thỏa thuận. Phần cần đăng ký
+  với nền tảng (liên kết tài khoản, đăng qua API) mới có thiết kế, chưa có mã. Không chỗ nào giả vờ đã kết nối.
 - Chín nguyên tắc của 0.1.0 giữ nguyên: dữ liệu sức khỏe không rời thiết bị; thay đổi ra ngoài đi kế hoạch → xem lại →
   đồng ý trong 120 giây → giấy phép → receiver → bằng chứng; UNKNOWN không tự thành FAILED, không tự gửi lại POST;
   mọi POST có Idempotency-Key; LeLe chỉ đề xuất; không phụ thuộc runtime.
@@ -61,10 +61,10 @@ các mã `LNH-…` mới (từ F20, T20, Q08, D13) định nghĩa ở đây.
 |---|---|
 | LNH-T40 | Ranh giới của «tất cả nền tảng»: (a) bảng chia sẻ của hệ điều hành (Web Share API) tới mọi ứng dụng máy đó có; (b) danh mục 34 nền tảng trong `web/shared/social-registry.js`, mỗi mục có khả năng và mức bằng chứng; (c) liên kết chia sẻ trực tiếp chỉ bật cho nền tảng có định dạng được xác nhận: Threads, X, Telegram, LINE, Bluesky; (d) sao chép và email. Các mục còn lại nằm trong danh mục ở trạng thái chưa xác nhận hoặc cần đăng ký. |
 | LNH-T41 | Chia sẻ ra diễn ra trên thiết bị, không gọi máy chủ, không lưu lịch sử. Thẻ chia sẻ chỉ gồm ghi chú người dùng tự gõ (tối đa 280 ký tự) và liên kết LeNhip nếu có địa chỉ công khai. Không có ô chọn dữ liệu sức khỏe, lịch hay nhà. Sau khi mở cửa sổ nền tảng: «LeNhip không biết bạn đã đăng hay chưa». |
-| LNH-T42 | Liên kết tài khoản: OAuth 2.0 mã ủy quyền + PKCE S256, chuyển hướng cả trang, `state` dùng một lần gắn với người bắt đầu. **Chỉ có nhà cung cấp giả lập `mock`**; `SOCIAL_VENDOR_PROFILES` rỗng nên không nền tảng thật nào liên kết được. Token chỉ ở bộ nhớ adapter, không vào sổ, log, phản hồi hay trình duyệt. |
-| LNH-T43 | Đăng qua API là loại hành động `social.post`, đi trọn chuỗi kế hoạch → đồng ý → giấy phép → receiver → bằng chứng. Chỉ đăng **thẻ theo mã** (`card_code`), không văn bản tự do: không chữ nào của người dùng vào máy chủ. ACK 10 giây, UNKNOWN sau 30 giây; đọc lại theo mã bài; không bao giờ tự gửi lại. |
-| LNH-T44 | Nhà cung cấp giả lập dùng issuer và gốc tin cậy `sim`; bằng chứng hạng `SIMULATED`, nhãn «mô phỏng» (mở rộng LNH-T19). |
-| LNH-T45 | Cổng: cờ `social` (tắt khi chưa đặt), mục đích đồng ý `social_post`, quyền `social.post`. Gỡ liên kết xóa token trước rồi gọi thu hồi một lần; báo đúng nền tảng đã xác nhận hay chưa. Không SDK, widget, pixel hay logo của nền tảng; CSP không đổi. Không đăng nhập bằng mạng xã hội. LeLe không soạn bài. |
+| LNH-T42 | **Thiết kế, chưa cài ở 1.0.0.** Liên kết tài khoản: OAuth 2.0 mã ủy quyền + PKCE S256, chuyển hướng cả trang, `state` dùng một lần gắn với người bắt đầu. Bước đầu chỉ có nhà cung cấp giả lập `mock`; `SOCIAL_VENDOR_PROFILES` rỗng nên không nền tảng thật nào liên kết được. Token chỉ ở bộ nhớ adapter, không vào sổ, log, phản hồi hay trình duyệt. Giao diện 1.0.0 ghi rõ «Liên kết tài khoản chưa có trong bản dựng này». |
+| LNH-T43 | **Thiết kế, chưa cài ở 1.0.0.** Đăng qua API là loại hành động `social.post`, đi trọn chuỗi kế hoạch → đồng ý → giấy phép → receiver → bằng chứng. Chỉ đăng **thẻ theo mã** (`card_code`), không văn bản tự do: không chữ nào của người dùng vào máy chủ. ACK 10 giây, UNKNOWN sau 30 giây; đọc lại theo mã bài; không bao giờ tự gửi lại. |
+| LNH-T44 | **Thiết kế, chưa cài ở 1.0.0.** Nhà cung cấp giả lập dùng issuer và gốc tin cậy `sim`; bằng chứng hạng `SIMULATED`, nhãn «mô phỏng» (mở rộng LNH-T19). Lõi đã ép loại tác vụ dùng gốc tin cậy `sim` chỉ nhận bằng chứng `SIMULATED` từ adapter. |
+| LNH-T45 | Cổng: cờ `social` (tắt khi chưa đặt) bật phần chia sẻ. Mục đích đồng ý `social_post` và quyền `social.post` đã có trong lược đồ (migration 0002), để dành cho LNH-T42 và LNH-T43; 1.0.0 chưa dùng. Không SDK, widget, pixel hay logo của nền tảng; CSP không đổi. Không đăng nhập bằng mạng xã hội. LeLe không soạn bài. |
 
 ### 3.4 Nhắn tin (yêu cầu 4)
 
@@ -109,7 +109,7 @@ các mã `LNH-…` mới (từ F20, T20, Q08, D13) định nghĩa ở đây.
 |---|---|
 | LNH-D13 | Người bản ngữ rà soát 12 bản dịch; chuyên gia rà câu về sức khỏe; chạy T18 (chữ 200 %) và T20 theo từng ngôn ngữ. |
 | LNH-D14 | CLO duyệt văn bản đồng ý từng ngôn ngữ và hai mục đích mới (`messaging`, `social_post`). |
-| LNH-D15 | Đăng ký ứng dụng với nền tảng thật, kho bí mật cho token, hồ sơ nhà cung cấp; đọc trực tiếp tài liệu chính thức để bật các liên kết chia sẻ còn lại. |
+| LNH-D15 | Cài liên kết tài khoản và `social.post` theo LNH-T42 đến LNH-T44 (trước hết với nhà cung cấp giả lập); đăng ký ứng dụng với nền tảng thật, kho bí mật cho token, hồ sơ nhà cung cấp; đọc trực tiếp tài liệu chính thức để bật các liên kết chia sẻ còn lại. |
 | LNH-D16 | HealthSource v2 trên app native; thỏa thuận với hãng thiết bị; kiểm tệp xuất thật của Apple, Samsung, Garmin, Fitbit, Oura. |
 | LNH-D17 | Phụ lục SRS V1.2: mô-đun Kết nối và Nhắn tin, loại máy web, bảng lưu giữ, mô hình đe dọa, ca nghiệm thu mới. |
 | LNH-D18 | Service worker, chế độ ngoại tuyến và thông báo đẩy (cần nhà cung cấp và hồ sơ chuyển dữ liệu). |
@@ -120,7 +120,7 @@ các mã `LNH-…` mới (từ F20, T20, Q08, D13) định nghĩa ở đây.
 
 | | |
 |---|---|
-| **Thật, có test** | Logo và icon; runtime ngôn ngữ, 13 catalog, định dạng số nhiều và ngày giờ; bộ lọc LeLe đa ngôn ngữ; chia sẻ ra từ thiết bị và trình dựng liên kết; PKCE và vòng liên kết; chuỗi `social.post`; mật mã `LNH-MSG-1` theo vector công bố; hộp thư, hội thoại, hộp gửi; đăng ký thiết bị; bộ phân tích Bluetooth và tệp xuất theo vector; bố cục bốn cỡ màn hình trên Chromium. |
-| **Giả lập** | Nhà cung cấp mạng xã hội (`mock`, bằng chứng `SIMULATED`); người dùng và «thiết bị» trong test (tài khoản dev, nhiều ngữ cảnh trình duyệt trên một máy); dữ liệu sức khỏe tổng hợp; Graph, Matter, IAM như ở 0.1.0. |
+| **Thật, có test** | Logo và icon; runtime ngôn ngữ, 13 catalog, định dạng số nhiều và ngày giờ; bộ lọc LeLe đa ngôn ngữ; chia sẻ ra từ thiết bị và trình dựng liên kết; mật mã `LNH-MSG-1` theo vector công bố; hộp thư, hội thoại, hộp gửi; đăng ký thiết bị; bộ phân tích Bluetooth và tệp xuất theo vector; bố cục bốn cỡ màn hình trên Chromium. |
+| **Giả lập** | Người dùng và «thiết bị» trong test (tài khoản dev, nhiều ngữ cảnh trình duyệt trên một máy); dữ liệu sức khỏe tổng hợp; Graph, Matter, IAM như ở 0.1.0. |
 | **Bản nháp** | Mọi bản dịch ngoài tiếng Việt và bảng từ của LeLe: dịch máy, chưa ai rà soát, chưa CLO hay chuyên gia y tế duyệt. |
 | **Chưa kiểm được ở đây** | Mọi nền tảng mạng xã hội thật; thiết bị Bluetooth thật; tệp xuất thật của hãng; Safari, Firefox, iOS, Android; trình đọc màn hình; phân loại pháp lý; ca T01–T22 trên môi trường đích. |

@@ -32,3 +32,13 @@ CONFLICT,late_evidence,VERIFIER,CONFLICT,thêm evidence hoặc discrepancy; gi�
 REJECTED,late_evidence,VERIFIER,REJECTED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
 EXPIRED,late_evidence,VERIFIER,EXPIRED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
 CANCELED,late_evidence,VERIFIER,CANCELED,thêm evidence hoặc discrepancy; giữ kết quả đã chốt,,SRS 18 và 19
+THREAD_REQUESTED,accept,ADDRESSEE,THREAD_ACTIVE,người được mời chấp nhận; cả hai còn là thành viên có quyền messaging.use và đồng ý messaging,,LNH-T33
+THREAD_REQUESTED,decline,ADDRESSEE,THREAD_CLOSED,người được mời từ chối; chỉ người đó được mời lại (reopen_by),,LNH-T33
+THREAD_REQUESTED,withdraw,REQUESTER,THREAD_CLOSED,người mời rút lời mời,,LNH-T33
+THREAD_REQUESTED,block,ADDRESSEE,THREAD_BLOCKED,người được mời chặn người mời,,LNH-T33
+THREAD_ACTIVE,block,MEMBER,THREAD_BLOCKED,một trong hai người chặn; phong bì đang chờ giao tới người chặn bị xóa,,LNH-T33
+THREAD_CLOSED,block,MEMBER,THREAD_BLOCKED,một trong hai người chặn,,LNH-T33
+THREAD_BLOCKED,unblock,BLOCKER,THREAD_CLOSED,đúng người đã chặn; chỉ người đó được mời lại (reopen_by),,LNH-T33
+THREAD_CLOSED,request,MEMBER,THREAD_REQUESTED,reopen_by trống hoặc là người gọi; người kia còn dùng được nhắn tin và có thiết bị,,LNH-T33
+THREAD_REQUESTED,revoke,AUTHORITY,THREAD_CLOSED,"một bên mất tư cách thành viên, quyền messaging.use hoặc đồng ý messaging",,LNH-T33
+THREAD_ACTIVE,revoke,AUTHORITY,THREAD_CLOSED,"một bên mất tư cách thành viên, quyền messaging.use hoặc đồng ý messaging",,LNH-T33

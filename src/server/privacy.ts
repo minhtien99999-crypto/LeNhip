@@ -98,7 +98,11 @@ function makeExport(ctx: Ctx, ws: string, user: string, requestId: string) {
   const consents = all<ConsentRow>(ctx.db, "SELECT * FROM consents WHERE workspace_id = ? AND user_id = ? ORDER BY at", ws, user).map(consentView);
   // Phần của từng mô-đun (ServerModule.privacy.exportFor), theo tên mô-đun. Chưa mô-đun nào có dữ liệu thì không có khóa `modules`.
   const modules: Record<string, unknown> = {};
-  for (const m of ctx.modules) if (m.privacy?.exportFor) modules[m.name] = m.privacy.exportFor(ctx, ws, user);
+  // Hook trả undefined nghĩa là mô-đun không giữ gì của người này: không đặt khóa, tệp xuất giữ nguyên dạng cũ.
+  for (const m of ctx.modules) {
+    const part = m.privacy?.exportFor?.(ctx, ws, user);
+    if (part !== undefined) modules[m.name] = part;
+  }
   const body = {
     generated_at: iso(now), workspace_id: ws, subject: user,
     scope: "Dữ liệu phía máy chủ LeNhip. Dữ liệu sức khỏe nằm trên điện thoại: xuất bằng chức năng exportLocalData() của app.",

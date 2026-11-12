@@ -1,0 +1,219 @@
+{
+  "scheme": "LNH-MSG-1",
+  "note": "Fixture của LNH-MSG-1 (LNH-T31), mô tả định dạng ở đầu web/shared/msg-crypto.js. Mọi khóa ở đây là khóa thử công khai: d = SHA-256(\"LNH-MSG-1 fixture key: <nhãn>\"), không bảo vệ thứ gì. Khóa nội dung, IV và khóa tạm được cố định chỉ để kết quả lặp lại được; mã thật luôn lấy ngẫu nhiên. Chuỗi nhị phân là base64url không padding. Sinh lại bằng node scripts/make-msg-fixtures.ts.",
+  "keys": {
+    "a1": {
+      "endpoint_id": "mep_00000000-0000-4000-8000-0000000000a1",
+      "user_id": "dev_a",
+      "d": "FKcRzza_My74Kit9BA60Je6rPc6x9TsjTEsw67JWWD0",
+      "public_key": "BF9AmvwbZ2WYfn0sSOrm0R6JCX89hjVtUT7bmmjqikGygdmOmyM4_stoXO3VKyzIJs9deCm_ZOZeatAjErPvEuI",
+      "key_id": "NPHllBBqXqZ9QXqj5PuWMc4FrfTj-GF0I5ig-a7VEnI"
+    },
+    "a2": {
+      "endpoint_id": "mep_00000000-0000-4000-8000-0000000000a2",
+      "user_id": "dev_a",
+      "d": "aFKyPIjDWWRFQH_WBkLMiA7gQWrnqPHmyE-X4JQF6ZM",
+      "public_key": "BDvpufuw5ehjQ8KQol0hnSMmWrnNwm3jQ9W3eoMZhZoKv3fdfJde0WQuVzrFZSaf_EwP4h_hnCFIoobXX2LVzNA",
+      "key_id": "QR__nAFt7erWqcpcRniZekPWlcjohAdGtPKS30CCLSI"
+    },
+    "b1": {
+      "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b1",
+      "user_id": "dev_b",
+      "d": "L1IKQnyenjVPEyWxlk71epupBXX6RdFeXBMfkARXEQ0",
+      "public_key": "BKn5pInewl3wuG0Ysf2JOCSD1bPOALyK48bWrON6OfP4qSWaZD78rB4KwXp7elZjohV6xCg8Zk2Epgicnre_qos",
+      "key_id": "S7wupsLlyuIn_IhXeUPJHSZSexZr7Tu1PsBeVZ9h4xc"
+    },
+    "b2": {
+      "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b2",
+      "user_id": "dev_b",
+      "d": "wlQNxoIxCoKf9XroEH2j7eMmTIpR2pU9ycXpVN7LLtU",
+      "public_key": "BHP1lUZfvAcfXYdwjSZ7xUO-F9SHj3wumcdPjiXVyQ0JWT5qjrahSGT7yEP8KtaAUxCnB0AglWNDuIK0ih7mhqs",
+      "key_id": "8lttN_qRaS3aONEjgdiJk1mu9PF-tlOLUsxFa-C1_g8"
+    }
+  },
+  "cases": [
+    {
+      "name": "van-ban-tieng-viet",
+      "input": {
+        "thread_id": "th_00000000-0000-4000-8000-00000000ab01",
+        "client_ref": "fixture-ref-0001-AAAAAAAAAA",
+        "text": "Xin chào, đây là tin thử số 1 của fixture LNH-MSG-1.",
+        "sender": "a1",
+        "recipients": [
+          "a1",
+          "a2",
+          "b1",
+          "b2"
+        ],
+        "content_key": "dGQZ9n2JaJpKBkTKh21iiuc6JJefjXj8ddNMulUXLdg",
+        "iv": "X1KBz54DTRteIj3k",
+        "ephemeral": {
+          "mep_00000000-0000-4000-8000-0000000000a1": {
+            "d": "zLvfRDWlTOxC4t01m3AIvQ6lF64-saZIQaRerDfVZkE",
+            "public_key": "BDD4NKu4zmDaS0vUBRCobDojkCInwQFAKtyXbTNAiidgxaNDZWsRoJaa0_kEMyrAJrZbL0-IUu5FZX_7Jr42wl8"
+          },
+          "mep_00000000-0000-4000-8000-0000000000a2": {
+            "d": "YjhT634CSo0LhNYKHi2RRozPWx2erhTFcOCfDUtdBL4",
+            "public_key": "BELttPvlKDdrfZk_HuwMJZtISra19vuZbvVClygOCdsKHOaBX_WsBve3yNeRPFgUP0ZuPkpHuo61P7EYvyjCKlE"
+          },
+          "mep_00000000-0000-4000-8000-0000000000b1": {
+            "d": "-bT_YWMi2tguaakiYiTpkolEF0QIQ8Ny450sz_xdwJ8",
+            "public_key": "BJ2JwkJox1ewpTVPL1Md933d44LfKB5g6FmaBfKUeAK9ALdN3YlkC_hzJymL4bUQb_hosTso578z3Rb49wOh8J0"
+          },
+          "mep_00000000-0000-4000-8000-0000000000b2": {
+            "d": "jF-zNFeVjc-oAbgXpFvZPkBQou4KKRMT2wZIQbGRR-c",
+            "public_key": "BLtgVnVcRfpWZx3CEKIU3U5jZnbMbSXbHfHx6PP955jBFjNIKDj5NazJjSisiBtJik5uWeJcc4mjdKUEz7D22Jg"
+          }
+        }
+      },
+      "expected": {
+        "content_json": "{\"text\":\"Xin chào, đây là tin thử số 1 của fixture LNH-MSG-1.\",\"type\":\"text\"}",
+        "padded_bytes": 256,
+        "aad": "{\"client_ref\":\"fixture-ref-0001-AAAAAAAAAA\",\"sender_endpoint\":\"mep_00000000-0000-4000-8000-0000000000a1\",\"thread_id\":\"th_00000000-0000-4000-8000-00000000ab01\",\"v\":\"LNH-MSG-1\"}",
+        "key_set": "1we7wVzlG7qLSK02p6KZBL9-rQohVYtJqQbpEYF3GMU",
+        "safety_code": "599209762067487776878407893887",
+        "request": {
+          "client_ref": "fixture-ref-0001-AAAAAAAAAA",
+          "sender_endpoint": "mep_00000000-0000-4000-8000-0000000000a1",
+          "key_set": "1we7wVzlG7qLSK02p6KZBL9-rQohVYtJqQbpEYF3GMU",
+          "iv": "X1KBz54DTRteIj3k",
+          "ct": "F5bPxg4QObPdiEdKTl7z6Ln8w78mWKevt82u4Rw5T_yvmnfULSZUTNkFYFyoTceZignY5hpcD1knRzW0khKcNoRR2r1qXY1cFbJUBrbQNwtioC3y1j3azuqWSLfu5HsgA0OAp6C8AfEJQeWrEqsmzKgnIzOMXakwxTDCP8JNezcp2aeTvjqBbPLrnqpa3zI-cDjgdWSKVt4hZsIRj74N_vhz8khlSvf8WR6A3enEeEyYnpuCcyiaUuV-XLw_SE_EAeBErIdYyArLYEcXXuA49iX0KX0DpxOTjfQ-DgYpHSfbIhO5qHn10kE2bSw30mZ8qzVSX615osBX-w8jGPu1h-yPY0iZm2973lqp7-z8gdU",
+          "envelopes": [
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000a1",
+              "enc": "BDD4NKu4zmDaS0vUBRCobDojkCInwQFAKtyXbTNAiidgxaNDZWsRoJaa0_kEMyrAJrZbL0-IUu5FZX_7Jr42wl8",
+              "wrapped": "_FBlksIzJGHxuW1RLPGt6Ambm3VpaWuSKPGzkKIHopsDTfm9OZK5mbZ_2vFfjb-k"
+            },
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000a2",
+              "enc": "BELttPvlKDdrfZk_HuwMJZtISra19vuZbvVClygOCdsKHOaBX_WsBve3yNeRPFgUP0ZuPkpHuo61P7EYvyjCKlE",
+              "wrapped": "P-moC82UL_OrLwTnnMyUdOrO67RIbzBd7XtJGVyILNLOayqSn7YTRnHExX8dFvOs"
+            },
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b1",
+              "enc": "BJ2JwkJox1ewpTVPL1Md933d44LfKB5g6FmaBfKUeAK9ALdN3YlkC_hzJymL4bUQb_hosTso578z3Rb49wOh8J0",
+              "wrapped": "7_7AvM6-wvg7xvtkYqOAyp9E3ODog9d4ArZrfUSmBbyoqdHQHX0iIT2XCNkFCaGJ"
+            },
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b2",
+              "enc": "BLtgVnVcRfpWZx3CEKIU3U5jZnbMbSXbHfHx6PP955jBFjNIKDj5NazJjSisiBtJik5uWeJcc4mjdKUEz7D22Jg",
+              "wrapped": "UQef6gXcSgfhYRQXxr1Bx1GDtSrcRUZp_CKiUBiWpBlFNo5ILSZgBGFaQWVV77B0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "ngoai-bmp-va-xuong-dong",
+      "input": {
+        "thread_id": "th_00000000-0000-4000-8000-00000000ab01",
+        "client_ref": "fixture-ref-0002-AAAAAAAAAA",
+        "text": "Dòng một 👋🏽\nDòng hai: 𠮷野家, ½, “ngoặc kép”, \\ và \"",
+        "sender": "b2",
+        "recipients": [
+          "a1",
+          "b1",
+          "b2"
+        ],
+        "content_key": "mlPp3VYhLSPQQAG7d6sxnLdutHEzb6YU1PeoTOiJN1o",
+        "iv": "YU3Z9xZrtRZr-Ycz",
+        "ephemeral": {
+          "mep_00000000-0000-4000-8000-0000000000a1": {
+            "d": "JZPJhR74-heSMVz1rGP1o_yqaX_457PRvgB4KI3wyGg",
+            "public_key": "BKY4oTgzvLq0YapKWZAndV-GE1o_9aHMRjcFbf6K0UxtSR4m_UJK-QTswUDmQR7jFlx4pAe1QRGnbFhuIFTJ4bM"
+          },
+          "mep_00000000-0000-4000-8000-0000000000b1": {
+            "d": "vGmUwTLZFNqGaDleB0JlMwXG4ATo5Mcoue5L4LA0L2M",
+            "public_key": "BMR0-rivkkkWYIdvsVQVAWkans3H2SHn4FZ8U67hbbMqiQc-cqIawZG6-dEnU34ra4pNLbsehMEIIAEYsrN90Jc"
+          },
+          "mep_00000000-0000-4000-8000-0000000000b2": {
+            "d": "GSN6YTWL3SEJQDCLKAPcWjIdzxid4fZ9x4EsPd76LeI",
+            "public_key": "BHuRggehGFQq0haNAHkZFr-a2ZIRYRgMGRJXV4ZNtfZLKBpmKUGoLqBIUQBXQDClsHs3QP84S046FCivDmHk4xI"
+          }
+        }
+      },
+      "expected": {
+        "content_json": "{\"text\":\"Dòng một 👋🏽\\nDòng hai: 𠮷野家, ½, “ngoặc kép”, \\\\ và \\\"\",\"type\":\"text\"}",
+        "padded_bytes": 256,
+        "aad": "{\"client_ref\":\"fixture-ref-0002-AAAAAAAAAA\",\"sender_endpoint\":\"mep_00000000-0000-4000-8000-0000000000b2\",\"thread_id\":\"th_00000000-0000-4000-8000-00000000ab01\",\"v\":\"LNH-MSG-1\"}",
+        "key_set": "AZt84n3fxXPqUDyHw_vzVZwuKV9NhnLn_VE0XzJ_fF4",
+        "safety_code": "978667279520937237676103934182",
+        "request": {
+          "client_ref": "fixture-ref-0002-AAAAAAAAAA",
+          "sender_endpoint": "mep_00000000-0000-4000-8000-0000000000b2",
+          "key_set": "AZt84n3fxXPqUDyHw_vzVZwuKV9NhnLn_VE0XzJ_fF4",
+          "iv": "YU3Z9xZrtRZr-Ycz",
+          "ct": "OH762Rq39Typ-LMNPUDCClLc41XrFoXSb7wpCMP6Im8_e4RbZh90zVO5qdDd5zs2pFmUBcAjj8bVx0NXD8wicoqssrl30Z8gD7P_BvAe8bd0fZiZ_Hg2BTfPR-opf9VxTiUCbJ2yNTcYE7uCQQ4DtMd49t-hkuJsxNfvPhd7i4GpCB-yxsKuJOCYuW49RbsWIs7ub5f1wHliNwL_JcKoeXuiaAhF6oqR1xjSMRbveT2x-MDqWXo-r-JIuT8jDcMU8lHFUoctVkaQCfItMbWtNKglc5lyy414JJ1X7Dm_5BlAZf7qagWL8OkUteRWeVlXdWy22yKifNUr88Nyjmt5nUCSlX1Zfwn6kc-dmr2l9cs",
+          "envelopes": [
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000a1",
+              "enc": "BKY4oTgzvLq0YapKWZAndV-GE1o_9aHMRjcFbf6K0UxtSR4m_UJK-QTswUDmQR7jFlx4pAe1QRGnbFhuIFTJ4bM",
+              "wrapped": "aacttc_RtN5sm9V89rwBgiVLMUpcWNzUyNvB095zJQD3hAqtovV_g8-KsNBqiRDf"
+            },
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b1",
+              "enc": "BMR0-rivkkkWYIdvsVQVAWkans3H2SHn4FZ8U67hbbMqiQc-cqIawZG6-dEnU34ra4pNLbsehMEIIAEYsrN90Jc",
+              "wrapped": "3wNneCC2BC8tdPPjGzezCxk0pudfgbBxl693UaoBJH45DlIE4A-sCEksOx_OI6_G"
+            },
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b2",
+              "enc": "BHuRggehGFQq0haNAHkZFr-a2ZIRYRgMGRJXV4ZNtfZLKBpmKUGoLqBIUQBXQDClsHs3QP84S046FCivDmHk4xI",
+              "wrapped": "Hl37htmHFBtJfvEvznk_xmGmnSpah5tCsb6GG5Oa5vmd41Q4hRh3x7R2IxBc8tjU"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "tron-mot-khoi",
+      "input": {
+        "thread_id": "th_00000000-0000-4000-8000-00000000ab01",
+        "client_ref": "fixture-ref-0003-AAAAAAAAAA",
+        "text": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "sender": "a2",
+        "recipients": [
+          "a2",
+          "b1"
+        ],
+        "content_key": "aXVw3ZGlzEdE5RZapma5Yi4yxYRbKbOwjABeiYZ0WLQ",
+        "iv": "w999r2hp44uIf5bi",
+        "ephemeral": {
+          "mep_00000000-0000-4000-8000-0000000000a2": {
+            "d": "OrMWdx2iXBQTK0cF6uxcz5fZG3pyd9PKrpLnI957ia4",
+            "public_key": "BBrHsybrxxwpvnl5MdtUqHt9s-vTF36bfW2aILLOXdGcvMO93bMRliYeltC8pMspJQYPqsN5XhiiO9cUlEHQVXs"
+          },
+          "mep_00000000-0000-4000-8000-0000000000b1": {
+            "d": "wTRT2PNkLhKxsgThh7esp2Ius1NJfQELNQOK8ZO_GKo",
+            "public_key": "BOZYcZm4b-auDOc0xdYHg7Vtmhao7kfp5fCD7xGvnSSR3ht5FjaY7tprnVtekRIBnOFnk9uyXoeHr08SiIK-8Ks"
+          }
+        }
+      },
+      "expected": {
+        "content_json": "{\"text\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\",\"type\":\"text\"}",
+        "padded_bytes": 512,
+        "aad": "{\"client_ref\":\"fixture-ref-0003-AAAAAAAAAA\",\"sender_endpoint\":\"mep_00000000-0000-4000-8000-0000000000a2\",\"thread_id\":\"th_00000000-0000-4000-8000-00000000ab01\",\"v\":\"LNH-MSG-1\"}",
+        "key_set": "r4M7zxz1NCqLiBihYM-KTBluayH_CQdGE0RdN-ZKGqg",
+        "safety_code": "808543710668832419486805028063",
+        "request": {
+          "client_ref": "fixture-ref-0003-AAAAAAAAAA",
+          "sender_endpoint": "mep_00000000-0000-4000-8000-0000000000a2",
+          "key_set": "r4M7zxz1NCqLiBihYM-KTBluayH_CQdGE0RdN-ZKGqg",
+          "iv": "w999r2hp44uIf5bi",
+          "ct": "xQZxF5GKhUkAjSDY16TP1syXgrzpQBoIrXuNkOdgt7En5KqefPuMnVQoNZ3rbL_LNU8ld7x8jaDMwH2nvNU0I4WWSE097PXCPHrzIZIA_tq7E-ZcpBMBgPnPOt6M3X0GiS7R3tA1Ov76q_htw2xaOOYx23iSUSlF4QqslziFuL1MRRUcOADsmafbTxkewuicTt7MzyDnNz5zUdOhWorgF0g575FlajKa-QKkj69MIX7kU4JRMi5vDmfyiYJ_7Inu73xWicAYnfey_E8kM2CTtpTYO8pu-85DZ9bEYpaGl2SsgTD2jHCRAMe5sNwwpPu8Kfz3WgXwMkT20rt4fhzH93wp8eAv0DSw2II9ojn0hfEa0NPAZ8wk4_Ybl2Vpg8wkOkYEa5og78VXdRsYhXd0lQd3uLmD2x3yig4s-yo1iswSX1dFRUv0rJw7ISRAzpGvDJLiIrw5hB8zBc3Sq3X1tpjGFLlxjexRHwMMyLzYM9ckx_pKlVbPlbzjv99c9nZ5i7oUXq3oNvFwGVQabzX2WgYnluLm2K4aWam3jivSLPg4RhJWksnKJIZo_r-GWuwOAkcypx1immg7uU-Bm8G50oMeUJN2EvSpgvY0k9fmvEOjyyPEXDLpUw36xpWni3cP8Wrk_TPTIdMU8jw67HiG6awe1BX9dVBAZipJk2N9Lm-BurxojGExSEAcEolxtf6W",
+          "envelopes": [
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000a2",
+              "enc": "BBrHsybrxxwpvnl5MdtUqHt9s-vTF36bfW2aILLOXdGcvMO93bMRliYeltC8pMspJQYPqsN5XhiiO9cUlEHQVXs",
+              "wrapped": "mvf7DiE7r0qScqYUcGsMl0If_blY05UaH2NbtXMViGeT_lzeCWbQOGOzh_IMh3bw"
+            },
+            {
+              "endpoint_id": "mep_00000000-0000-4000-8000-0000000000b1",
+              "enc": "BOZYcZm4b-auDOc0xdYHg7Vtmhao7kfp5fCD7xGvnSSR3ht5FjaY7tprnVtekRIBnOFnk9uyXoeHr08SiIK-8Ks",
+              "wrapped": "ldZauPouUw8btfIy3P6bSW7tI4Iw5KAQqJR3uccAHAZO_IjFnYmNBudcGYLeS3HL"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

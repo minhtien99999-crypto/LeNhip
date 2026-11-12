@@ -1,0 +1,26 @@
+{
+  "source": "Bộ vector kiểm thử của CFRG cho HPKE (RFC 9180), tệp test-vectors.json (128 mục; sha256 của tệp đã dùng: 61fc662f01996cd06d713dacf5e133167bd309a1f329442d53f1e21a47b3ede6). Đây là mục duy nhất có mode=2 (mode_auth), kem_id=16 (DHKEM P-256, HKDF-SHA256), kdf_id=1 (HKDF-SHA256), aead_id=2 (AES-256-GCM): đúng bộ thuật toán LNH-MSG-1 dùng để niêm phong khóa nội dung. Các trường được chép nguyên (hex); chỉ giữ lần mã hóa có số thứ tự 0 vì LNH-MSG-1 mỗi ngữ cảnh HPKE chỉ niêm phong một lần.",
+  "mode": 2,
+  "kem_id": 16,
+  "kdf_id": 1,
+  "aead_id": 2,
+  "info": "4f6465206f6e2061204772656369616e2055726e",
+  "skRm": "d9f10996a02cd6c9dbda1d1f225f18f781ea3c893b8c2a6cb2e266e59f3cd9a9",
+  "pkRm": "04cd38ef80923e26f157e06c9887f80177c97e1005a41104127271237f946df22eda13d40801bce6184f1a631c44b0807a1a5e8d039975ed0f6079fcbd2dfe6652",
+  "skSm": "6e7b14befe49443dc501def1cc2f0f293d9c5cfa045a23e9a2e0e7703b42705d",
+  "pkSm": "04ece9b48cc98ee03ba742fe1218a3fbec960cc34b6e1defdcd3285276f39028e95b90f9526607565888766a1101f429dc3ec87364b5c8c613f0a081881950427f",
+  "skEm": "7a6cb29fab4e249d1796f95645288a6504d2167c7ff463bc447ab6022462af42",
+  "pkEm": "04a7aeac79fda402674ef247c12d6f5fdfd21498d896b67ff04ec181382d4516b7662be32b4a2ae817c2d57104ecb6fcaa527438939810612d1b3d0af36ffc66ce",
+  "enc": "04a7aeac79fda402674ef247c12d6f5fdfd21498d896b67ff04ec181382d4516b7662be32b4a2ae817c2d57104ecb6fcaa527438939810612d1b3d0af36ffc66ce",
+  "shared_secret": "4b6e403bf494c60342caaa46b3738ee0423892720751607338034b0a067cc1db",
+  "key": "640064834667025be3ce7abf1eb42ccc0dea2db9782b9823519f474e054524e7",
+  "base_nonce": "29240057274f71e55bfcca28",
+  "encryptions": [
+    {
+      "aad": "436f756e742d30",
+      "ct": "59b9890aabf94c1d502c39d8d356989ab0880ed43e984255db7b32a8d7b0ad5beba799a4ec326a0ddca3dd5e5d",
+      "nonce": "29240057274f71e55bfcca28",
+      "pt": "4265617574792069732074727574682c20747275746820626561757479"
+    }
+  ]
+}

@@ -1,3 +1,14 @@
-/* Kiểu riêng của phần Thiết bị của tôi (web/views/connect-endpoints.js). Viết ở đây, không sửa styles.css.
-   Quy ước: token màu của phong cách, thuộc tính logic (inline/block), mốc 700/701, 1180/1181, 1500 px, và đặt mọi bộ chọn dưới
-   .connect-section[data-section=endpoints] hoặc một lớp có tiền tố endpoint-. */
+/* Kiểu riêng của phần «Thiết bị của tôi» (web/views/connect-endpoints.js). Các lớp msg- (ô chọn loại máy, ghi chú, lỗi) nằm ở
+   web/views/messages.css. Token màu của phong cách, thuộc tính logic, vùng bấm từ 44 px. */
+.connect-section[data-section=endpoints] .tiny-pill{white-space:nowrap}
+.endpoint-list{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.endpoint-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;min-inline-size:0;padding:10px 12px;border:1px solid var(--line);border-radius:14px}
+.endpoint-row>svg{color:var(--accent)}
+.endpoint-copy{flex:1;min-inline-size:min(100%,130px);display:grid;gap:2px}
+.endpoint-copy strong{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:.85rem}
+.endpoint-copy small{font-size:.7rem;color:var(--muted)}
+.endpoint-remove{min-block-size:44px}
+.endpoint-register{margin-block-start:14px;padding-block-start:14px;border-block-start:1px solid var(--line)}
+.endpoint-register h3{margin:0 0 6px;font-size:.95rem}
+.connect-section[data-section=endpoints] .privacy-note{margin-block:14px 0}
+.connect-section[data-section=endpoints] [data-endpoint=list]>.empty-state{margin-block-start:14px;font-size:.82rem}
