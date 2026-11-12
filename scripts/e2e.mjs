@@ -1,48 +1,14 @@
-// Kiểm giao diện trên trình duyệt thật (Playwright có sẵn trên máy kiểm): dựng máy chủ chạy thử trên cổng riêng với dữ liệu tạm,
-// đi qua thông báo đầu tiên, tạo khung giờ lịch, bật/tắt đèn, xem sức khỏe, đề xuất của LeLe, 5 phương án và cỡ chữ 200 %.
-//   node scripts/e2e.mjs [thư-mục-ảnh]
-import { spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { createRequire } from "node:module";
+// Kiểm giao diện trên trình duyệt thật: đi qua thông báo đầu tiên, tạo khung giờ lịch, bật/tắt đèn, xem sức khỏe, đề xuất của
+// LeLe, 5 phương án và cỡ chữ 200 %. Phần dựng máy chủ, trình duyệt và các hàm chung nằm ở scripts/e2e-lib.mjs.
+//   node scripts/e2e.mjs [thư-mục-ảnh]        (cả bộ: npm run e2e)
+// Khung giờ luôn đặt vào NGÀY MAI: máy chủ từ chối khung giờ đã qua, nên bản 0.1.0 (đặt 16:00, 17:00, 18:00 hôm nay) chỉ chạy
+// được trước 16 giờ Việt Nam. Nội dung từng phép kiểm không đổi.
+import { run, PHONE } from "./e2e-lib.mjs";
 
-const { chromium } = createRequire(import.meta.url)("playwright");
-const out = process.argv[2] ?? null;
-if (out) mkdirSync(out, { recursive: true });
-const data = mkdtempSync(join(tmpdir(), "lenhip-e2e-"));
-const port = 8900 + Math.floor(Math.random() * 90);
-const server = spawn(process.execPath, ["src/main.ts"], {
-  cwd: new URL("..", import.meta.url).pathname,
-  env: { ...process.env, LENHIP_DEV: "1", PORT: String(port), LENHIP_DATA_DIR: data },
-  stdio: ["ignore", "pipe", "pipe"],
-});
-const base = `http://127.0.0.1:${port}`;
-let checks = 0;
-const ok = (cond, msg) => {
-  if (!cond) throw new Error("✗ " + msg);
-  checks++;
-  console.log("✓ " + msg);
-};
-const shot = async (page, name, full = false) => out && page.screenshot({ path: join(out, name + ".png"), fullPage: full });
+await run("hành trình chính", async (t) => {
+  const { ok, shot } = t;
+  const { page } = await t.open();
 
-try {
-  for (let i = 0; i < 50; i++) {
-    try {
-      if ((await fetch(base + "/healthz")).ok) break;
-    } catch {
-      /* chưa lên */
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, timezoneId: "Asia/Ho_Chi_Minh", locale: "vi-VN" });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-
-  await page.goto(base + "/");
   await page.waitForSelector("#consent-form");
   const boxes = await page.$$eval("#consent-form input[type=checkbox]", (els) => els.map((e) => e.checked));
   ok(boxes.length === 4 && boxes.every((c) => !c), "thông báo đầu tiên: 4 mục đích, mặc định để trống");
@@ -63,6 +29,7 @@ try {
   const work = await page.textContent("main");
   ok(work.includes("Bận") && !work.includes("Cuộc họp"), "lịch hôm nay hiện khoảng bận, không lộ tiêu đề cuộc họp");
   await page.click("button[data-action=new-block]");
+  await page.selectOption("#block-day", { index: 1 });
   await page.fill("#block-start", "16:00");
   await page.fill("#block-end", "16:30");
   await page.click("#block-form button");
@@ -100,7 +67,7 @@ try {
   await page.click("#chat-form button");
   await page.waitForTimeout(300);
   ok((await page.textContent("#chat-list")).includes("không gửi tới LeLe"), "câu hỏi sức khỏe không rời thiết bị");
-  await page.fill("#chat-form input", "dành 30 phút tập trung lúc 17:00");
+  await page.fill("#chat-form input", "dành 30 phút tập trung lúc 17:00 ngày mai");
   await page.click("#chat-form button");
   await page.waitForSelector("button[data-action=use-proposal]");
   await shot(page, "07-lele");
@@ -109,21 +76,17 @@ try {
   ok((await page.textContent("#action-body")).includes("17:00 – 17:30"), "đề xuất của LeLe đi qua cùng bước xem lại và xác nhận");
   await page.click("button[data-action=cancel-plan]");
 
-  for (const t of ["orbit", "night", "calm", "flow", "titanium"]) {
+  for (const theme of ["orbit", "night", "calm", "flow", "titanium"]) {
     await page.click("button[data-nav=home]");
-    await page.click(`button[data-theme-choice=${t}]`);
+    await page.click(`button[data-theme-choice=${theme}]`);
     await page.waitForTimeout(150);
-    ok((await page.getAttribute("body", "data-theme")) === t, `phương án ${t} áp dụng`);
-    await shot(page, `08-${t}`);
+    ok((await page.getAttribute("body", "data-theme")) === theme, `phương án ${theme} áp dụng`);
+    await shot(page, `08-${theme}`);
   }
 
   // Cỡ chữ 200 % trên điện thoại: không cuộn ngang, nút xác nhận còn trong khung.
-  const phoneCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: "Asia/Ho_Chi_Minh", locale: "vi-VN", reducedMotion: "reduce" });
-  const phone = await phoneCtx.newPage();
-  phone.on("pageerror", (e) => errors.push(e.message));
-  await phone.goto(base + "/");
-  await phone.waitForTimeout(1000);
-  if (await phone.$("#consent-form")) await phone.click("#action-dialog [data-action=close-action]");
+  const { page: phone } = await t.open({ viewport: PHONE, reducedMotion: "reduce" });
+  await t.dismissNotice(phone);
   ok(await phone.evaluate(() => document.body.classList.contains("reduced-motion")), "mặc định theo prefers-reduced-motion của thiết bị");
   await phone.click("#settings-button");
   await phone.selectOption("#font-size", "200");
@@ -132,12 +95,12 @@ try {
   for (const tab of ["home", "health", "work", "house"]) {
     await phone.click(`#mobile-nav button[data-nav=${tab}]`);
     await phone.waitForTimeout(200);
-    const overflow = await phone.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    ok(overflow <= 0, `chữ 200 %, trang ${tab}: không cuộn ngang`);
+    ok((await t.overflowX(phone)) <= 0, `chữ 200 %, trang ${tab}: không cuộn ngang`);
   }
   await shot(phone, "09-dien-thoai-200", true);
   await phone.click("#mobile-nav button[data-nav=work]");
   await phone.click("button[data-action=new-block]");
+  await phone.selectOption("#block-day", { index: 1 });
   await phone.fill("#block-start", "18:00");
   await phone.fill("#block-end", "18:15");
   await phone.click("#block-form button");
@@ -149,11 +112,4 @@ try {
   });
   ok(box.bottom <= box.h && box.w > 200, "chữ 200 %: nút Xác nhận nằm trong khung, đủ rộng");
   await phone.click("button[data-action=cancel-plan]");
-
-  ok(errors.length === 0, "không có lỗi JavaScript" + (errors.length ? ": " + errors.join(" | ") : ""));
-  await browser.close();
-  console.log(`\n${checks} phép kiểm trình duyệt đạt`);
-} finally {
-  server.kill();
-  rmSync(data, { recursive: true, force: true });
-}
+});

@@ -251,6 +251,50 @@ test("phục vụ giao diện: chỉ tệp trong danh sách, có CSP; không l�
       const r = await fetch(h.base + p);
       assert.ok(r.status === 404 || r.url.endsWith("/app.js"), `${p} → ${r.status}`);
     }
+    // V1.0.0: icon PNG, màn hình trong views/ và manifest của bản cài được, đúng kiểu nội dung, vẫn kèm header bảo mật.
+    for (const [p, type] of [
+      ["/icons/icon-192.png", "image/png"],
+      ["/icons/icon-512.png", "image/png"],
+      ["/icons/apple-touch-icon.png", "image/png"],
+      ["/icons/favicon-32.png", "image/png"],
+      ["/icon.svg", "image/svg+xml"],
+      ["/manifest.json", "application/manifest+json"],
+      ["/views/index.js", "text/javascript; charset=utf-8"],
+      ["/views/messages.js", "text/javascript; charset=utf-8"],
+      ["/views/messages.css", "text/css; charset=utf-8"],
+      ["/shared/i18n.js", "text/javascript; charset=utf-8"],
+      ["/shared/i18n-vi.js", "text/javascript; charset=utf-8"],
+    ]) {
+      const r = await fetch(h.base + p);
+      assert.equal(r.status, 200, p);
+      assert.equal(r.headers.get("content-type"), type, p);
+      assert.equal(r.headers.get("x-content-type-options"), "nosniff", p);
+      assert.equal(r.headers.get("referrer-policy"), "no-referrer", p);
+      assert.equal(r.headers.get("cache-control"), "no-cache", p);
+      assert.equal(r.headers.get("content-security-policy"), null, `${p}: CSP chỉ gắn vào trang HTML`);
+      await r.arrayBuffer();
+    }
+    const png = Buffer.from(await (await fetch(h.base + "/icons/icon-192.png")).arrayBuffer());
+    assert.equal(png.subarray(1, 4).toString("latin1"), "PNG");
+    const manifest = (await (await fetch(h.base + "/manifest.json")).json()) as { display: string; icons: { src: string }[] };
+    assert.equal(manifest.display, "standalone");
+    for (const icon of manifest.icons) assert.equal((await fetch(new URL(icon.src, h.base + "/manifest.json"))).status, 200, icon.src);
+    // Tên ngoài mẫu (chữ hoa, gạch dưới, đuôi khác, thư mục con, thoát thư mục) không được phục vụ.
+    for (const p of [
+      "/icons/Icon-192.png", "/icons/icon_192.png", "/icons/icon-192.svg", "/icons/icon-192.png/", "/icons/sub/icon-192.png", "/icons/.png", "/icons/",
+      "/icons/..%2fapp.js", "/icons/%2e%2e/package.json", "/icons/..%2f..%2fpackage.json", "/icons/icon-192.png%00.js",
+      "/views/index.ts", "/views/Index.js", "/views/index.mjs", "/views/a/index.js", "/views/", "/views/..%2f..%2fpackage.json", "/views/%2e%2e%2f%2e%2e%2fsrc%2fmain.ts",
+      "/manifest.webmanifest", "/manifest.json/", "/sw.js", "/favicon.ico", "/icons/missing.png", "/views/missing.js",
+    ]) {
+      const r = await fetch(h.base + p);
+      assert.equal(r.status, 404, `${p} → ${r.status}`);
+      await r.arrayBuffer();
+    }
+    for (const p of ["/icons/../app.js", "/views/../app.js"]) {
+      const r = await fetch(h.base + p);
+      assert.ok(r.status === 404 || r.url.endsWith("/app.js"), `${p} → ${r.status}`);
+      await r.arrayBuffer();
+    }
     assert.equal((await fetch(h.base + "/healthz")).status, 200);
   } finally {
     await h.close();

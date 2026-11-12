@@ -1,0 +1,3 @@
+/* Kiểu riêng của phần Mạng xã hội (web/views/connect-social.js). Nhánh mạng xã hội viết ở đây, không sửa styles.css.
+   Quy ước: token màu của phong cách, thuộc tính logic (inline/block), mốc 700/701, 1180/1181, 1500 px, và đặt mọi bộ chọn dưới
+   .connect-section[data-section=social] hoặc một lớp có tiền tố social-. */

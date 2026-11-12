@@ -1,0 +1,21 @@
+export default {
+  "brand.name": "LeNhip",
+  "nav.messages": "Tin nhắn",
+  "nav.connect": "Kết nối",
+  "nav.connectHint": "Mạng xã hội, thiết bị của tôi, thiết bị theo dõi",
+  "nav.more": "Mở rộng",
+  "connect.eyebrow": "MÔ-ĐUN MỞ RỘNG",
+  "connect.title": "Kết nối",
+  "connect.subtitle": "Mỗi phần chỉ hiện khi mô-đun tương ứng được bật cho tài khoản của bạn.",
+  "connect.social.title": "Mạng xã hội",
+  "connect.endpoints.title": "Thiết bị của tôi",
+  "connect.trackers.title": "Thiết bị theo dõi",
+  "shell.placeholder": "Giữ chỗ",
+  "shell.viewError": "Màn hình này gặp lỗi nên chưa hiển thị được. Các phần khác của LeNhip vẫn dùng bình thường.",
+  "shell.messages.empty": "Phần nhắn tin chưa có trong bản dựng này: chưa gửi hay nhận được tin nào.",
+  "shell.messages.draftLabel": "Ô soạn thử",
+  "shell.messages.draftNote": "Ô này là phần giữ chỗ của khung giao diện, dùng để kiểm việc giữ nội dung và con trỏ khi trang tự cập nhật. Nội dung bạn gõ không được gửi hay lưu ở đâu.",
+  "shell.social.empty": "Phần mạng xã hội chưa có trong bản dựng này: chưa liên kết tài khoản nào và chưa chia sẻ được gì.",
+  "shell.endpoints.empty": "Phần đăng ký thiết bị chưa có trong bản dựng này: trình duyệt này chưa được đăng ký để nhận tin.",
+  "shell.trackers.empty": "Phần thiết bị theo dõi chưa có trong bản dựng này: chưa đọc dữ liệu từ thiết bị hay tệp xuất nào."
+};

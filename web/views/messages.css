@@ -1,0 +1,4 @@
+/* Kiểu riêng của màn hình Tin nhắn (web/views/messages.js). Nhánh nhắn tin viết ở đây, không sửa styles.css.
+   Quy ước: dùng token màu của phong cách (--bg, --surface, --surface-soft, --text, --muted, --line, --accent, --accent-ink),
+   thuộc tính logic (inline/block) thay cho left/right, mốc 700/701, 1180/1181, 1500 px, và đặt mọi bộ chọn dưới
+   body[data-view=messages] hoặc một lớp có tiền tố msg-. */

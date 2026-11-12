@@ -2,8 +2,11 @@
 // Phương án giao diện và tùy chọn cá nhân của LeNhip (gói giao diện V1.0, 5 phương án PA01–PA05), tinh chỉnh: cỡ chữ tới 200 %
 // (SRS mục 13, T18), múi phân tích IANA, tôn trọng prefers-reduced-motion. Chỉ lưu tùy chọn giao diện trên trình duyệt; lịch,
 // đèn và đồng ý nằm ở máy chủ; sức khỏe tính trên thiết bị, không lưu số đo.
+// V1.0.0: thêm `locale` ("auto" theo trình duyệt, hoặc một tag trong LOCALES của shared/i18n.js). Ngôn ngữ lưu theo thiết bị
+// như các tùy chọn giao diện khác (LNH-T29); máy chủ không biết ngôn ngữ của người dùng (LNH-T23).
 
 import { isValidZone } from "./shared/zone.js";
+import { isLocale } from "./shared/i18n.js";
 
 export const THEMES = [
   { id: "orbit", code: "PA01", name: "Quỹ đạo", description: "Trắng, Cyan và ánh vàng", accent: "#087f91", colors: ["#edfaff", "#19aabd", "#e2b45a"] },
@@ -36,7 +39,7 @@ export function browserZone() {
 
 /** @param {string} name */
 export function defaults(name = "Bạn") {
-  return { theme: "orbit", accent: "", name, fontSize: 100, reducedMotion: prefersReduced(), compact: false, widgets: [...WIDGETS], zone: browserZone() };
+  return { theme: "orbit", accent: "", name, fontSize: 100, reducedMotion: prefersReduced(), compact: false, widgets: [...WIDGETS], zone: browserZone(), locale: "auto" };
 }
 
 /**
@@ -56,6 +59,7 @@ export function sanitizeSettings(value) {
     compact: value.compact === true,
     widgets,
     zone: isValidZone(value.zone) ? value.zone : browserZone(),
+    locale: isLocale(value.locale) ? value.locale : "auto",
   };
 }
 

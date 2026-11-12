@@ -97,3 +97,97 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 @media(max-width:360px){.hero-copy{max-width:64%}.orb-scene{right:-62px}}
 /* Liên kết bỏ qua chỉ hiện khi có focus bàn phím, kể cả ở cỡ chữ 200 % */
 .skip-link:not(:focus){top:auto;bottom:100%}
+
+/* ===================================================================== LeNhip V1.0.0: khung giao diện (LNH-T20, T28, T50, T51)
+   Quy ước cho mọi luật mới từ đây trở xuống và trong web/views/*.css:
+   - màu lấy từ token của phong cách (--bg --surface --surface-soft --text --muted --line --accent --accent-ink --gold --shadow);
+   - thuộc tính logic (inline-size, margin-inline, inset-block-end, text-align:start…) thay cho left/right/top/bottom, để sau
+     này thêm được ngôn ngữ viết từ phải sang trái;
+   - bốn cỡ màn hình: điện thoại ≤ 700 px · máy tính bảng 701–1180 · máy tính xách tay 1181–1499 · máy tính để bàn ≥ 1500.
+     Lớp .large-text (cỡ chữ từ 150 %) dùng bố cục điện thoại ở mọi bề ngang;
+   - vùng bấm tối thiểu 44 px. Không tải phông: mỗi hệ chữ dùng phông hệ thống. */
+
+/* Chữ: từ dài (tiếng Đức, Pháp…) được ngắt thay vì tràn khung; tiếng Hàn chỉ ngắt ở khoảng trắng khi còn chỗ; tiếng Nhật và
+   tiếng Trung theo luật ngắt dòng chặt. */
+body{overflow-wrap:anywhere}
+/* Nhãn ngắn (viên nhãn, trạng thái, giờ, số liệu, chữ tắt tên) giữ nguyên từng từ: không bị ép hẹp tới mức ngắt giữa từ, chỉ ngắt
+   khi cả khung hẹp hơn một từ. */
+.tiny-pill,.status-chip,.event-time,.stat-value,.stat-label,.nav-badge,.eyebrow,.settings-theme{overflow-wrap:break-word}
+.avatar{overflow-wrap:normal;white-space:nowrap}
+:lang(ko){word-break:keep-all}
+:lang(ja),:lang(zh){line-break:strict}
+/* Phông hệ thống theo hệ chữ. Chỉ đặt trên phần tử mang thuộc tính lang (thẻ html, hoặc một đoạn nội dung có lang riêng) để
+   phần tử con thừa kế bình thường. */
+[lang]:lang(ru){font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",sans-serif}
+[lang]:lang(zh-Hans){font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif}
+[lang]:lang(zh-Hant){font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",sans-serif}
+[lang]:lang(ja){font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,"Noto Sans CJK JP","Noto Sans JP",sans-serif}
+[lang]:lang(ko){font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Noto Sans CJK KR","Noto Sans KR",sans-serif}
+/* Chữ Hán, kana và Hangul không có chữ hoa và không giãn chữ như chữ Latin. */
+:lang(zh) .eyebrow,:lang(ja) .eyebrow,:lang(ko) .eyebrow,:lang(zh) .sidebar-caption,:lang(ja) .sidebar-caption,:lang(ko) .sidebar-caption{letter-spacing:0}
+:lang(zh) h1,:lang(ja) h1,:lang(ko) h1,:lang(zh) h2,:lang(ja) h2,:lang(ko) h2{letter-spacing:0}
+textarea{font:inherit;color:inherit;touch-action:manipulation}
+textarea:focus-visible,[tabindex]:not([tabindex="-1"]):focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.field textarea{inline-size:100%;min-block-size:96px;padding:12px;border-radius:12px;border:1px solid var(--line);color:var(--text);background:var(--surface-soft);resize:vertical}
+
+/* Chữ LeNhip là bản vẽ của gói nhận diện (shared/brand.js), đổi theo phong cách. Gỡ luật svg chung (22 px, có nét viền) như
+   đã làm với svg.lele-mark; không đổi màu bản vẽ. Dòng "by LeTRON" giữ kiểu chữ nhỏ cũ. */
+.wordmark{display:block}
+.wordmark,.mobile-brand{letter-spacing:0;line-height:1;min-inline-size:0}
+.wordmark .brand-art,.mobile-brand .brand-art{margin:0;line-height:0;letter-spacing:0}
+svg.brand-wordmark{display:block;stroke:none;inline-size:auto;block-size:clamp(34px,2.5rem,60px);max-inline-size:100%}
+.mobile-brand svg.brand-wordmark{block-size:clamp(28px,2rem,46px)}
+.topbar .mobile-brand{flex:0 1 auto}
+
+/* Thanh bên cuộn được: trên màn hình thấp (máy tính xách tay 768 px, điện thoại xoay ngang) mọi mục và nút Cá nhân hóa vẫn
+   với tới được. Màn hình thấp thì bỏ phần trang trí ở chân thanh bên. */
+.sidebar{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin} /* overflow-block/-inline chưa được hỗ trợ đủ rộng nên giữ dạng x/y */
+.sidebar>*{flex-shrink:0}
+@media(min-width:701px) and (max-height:760px){
+  .sidebar-caption{margin-block:26px 12px}
+  .sidebar-bottom{padding-block-start:18px}
+  .sidebar-bottom .small-orbit,.sidebar-bottom strong,.sidebar-bottom p{display:none}
+}
+
+/* Điều hướng: nhãn xuống dòng trong nút, không tràn sang nút bên cạnh (thanh dưới có tối đa năm mục). */
+.nav-button{position:relative}
+.nav-label{min-inline-size:0;max-inline-size:100%}
+.desktop-nav .nav-label{flex:1}
+.mobile-nav .nav-label{display:block;text-align:center;line-height:1.25}
+.nav-badge{position:absolute;inset-block-start:4px;inset-inline-end:calc(50% - 22px);min-inline-size:18px;block-size:18px;padding-inline:5px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:.62rem;font-weight:700;line-height:18px;text-align:center}
+.nav-badge:empty{min-inline-size:10px;block-size:10px;padding:0}
+.desktop-nav .nav-badge{position:static;margin-inline-start:auto}
+.mobile-nav{padding-inline:max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right))}
+.large-text .mobile-nav{padding-block-end:calc(6px + env(safe-area-inset-bottom))}
+/* Thanh dưới cao theo nhãn; app.js đo và đặt --bar-block để nội dung cuối trang và thông báo nổi không bị che. */
+@media(max-width:700px){
+  .workspace{padding-block-end:calc(var(--bar-block,82px) + 14px)}
+  .toast{inset-block-end:calc(var(--bar-block,82px) + 18px)}
+}
+.large-text .workspace{padding-block-end:calc(var(--bar-block,110px) + 14px)}
+.large-text .toast{inset-block-end:calc(var(--bar-block,110px) + 18px)}
+
+/* Bốn cỡ màn hình (LNH-T51). Máy tính bảng: thanh bên hẹp và một cột nội dung, chọn phong cách nằm trong Cá nhân hóa.
+   Máy tính để bàn: cột nội dung rộng hơn. Màn hình khai báo wide (web/views/index.js) dùng hết bề ngang nội dung. */
+@media(min-width:701px) and (max-width:1180px){
+  .design-panel{display:none}
+  .content-grid{grid-template-columns:minmax(0,720px)}
+}
+@media(min-width:1500px){.content-grid{grid-template-columns:minmax(0,860px) 300px}}
+body[data-layout=wide] .design-panel{display:none}
+body[data-layout=wide] .content-grid{grid-template-columns:minmax(0,1120px)}
+
+/* Màn hình của sổ đăng ký và màn hình Kết nối */
+.view-host{min-inline-size:0}
+.view-card{margin-block-start:22px}
+.connect-grid{display:grid;gap:16px;margin-block-start:24px;align-items:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.connect-section .section-heading{margin-block-start:0;gap:12px}
+.connect-section h2{display:flex;align-items:center;gap:10px}
+.connect-section h2 svg{color:var(--accent)}
+/* Hộp Tài khoản: các màn hình không có trên thanh dưới của điện thoại */
+.account-nav{border-block-start:1px solid var(--line);margin-block-start:18px;padding-block-start:14px}
+.account-nav h3{font-size:.8rem;color:var(--muted);margin-block-end:10px}
+.account-nav-row{display:flex;align-items:center;gap:14px;min-block-size:56px;padding:14px 16px;box-shadow:none;color:var(--text)}
+.account-nav-row+.account-nav-row{margin-block-start:10px}
+.account-nav-row>svg:first-child{color:var(--accent)}
+.account-nav-row>svg:last-child{inline-size:17px}

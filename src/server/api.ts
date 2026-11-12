@@ -401,8 +401,11 @@ const compile = (routes: Route[]) => routes.map((r) => {
   return { ...r, re, keys };
 });
 
-const WEB_FILE = /^\/(?:(?:index\.html|styles\.css|app\.js|model\.js|api\.js|lele\.js|health\.js|icon\.svg|manifest\.json)|shared\/[a-z0-9-]+\.js)$/;
-const TYPES: Record<string, string> = { html: "text/html; charset=utf-8", css: "text/css; charset=utf-8", js: "text/javascript; charset=utf-8", svg: "image/svg+xml", json: "application/json" };
+// Tệp giao diện được phục vụ: tên khớp đúng mẫu, không có ".." hay "/" trong phần tên nên không thoát khỏi web/.
+// V1.0.0 thêm icons/<tên>.png (icon ứng dụng), views/<tên>.js và views/<tên>.css (màn hình của sổ đăng ký), manifest.json (PWA).
+const WEB_FILE = /^\/(?:(?:index\.html|styles\.css|app\.js|model\.js|api\.js|lele\.js|health\.js|icon\.svg|manifest\.json)|shared\/[a-z0-9-]+\.js|views\/[a-z0-9-]+\.(?:js|css)|icons\/[a-z0-9-]+\.png)$/;
+// Tệp .json tĩnh duy nhất trong danh sách là manifest.json nên kiểu của "json" là kiểu manifest; JSON của API đi qua send().
+const TYPES: Record<string, string> = { html: "text/html; charset=utf-8", css: "text/css; charset=utf-8", js: "text/javascript; charset=utf-8", svg: "image/svg+xml", json: "application/manifest+json", png: "image/png" };
 
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",

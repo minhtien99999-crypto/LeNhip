@@ -1,0 +1,21 @@
+export default {
+  "brand.name": "LeNhip",
+  "nav.messages": "Messages",
+  "nav.connect": "Connect",
+  "nav.connectHint": "Social networks, my devices, trackers",
+  "nav.more": "More",
+  "connect.eyebrow": "ADD-ON MODULES",
+  "connect.title": "Connect",
+  "connect.subtitle": "Each part appears only when its module is turned on for your account.",
+  "connect.social.title": "Social networks",
+  "connect.endpoints.title": "My devices",
+  "connect.trackers.title": "Trackers",
+  "shell.placeholder": "Placeholder",
+  "shell.viewError": "This screen ran into an error and cannot be shown yet. The rest of LeNhip still works as usual.",
+  "shell.messages.empty": "Messaging is not part of this build: no message can be sent or received yet.",
+  "shell.messages.draftLabel": "Test compose box",
+  "shell.messages.draftNote": "This box is a placeholder of the interface shell, used to check that text and the cursor are kept when the page updates by itself. What you type is not sent or stored anywhere.",
+  "shell.social.empty": "Social networks are not part of this build: no account is linked and nothing can be shared yet.",
+  "shell.endpoints.empty": "Device registration is not part of this build: this browser is not registered to receive messages.",
+  "shell.trackers.empty": "Trackers are not part of this build: no data is read from any device or export file yet."
+};

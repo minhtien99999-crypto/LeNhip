@@ -1,0 +1,18 @@
+{
+  "name": "LeNhip",
+  "short_name": "LeNhip",
+  "description": "Trợ lý cá nhân của LeDB. Bản tham chiếu: cần kết nối mạng, chưa có chế độ ngoại tuyến.",
+  "lang": "vi",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#12394A",
+  "theme_color": "#12394A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
