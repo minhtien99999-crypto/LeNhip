@@ -42,3 +42,60 @@ THREAD_BLOCKED,unblock,BLOCKER,THREAD_CLOSED,đúng người đã chặn; chỉ 
 THREAD_CLOSED,request,MEMBER,THREAD_REQUESTED,reopen_by trống hoặc là người gọi; người kia còn dùng được nhắn tin và có thiết bị,,LNH-T33
 THREAD_REQUESTED,revoke,AUTHORITY,THREAD_CLOSED,"một bên mất tư cách thành viên, quyền messaging.use hoặc đồng ý messaging",,LNH-T33
 THREAD_ACTIVE,revoke,AUTHORITY,THREAD_CLOSED,"một bên mất tư cách thành viên, quyền messaging.use hoặc đồng ý messaging",,LNH-T33
+INBOX_NEW,save,OWNER,INBOX_SAVED,«Lưu»: mục của chính người gọi và nguồn của mục còn quyền đọc,,LNH-T65
+INBOX_SNOOZED,save,OWNER,INBOX_SAVED,«Lưu» một mục đang để sau; bỏ giờ nhắc,,LNH-T65
+INBOX_NEW,snooze,OWNER,INBOX_SNOOZED,«Để sau» tới một thời điểm trong tương lai (tối đa 30 ngày),,LNH-T65
+INBOX_SAVED,snooze,OWNER,INBOX_SNOOZED,«Để sau» một mục đã lưu,,LNH-T65
+INBOX_SNOOZED,snooze,OWNER,INBOX_SNOOZED,đổi giờ nhắc của mục đang để sau,,LNH-T65
+INBOX_SNOOZED,wake,CLOCK,INBOX_NEW,tới giờ nhắc theo đồng hồ máy chủ; mục hiện lại ở «Mới»,snooze_until,LNH-T65
+INBOX_NEW,done,OWNER,INBOX_DONE,«Xong»,,LNH-T65
+INBOX_SAVED,done,OWNER,INBOX_DONE,«Xong»,,LNH-T65
+INBOX_SNOOZED,done,OWNER,INBOX_DONE,«Xong»; bỏ giờ nhắc,,LNH-T65
+INBOX_NEW,source_revoked,AUTHORITY,INBOX_HIDDEN,"nguồn mất quyền đọc (token bị thu hồi hoặc hết hạn, X03): mục biến khỏi danh sách ngay",,LNH-T65
+INBOX_SAVED,source_revoked,AUTHORITY,INBOX_HIDDEN,"nguồn mất quyền đọc (token bị thu hồi hoặc hết hạn, X03): mục biến khỏi danh sách ngay",,LNH-T65
+INBOX_SNOOZED,source_revoked,AUTHORITY,INBOX_HIDDEN,"nguồn mất quyền đọc (token bị thu hồi hoặc hết hạn, X03): mục biến khỏi danh sách ngay",,LNH-T65
+INBOX_DONE,source_revoked,AUTHORITY,INBOX_HIDDEN,"nguồn mất quyền đọc (token bị thu hồi hoặc hết hạn, X03): mục biến khỏi danh sách ngay",,LNH-T65
+INBOX_HIDDEN,source_restored,SOURCE,INBOX_NEW,người dùng kết nối lại và nguồn trả lại đúng thư đó (cùng source_ref) trong 7 ngày; quá hạn thì mục đã bị xóa,,LNH-T65
+HAAS_REQUESTED,survey,LELS,HAAS_SURVEYED,"vận hành LeLS (vai SITE_OPERATOR, không phải chủ hộ) ghi kết quả khảo sát: số camera 1–4 và báo giá trước lắp; cùng revision",,LNH-T66
+HAAS_REQUESTED,reject,LELS,HAAS_TERMINATED,khảo sát cho thấy không tương thích; chưa có hub nên hệ thống đóng ngay,,LNH-T66
+HAAS_REQUESTED,cancel,OWNER,HAAS_TERMINATED,chủ hộ rút yêu cầu; cùng revision,,LNH-T66
+HAAS_SURVEYED,accept_quote,OWNER,HAAS_ACCEPTED,chủ hộ nhận đúng báo giá đã xem (cùng revision); quote_accepted_at được ghi,,LNH-T66
+HAAS_SURVEYED,cancel,OWNER,HAAS_TERMINATED,chủ hộ không nhận báo giá,,LNH-T66
+HAAS_ACCEPTED,install,LELS,HAAS_INSTALLED,liên kết serial hub với hộ; danh tính hub mới và khóa riêng; binding_version tăng,,LNH-T66
+HAAS_ACCEPTED,cancel,OWNER,HAAS_TERMINATED,chủ hộ hủy trước khi lắp,,LNH-T66
+HAAS_INSTALLED,confirm_install,OWNER,HAAS_ACTIVE,chủ hộ xác nhận trong app đúng serial của hub đang dùng,,LNH-T66
+HAAS_INSTALLED,terminate,OWNER,HAAS_TERMINATED,chủ hộ chấm dứt (đăng nhập mới trong 5 phút); hub và quyền xem bị thu hồi; sự kiện ở máy chủ bị xóa,,LNH-T66
+HAAS_ACTIVE,replace_hub,LELS,HAAS_INSTALLED,"đổi hub (X07): thu hồi danh tính hub cũ, binding_version tăng, binding cũ bị chặn; chủ hộ xác nhận lại",,LNH-T66
+HAAS_ACTIVE,suspend,LELS,HAAS_SUSPENDED,tạm ngừng dịch vụ kèm mã lý do; hub không gửi được sự kiện,,LNH-T66
+HAAS_SUSPENDED,resume,LELS,HAAS_ACTIVE,mở lại dịch vụ; hub gửi lại hàng đợi với cờ đến trễ (X05),,LNH-T66
+HAAS_ACTIVE,terminate,OWNER,HAAS_TERMINATED,chủ hộ chấm dứt (đăng nhập mới trong 5 phút); hub và quyền xem bị thu hồi; sự kiện ở máy chủ bị xóa,,LNH-T66
+HAAS_SUSPENDED,terminate,OWNER,HAAS_TERMINATED,chủ hộ chấm dứt (đăng nhập mới trong 5 phút); hub và quyền xem bị thu hồi; sự kiện ở máy chủ bị xóa,,LNH-T66
+HAAS_ACTIVE,terminate,LELS,HAAS_TERMINATED,LeLS chấm dứt theo điều khoản kèm mã lý do; hub và quyền xem bị thu hồi; sự kiện ở máy chủ bị xóa,,LNH-T66
+HAAS_SUSPENDED,terminate,LELS,HAAS_TERMINATED,LeLS chấm dứt theo điều khoản kèm mã lý do; hub và quyền xem bị thu hồi; sự kiện ở máy chủ bị xóa,,LNH-T66
+HAAS_TERMINATED,return_hub,LELS,HAAS_RETURNED,hub đã thu về và đã xóa dữ liệu tại hub (hub_wiped); biên bản thu hồi hoàn tất,,LNH-T66
+HAAS_TERMINATED,close,SYSTEM,HAAS_RETURNED,chưa từng lắp hub (binding_version = 0): không có thiết bị phải thu hồi,,LNH-T66
+HAAS_REQUESTED,revoke,SYSTEM,HAAS_TERMINATED,"chủ hộ mất tư cách thành viên, quyền home.hub hoặc đồng ý home_hub",,LNH-T66
+HAAS_SURVEYED,revoke,SYSTEM,HAAS_TERMINATED,"chủ hộ mất tư cách thành viên, quyền home.hub hoặc đồng ý home_hub",,LNH-T66
+HAAS_ACCEPTED,revoke,SYSTEM,HAAS_TERMINATED,"chủ hộ mất tư cách thành viên, quyền home.hub hoặc đồng ý home_hub",,LNH-T66
+HAAS_INSTALLED,revoke,SYSTEM,HAAS_TERMINATED,"chủ hộ mất tư cách thành viên, quyền home.hub hoặc đồng ý home_hub; hub bị thu hồi",,LNH-T66
+HAAS_ACTIVE,revoke,SYSTEM,HAAS_TERMINATED,"chủ hộ mất tư cách thành viên, quyền home.hub hoặc đồng ý home_hub; hub bị thu hồi",,LNH-T66
+HAAS_SUSPENDED,revoke,SYSTEM,HAAS_TERMINATED,"chủ hộ mất tư cách thành viên, quyền home.hub hoặc đồng ý home_hub; hub bị thu hồi",,LNH-T66
+SYNCDRAFT_OPEN,revise,OWNER,SYNCDRAFT_OPEN,base_revision bằng revision hiện hành; snapshot qua schema đóng của mục đích; revision + 1. Sai revision trả 409 REVISION_CONFLICT kèm bản hiện hành,,LNH-T63 · X01
+SYNCDRAFT_OPEN,discard,OWNER,SYNCDRAFT_DISCARDED,base_revision bằng revision hiện hành; snapshot xóa ngay; hàng xóa sau 30 ngày,,LNH-T63 · X01
+SYNCDEV_ACTIVE,revoke,OWNER,SYNCDEV_REVOKED,chủ phiên thu hồi từ một phiên đang dùng của chính mình; ghi sổ thu hồi độc lập,,LNH-T64 · X02
+SYNCDEV_ACTIVE,revoke,AUTHORITY,SYNCDEV_REVOKED,nạp lại sổ thu hồi sau restore,,LNH-T64 · X02 · X12
+MEAS_QUARANTINED,resolve,PERSON,MEAS_ASSIGNED,mọi ứng viên đã trả lời; đúng một người nói của tôi và người đó còn quyền measurements.record và đồng ý measurements,,LNH-T67 N20-MEAS X08
+MEAS_QUARANTINED,discard,PERSON,MEAS_DISCARDED,mọi ứng viên đã trả lời không phải của tôi; giá trị đo bị xóa,,LNH-T67 N20-MEAS X08
+MEAS_QUARANTINED,mapping_confirmed,PERSON,MEAS_ASSIGNED,người được đề nghị xác nhận ánh xạ; không ai khác giữ ánh xạ đã xác nhận cùng máy và hồ sơ,,LNH-T67 N20-MEAS X08
+MEAS_QUARANTINED,mapping_rejected,PERSON,MEAS_DISCARDED,người được đề nghị từ chối hoặc gỡ ánh xạ; bản ghi chỉ có người đó là ứng viên; giá trị đo bị xóa,,LNH-T67 N20-MEAS X08
+MEAS_QUARANTINED,conflict,AUTHORITY,MEAS_QUARANTINED,lúc xác nhận ánh xạ có người khác đã xác nhận cùng máy và hồ sơ; thêm ứng viên; không gán,,LNH-T67 N20-MEAS X08
+MEAS_QUARANTINED,expire,SCHEDULER,MEAS_EXPIRED,quá 30 ngày chưa giải quyết; giá trị đo bị xóa,created_at + 30 ngày,LNH-T67 N20-MEAS
+MEASMAP_PROPOSED,confirm,PERSON,MEASMAP_CONFIRMED,chính người được đề nghị xác nhận; còn quyền và đồng ý,,LNH-T67 N20-MEAS X08
+MEASMAP_PROPOSED,reject,PERSON,MEASMAP_REJECTED,chính người được đề nghị từ chối; adapter không đề nghị lại cùng máy và hồ sơ,,LNH-T67 N20-MEAS X08
+MEASMAP_CONFIRMED,unlink,PERSON,MEASMAP_REVOKED,chính người đó gỡ ánh xạ; phép đo mới của máy và hồ sơ đó không còn gán cho người đó,,LNH-T67 N20-MEAS X08
+MEASMAP_PROPOSED,revoke,AUTHORITY,MEASMAP_REVOKED,"người đó rút đồng ý measurements, hạn chế xử lý, xóa dữ liệu, hoặc nạp lại sổ thu hồi",,LNH-T67 N20-MEAS
+MEASMAP_CONFIRMED,revoke,AUTHORITY,MEASMAP_REVOKED,"người đó rút đồng ý measurements, hạn chế xử lý, xóa dữ liệu, hoặc nạp lại sổ thu hồi",,LNH-T67 N20-MEAS
+MEASSHARE_ACTIVE,revoke,OWNER,MEASSHARE_REVOKED,chủ dữ liệu thu hồi; người xem mất quyền đọc ngay,,LNH-T67 N20-MEAS X09
+MEASSHARE_ACTIVE,expire,SCHEDULER,MEASSHARE_EXPIRED,tới hạn của grant (tối đa 90 ngày); route đọc đã chặn từ lúc tới hạn,expires_at,LNH-T67 N20-MEAS X09
+MEASSHARE_ACTIVE,withdraw,AUTHORITY,MEASSHARE_REVOKED,"chủ dữ liệu mất quyền, rút đồng ý, hạn chế xử lý hoặc xóa; người xem rời workspace; nạp lại sổ thu hồi",,LNH-T67 N20-MEAS X09
+SIMRUN_QUEUED,simulate,SIMULATOR,SIMRUN_COMPLETED,trình mô phỏng tham chiếu lấy lượt khỏi hàng đợi mô phỏng; kết quả tổng hợp nhãn SIMULATED; không thiết bị nào,queued_at + 2 s,LNH-T68 N20-SIM X10

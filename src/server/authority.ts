@@ -12,13 +12,13 @@ import type { KindSpec } from "./modules.ts";
 /** Ba loại tác vụ của lõi. Loại do mô-đun khai (KindSpec trong modules.ts) là chuỗi khác, tra bằng kindRule(). */
 export type Kind = "calendar.block" | "device.set_power" | "robot.simulate";
 /** Mục đích đồng ý có xử lý phía máy chủ. Hai mục cuối thêm ở V1.0.0 (LNH-T36, LNH-T45), bảng consents nhận chúng từ migration 0002. */
-export type Purpose = "calendar_link" | "home_control" | "beta_telemetry" | "messaging" | "social_post";
+export type Purpose = "calendar_link" | "home_control" | "beta_telemetry" | "messaging" | "social_post" | "inbox_mail" | "home_hub" | "measurements";
 /** Phạm vi quyền. Hai mục cuối thêm ở V1.0.0 (LNH-T36, LNH-T45), bảng grants nhận chúng từ migration 0002. */
-export type GrantScope = "calendar.block" | "home.control" | "robot.simulate" | "messaging.use" | "social.post";
+export type GrantScope = "calendar.block" | "home.control" | "robot.simulate" | "messaging.use" | "social.post" | "inbox.connect" | "home.hub" | "measurements.record" | "sim.run";
 
 export const KINDS: Kind[] = ["calendar.block", "device.set_power", "robot.simulate"];
-export const PURPOSES: readonly Purpose[] = ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post"];
-export const GRANT_SCOPES: readonly GrantScope[] = ["calendar.block", "home.control", "robot.simulate", "messaging.use", "social.post"];
+export const PURPOSES: readonly Purpose[] = ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post", "inbox_mail", "home_hub", "measurements"];
+export const GRANT_SCOPES: readonly GrantScope[] = ["calendar.block", "home.control", "robot.simulate", "messaging.use", "social.post", "inbox.connect", "home.hub", "measurements.record", "sim.run"];
 export const SCOPE_FOR: Record<Kind, GrantScope> = { "calendar.block": "calendar.block", "device.set_power": "home.control", "robot.simulate": "robot.simulate" };
 export const PURPOSE_FOR: Record<Kind, Purpose | null> = { "calendar.block": "calendar_link", "device.set_power": "home_control", "robot.simulate": null };
 export const MODULE_FOR: Record<Kind, ModuleName> = { "calendar.block": "calendar", "device.set_power": "home", "robot.simulate": "robot" };

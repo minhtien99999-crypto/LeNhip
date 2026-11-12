@@ -27,7 +27,7 @@ export function mergeOpenApi(core: OpenApiDoc, fragments: { name: string; doc: u
     const components = doc.components ?? {};
     if (!isObject(paths) || !isObject(components)) throw bad("paths và components phải là đối tượng");
     for (const [path, item] of Object.entries(paths)) {
-      if (!path.startsWith("/v1/")) throw bad(`đường dẫn ${path} phải nằm dưới /v1/`);
+      if (!/^\/v[12]\//.test(path)) throw bad(`đường dẫn ${path} phải nằm dưới /v1/ hoặc /v2/`);
       if (Object.hasOwn(out.paths, path)) throw bad(`đường dẫn ${path} đã có`);
       if (!isObject(item)) throw bad(`đường dẫn ${path} phải là đối tượng`);
       out.paths[path] = item;

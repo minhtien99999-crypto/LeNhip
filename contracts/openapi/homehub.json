@@ -1,0 +1,2059 @@
+{
+  "paths": {
+    "/v2/home/subscriptions": {
+      "get": {
+        "operationId": "listHomeSubscriptions",
+        "description": "Đăng ký HaaS của chính chủ hộ (N20‑HAAS, LNH-T66): trạng thái HAAS_*, các bước, hub, quyền xem tạm thời. Quyền truy cập tính từ trạng thái ở máy chủ. Cổng: thành viên → cờ home_hub → quyền home.hub → đồng ý home_hub.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSubscriptionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createHomeSubscription",
+        "description": "Yêu cầu khảo sát (SRS V2.0 §12): site_ref, package_code, contact_grant, terms_version. Trả subscription_ref và trạng thái ban đầu HAAS_REQUESTED. Một đăng ký đang mở cho mỗi chủ hộ.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeSubscriptionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/accept-quote": {
+      "post": {
+        "operationId": "acceptHomeQuote",
+        "description": "Chủ hộ nhận báo giá khảo sát (HAAS_SURVEYED → HAAS_ACCEPTED). revision phải là bản chủ hộ đã xem; khác thì 409 HOME_REVISION_CONFLICT.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOwnerStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/confirm-install": {
+      "post": {
+        "operationId": "confirmHomeInstall",
+        "description": "Chủ hộ xác nhận trong app hub đã lắp (HAAS_INSTALLED → HAAS_ACTIVE): serial phải khớp hub LeLS đã liên kết với hộ.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeInstallConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/cancel": {
+      "post": {
+        "operationId": "cancelHomeSubscription",
+        "description": "Chủ hộ hủy trước khi lắp (REQUESTED, SURVEYED, ACCEPTED → TERMINATED; hệ thống đóng ngay vì chưa có hub).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOwnerStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/terminate": {
+      "post": {
+        "operationId": "terminateHomeSubscription",
+        "description": "Chủ hộ chấm dứt sau khi lắp: cần đăng nhập trong 5 phút (401 REAUTH_REQUIRED). Hub và quyền xem bị thu hồi, sự kiện ở máy chủ bị xóa; lấy bản xuất trước ở …/export. LeLS thu hồi hub rồi mới RETURNED.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOwnerStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/events": {
+      "get": {
+        "operationId": "listHomeEvents",
+        "description": "Sự kiện tối thiểu của hộ, chỉ chủ hộ (X05): loại, camera, thời điểm quan sát, thời điểm nhận, cờ đến trễ, clip_ref mờ. Không ảnh, video, âm thanh, khuôn mặt hay danh tính. Xem clip từ xa chưa có (clip_view = UNAVAILABLE).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeEventList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/export": {
+      "get": {
+        "operationId": "exportHomeSubscription",
+        "description": "Bản xuất của một đăng ký cho chủ hộ (trước khi chấm dứt): các bước, hub, quyền xem, sự kiện. Không khóa hub.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeExport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/subscriptions/{subscription_id}/view-grants": {
+      "post": {
+        "operationId": "createHomeViewGrant",
+        "description": "Chủ hộ cấp cho vận hành LeLS quyền xem sự kiện tạm thời theo ticket, 15–240 phút; mỗi lần dùng được đếm và ghi nhật ký (X06 một phần). Một quyền còn hiệu lực mỗi lúc.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeViewGrantCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeViewGrant"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/view-grants/{grant_id}/revoke": {
+      "post": {
+        "operationId": "revokeHomeViewGrant",
+        "description": "Chủ hộ thu hồi quyền xem tạm thời; ghi vào sổ thu hồi để restore không mở lại.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeViewGrant"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/home/hubs/{hub_id}/events": {
+      "post": {
+        "operationId": "postHomeHubEvent",
+        "description": "Chỉ danh tính hub (SRS V2.0 §12): bearer sub hub:<hub_id> cộng chữ ký HMAC (proof) trên mã băm JCS của phong bì; token người dùng nhận 401 HOME_HUB_IDENTITY_INVALID. Danh tính hub ở bản này là MÔ PHỎNG, chỉ có ở chế độ dev; ngoài dev trả 503 HOME_HUB_IDENTITY_UNAVAILABLE (danh tính thật, mTLS chưa có). Chống trùng theo hub, camera, epoch, event_id (200 duplicate=true); sự kiện trễ giữ observed_at, late=true (X05); binding_version cũ 409 HOME_BINDING_STALE (X07).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "hub_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeHubEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sự kiện đã nhận trước đó (cùng hub, camera, epoch, event_id): trả biên nhận cũ với duplicate=true, không ghi lần nữa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeHubReceipt"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeHubReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions": {
+      "get": {
+        "operationId": "listOpsHomeSubscriptions",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR): trạng thái dịch vụ và vận hành của mọi đăng ký trong workspace (serial, firmware, lần liên lạc cuối, camera trực tuyến). Không có sự kiện.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/events": {
+      "get": {
+        "operationId": "listOpsHomeEvents",
+        "description": "Sự kiện cho LeLS chỉ khi chủ hộ đang cấp quyền xem tạm thời còn hạn (403 HOME_VIEW_GRANT_REQUIRED); mỗi lần đọc tăng bộ đếm và ghi nhật ký. Không clip_ref.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsEvents"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/survey": {
+      "post": {
+        "operationId": "opsHomeSurvey",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Khảo sát: số camera và báo giá trước lắp (REQUESTED → SURVEYED). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeSurvey"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/reject": {
+      "post": {
+        "operationId": "opsHomeReject",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Không tương thích sau khảo sát (REQUESTED → TERMINATED → RETURNED). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOpsStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/install": {
+      "post": {
+        "operationId": "opsHomeInstall",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Lắp: liên kết serial hub với hộ, danh tính hub mới, binding_version tăng (ACCEPTED → INSTALLED). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeInstall"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/replace-hub": {
+      "post": {
+        "operationId": "opsHomeReplaceHub",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Đổi hub (X07): thu hồi danh tính hub cũ, binding_version tăng, chủ hộ xác nhận lại (ACTIVE → INSTALLED). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeInstall"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/suspend": {
+      "post": {
+        "operationId": "opsHomeSuspend",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Tạm ngừng (ACTIVE → SUSPENDED); hub không gửi được sự kiện. revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOpsStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/resume": {
+      "post": {
+        "operationId": "opsHomeResume",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Mở lại (SUSPENDED → ACTIVE). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOpsStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/terminate": {
+      "post": {
+        "operationId": "opsHomeTerminate",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): LeLS chấm dứt theo điều khoản (ACTIVE, SUSPENDED → TERMINATED). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeOpsStep"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/ops/home/subscriptions/{subscription_id}/return": {
+      "post": {
+        "operationId": "opsHomeReturn",
+        "description": "Vận hành LeLS (vai SITE_OPERATOR, không trên đăng ký của chính mình): Hub đã thu về và đã xóa dữ liệu tại hub (TERMINATED → RETURNED). revision phải khớp.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeReturn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOpsSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "422": {
+            "$ref": "#/components/responses/HomeError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HomeSubscriptionCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "site_ref",
+          "package_code",
+          "contact_grant",
+          "terms_version"
+        ],
+        "properties": {
+          "site_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{3,64}$",
+            "description": "Mã địa điểm do chủ hộ chọn; không phải địa chỉ."
+          },
+          "package_code": {
+            "enum": [
+              "HOME_PILOT"
+            ]
+          },
+          "contact_grant": {
+            "enum": [
+              "IN_APP",
+              "IN_APP_AND_CALL"
+            ],
+            "description": "Kênh LeLS được phép liên hệ để khảo sát và lắp; số điện thoại không đi qua LeNhip."
+          },
+          "terms_version": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{3,40}$"
+          }
+        }
+      },
+      "HomeOwnerStep": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "HomeInstallConfirm": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "serial"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Z0-9-]{4,32}$"
+          }
+        }
+      },
+      "HomeViewGrantCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ticket_ref",
+          "minutes"
+        ],
+        "properties": {
+          "ticket_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{3,40}$"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 240
+          }
+        }
+      },
+      "HomeSurvey": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "camera_count",
+          "quote_vnd"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "camera_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "quote_vnd": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000000
+          }
+        }
+      },
+      "HomeInstall": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "serial",
+          "firmware",
+          "camera_refs"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "serial": {
+            "type": "string",
+            "pattern": "^[A-Z0-9-]{4,32}$"
+          },
+          "firmware": {
+            "type": "string",
+            "pattern": "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$"
+          },
+          "camera_refs": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "pattern": "^cam_[a-z0-9_]{1,24}$"
+            }
+          }
+        }
+      },
+      "HomeOpsStep": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "reason_code"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason_code": {
+            "enum": [
+              "INCOMPATIBLE",
+              "CUSTOMER_REQUEST",
+              "MAINTENANCE",
+              "PAYMENT",
+              "INCIDENT",
+              "END_OF_TERM",
+              "OTHER"
+            ]
+          }
+        }
+      },
+      "HomeReturn": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "hub_wiped"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hub_wiped": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "HomeHubEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "observed_at",
+          "type",
+          "camera_ref",
+          "binding_version",
+          "schema_version",
+          "epoch",
+          "proof"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,64}$"
+          },
+          "observed_at": {
+            "$ref": "#/components/schemas/UtcTime"
+          },
+          "type": {
+            "enum": [
+              "PERSON_IN_ZONE",
+              "CAMERA_OFFLINE",
+              "CAMERA_ONLINE",
+              "HUB_OFFLINE_RECOVERED"
+            ]
+          },
+          "camera_ref": {
+            "type": "string",
+            "pattern": "^cam_[a-z0-9_]{1,24}$"
+          },
+          "binding_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "schema_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "clip_ref": {
+            "type": "string",
+            "pattern": "^clp_[A-Za-z0-9_-]{8,64}$",
+            "description": "Định danh mờ của clip lưu tại hub; không phải URL. Chỉ với PERSON_IN_ZONE."
+          },
+          "proof": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      },
+      "HomeHubReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_ref",
+          "duplicate",
+          "late",
+          "received_at"
+        ],
+        "properties": {
+          "event_ref": {
+            "type": "string"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "late": {
+            "type": "boolean"
+          },
+          "received_at": {
+            "type": "string"
+          }
+        }
+      },
+      "HomeViewGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant_id",
+          "ticket_ref",
+          "created_at",
+          "expires_at",
+          "revoked_at",
+          "uses",
+          "last_used_at",
+          "active"
+        ],
+        "properties": {
+          "grant_id": {
+            "type": "string"
+          },
+          "ticket_ref": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uses": {
+            "type": "integer"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HomeEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_ref",
+          "type",
+          "camera_ref",
+          "observed_at",
+          "received_at",
+          "late",
+          "binding_version",
+          "clip_ref",
+          "verified"
+        ],
+        "properties": {
+          "event_ref": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "PERSON_IN_ZONE",
+              "CAMERA_OFFLINE",
+              "CAMERA_ONLINE",
+              "HUB_OFFLINE_RECOVERED"
+            ]
+          },
+          "camera_ref": {
+            "type": "string"
+          },
+          "observed_at": {
+            "type": "string"
+          },
+          "received_at": {
+            "type": "string"
+          },
+          "late": {
+            "type": "boolean"
+          },
+          "binding_version": {
+            "type": "integer"
+          },
+          "clip_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": "boolean",
+            "const": false
+          }
+        }
+      },
+      "HomeSubscription": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subscription_ref",
+          "state",
+          "site_ref",
+          "package_code",
+          "contact_grant",
+          "terms_version",
+          "camera_count",
+          "quote_vnd",
+          "quote_accepted_at",
+          "binding_version",
+          "reason_code",
+          "revision",
+          "created_at",
+          "updated_at",
+          "steps",
+          "hub",
+          "access",
+          "view_grants"
+        ],
+        "properties": {
+          "subscription_ref": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "HAAS_REQUESTED",
+              "HAAS_SURVEYED",
+              "HAAS_ACCEPTED",
+              "HAAS_INSTALLED",
+              "HAAS_ACTIVE",
+              "HAAS_SUSPENDED",
+              "HAAS_TERMINATED",
+              "HAAS_RETURNED"
+            ]
+          },
+          "site_ref": {
+            "type": "string"
+          },
+          "package_code": {
+            "type": "string"
+          },
+          "contact_grant": {
+            "type": "string"
+          },
+          "terms_version": {
+            "type": "string"
+          },
+          "camera_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "quote_vnd": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "quote_accepted_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "binding_version": {
+            "type": "integer"
+          },
+          "reason_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "seq": {
+                  "type": "integer"
+                },
+                "from_state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "event": {
+                  "type": "string"
+                },
+                "actor_kind": {
+                  "enum": [
+                    "OWNER",
+                    "LELS",
+                    "SYSTEM"
+                  ]
+                },
+                "to_state": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "hub": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "access": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "events_visible": {
+                "type": "boolean"
+              },
+              "hub_accepting": {
+                "type": "boolean"
+              },
+              "clip_view": {
+                "const": "UNAVAILABLE"
+              }
+            }
+          },
+          "view_grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeViewGrant"
+            }
+          }
+        }
+      },
+      "HomeSubscriptionList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subscriptions",
+          "terms_version",
+          "packages"
+        ],
+        "properties": {
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeSubscription"
+            }
+          },
+          "terms_version": {
+            "type": "string"
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "HomeEventList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subscription_ref",
+          "state",
+          "events",
+          "retention_days",
+          "clip_view"
+        ],
+        "properties": {
+          "subscription_ref": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "HAAS_REQUESTED",
+              "HAAS_SURVEYED",
+              "HAAS_ACCEPTED",
+              "HAAS_INSTALLED",
+              "HAAS_ACTIVE",
+              "HAAS_SUSPENDED",
+              "HAAS_TERMINATED",
+              "HAAS_RETURNED"
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeEvent"
+            }
+          },
+          "retention_days": {
+            "type": "integer"
+          },
+          "clip_view": {
+            "const": "UNAVAILABLE"
+          }
+        }
+      },
+      "HomeExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scope",
+          "subscription"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "subscription": {
+            "type": "object"
+          }
+        }
+      },
+      "HomeOpsSubscription": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subscription_ref",
+          "owner_id",
+          "state",
+          "site_ref",
+          "package_code",
+          "contact_grant",
+          "camera_count",
+          "quote_vnd",
+          "quote_accepted",
+          "binding_version",
+          "reason_code",
+          "revision",
+          "updated_at",
+          "hub",
+          "view_grant"
+        ],
+        "properties": {
+          "subscription_ref": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "HAAS_REQUESTED",
+              "HAAS_SURVEYED",
+              "HAAS_ACCEPTED",
+              "HAAS_INSTALLED",
+              "HAAS_ACTIVE",
+              "HAAS_SUSPENDED",
+              "HAAS_TERMINATED",
+              "HAAS_RETURNED"
+            ]
+          },
+          "site_ref": {
+            "type": "string"
+          },
+          "package_code": {
+            "type": "string"
+          },
+          "contact_grant": {
+            "type": "string"
+          },
+          "camera_count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "quote_vnd": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "quote_accepted": {
+            "type": "boolean"
+          },
+          "binding_version": {
+            "type": "integer"
+          },
+          "reason_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "hub": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "view_grant": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        }
+      },
+      "HomeOpsList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subscriptions"
+        ],
+        "properties": {
+          "subscriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeOpsSubscription"
+            }
+          }
+        }
+      },
+      "HomeOpsEvents": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subscription_ref",
+          "grant",
+          "events",
+          "clip_view"
+        ],
+        "properties": {
+          "subscription_ref": {
+            "type": "string"
+          },
+          "grant": {
+            "type": "object"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "clip_view": {
+            "const": "UNAVAILABLE"
+          }
+        }
+      },
+      "HomeError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "retryable"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "detail_code": {
+            "enum": [
+              "WINDOW_TOO_LONG",
+              "WORKSPACE_HEADER",
+              "END_BEFORE_START",
+              "BLOCK_TOO_LONG",
+              "START_IN_PAST",
+              "BEYOND_HORIZON"
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "terms_version": {
+            "type": "string"
+          },
+          "binding_version": {
+            "type": "integer"
+          }
+        },
+        "description": "Lỗi của Le‑NodeHome: Error chuẩn, có thể kèm revision (HOME_REVISION_CONFLICT), terms_version (HOME_TERMS_OUTDATED) hoặc binding_version (HOME_BINDING_STALE) để máy khách đọc lại trạng thái mới."
+      }
+    },
+    "responses": {
+      "HomeError": {
+        "description": "Lỗi chuẩn của Le‑NodeHome",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HomeError"
+            }
+          }
+        }
+      }
+    }
+  }
+}

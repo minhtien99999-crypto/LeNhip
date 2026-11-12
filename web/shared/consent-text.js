@@ -26,6 +26,10 @@ export const CONSENT_TEXT_VERSIONS = Object.freeze({
   beta_telemetry: "v1-2026-11-11",
   messaging: "v1-2026-11-11",
   social_post: "v1-2026-11-11",
+  // V1.0.1 (SRS V2.0): nguồn Microsoft 365 của Hộp tổng hợp, sự kiện Le‑NodeHome, phép đo Le‑NodeHealth.
+  inbox_mail: "v1-2026-11-12",
+  home_hub: "v1-2026-11-12",
+  measurements: "v1-2026-11-12",
 });
 
 /** Khóa thân văn bản đồng ý trong mọi catalog; nhóm 1 là purpose_id. */

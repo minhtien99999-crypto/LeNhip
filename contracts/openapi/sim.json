@@ -1,0 +1,458 @@
+{
+  "paths": {
+    "/v2/sim/catalog": {
+      "get": {
+        "operationId": "getSimCatalog",
+        "description": "Cổng mô phỏng Le‑ORION (SRS V2.0 mục 09, N20‑SIM, LNH-T68): kỹ năng đã đăng ký, scene theo phiên bản, giới hạn. Chỉ danh tính lab.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimCatalog"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/sim/runs": {
+      "get": {
+        "operationId": "listSimRuns",
+        "description": "Cổng mô phỏng Le‑ORION (SRS V2.0 mục 09, N20‑SIM, LNH-T68): lượt mô phỏng của chính người gọi, luôn SIMULATED.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimRunList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSimRun",
+        "description": "Cổng mô phỏng Le‑ORION (SRS V2.0 mục 09, N20‑SIM, LNH-T68): chỉ danh tính lab (workspace là tenant lab + quyền sim.run). Lệnh chỉ vào hàng đợi mô phỏng; biên nhận SIMULATED không nâng mức xác minh của sự kiện vật lý.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimRunCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã xếp hàng mô phỏng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimRun"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Lượt đã có cùng request_ref",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/sim/receipts/verify": {
+      "post": {
+        "operationId": "verifySimReceipt",
+        "description": "Cổng mô phỏng Le‑ORION (SRS V2.0 mục 09, N20‑SIM, LNH-T68): kiểm một biên nhận lab; mọi audience hay danh tính ngoài lab bị từ chối (X10).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimReceiptVerify"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimReceiptVerdict"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SimReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action_id",
+          "run_id",
+          "scene_version",
+          "at",
+          "status"
+        ],
+        "properties": {
+          "action_id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "scene_version": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string"
+          },
+          "status": {
+            "const": "SIMULATED"
+          }
+        }
+      },
+      "SimRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_ref",
+          "label",
+          "skill_ref",
+          "scene_version",
+          "state",
+          "queue",
+          "receipt",
+          "queued_at",
+          "completed_at",
+          "result"
+        ],
+        "properties": {
+          "run_ref": {
+            "type": "string"
+          },
+          "label": {
+            "const": "SIMULATED"
+          },
+          "skill_ref": {
+            "type": "string"
+          },
+          "scene_version": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "SIMRUN_QUEUED",
+              "SIMRUN_COMPLETED"
+            ]
+          },
+          "queue": {
+            "const": "SIMULATION"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/SimReceipt"
+          },
+          "queued_at": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "receipt_token": {
+            "type": "string"
+          }
+        }
+      },
+      "SimRunCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "skill_ref",
+          "scene_version",
+          "request_ref"
+        ],
+        "properties": {
+          "skill_ref": {
+            "type": "string",
+            "pattern": "^skl_[a-z_]{1,40}$"
+          },
+          "scene_version": {
+            "type": "string",
+            "pattern": "^scn_[a-z_]{1,32}@\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$"
+          },
+          "request_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,64}$"
+          }
+        },
+        "description": "Đúng ba trường của SRS V2.0 §12; không có trường nào cho ảnh camera hay phép đo."
+      },
+      "SimRunList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "runs"
+        ],
+        "properties": {
+          "label": {
+            "const": "SIMULATED"
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimRun"
+            }
+          }
+        }
+      },
+      "SimCatalog": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "lab_ref",
+          "skills",
+          "scenes",
+          "limits"
+        ],
+        "properties": {
+          "label": {
+            "const": "SIMULATED"
+          },
+          "lab_ref": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "skill_ref",
+                "version",
+                "scenes",
+                "max_steps"
+              ],
+              "properties": {
+                "skill_ref": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "scenes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "max_steps": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scene_version",
+                "scene_id",
+                "version",
+                "manifest_digest"
+              ],
+              "properties": {
+                "scene_version": {
+                  "type": "string"
+                },
+                "scene_id": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "manifest_digest": {
+                  "$ref": "#/components/schemas/Digest"
+                }
+              }
+            }
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "queued_per_workspace",
+              "inputs",
+              "physical_robot"
+            ],
+            "properties": {
+              "queued_per_workspace": {
+                "type": "integer"
+              },
+              "inputs": {
+                "const": "NO_CAMERA_NO_MEASUREMENTS"
+              },
+              "physical_robot": {
+                "const": "OUT_OF_SCOPE_G3"
+              }
+            }
+          }
+        }
+      },
+      "SimReceiptVerify": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receipt_token",
+          "audience"
+        ],
+        "properties": {
+          "receipt_token": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "audience": {
+            "type": "string",
+            "pattern": "^[a-z]{1,16}:[A-Za-z0-9_.-]{1,64}$"
+          }
+        }
+      },
+      "SimReceiptVerdict": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "valid",
+          "label",
+          "run_ref",
+          "receipt",
+          "physical_verification"
+        ],
+        "properties": {
+          "valid": {
+            "const": true
+          },
+          "label": {
+            "const": "SIMULATED"
+          },
+          "run_ref": {
+            "type": "string"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/SimReceipt"
+          },
+          "physical_verification": {
+            "const": "NONE"
+          }
+        }
+      }
+    }
+  }
+}

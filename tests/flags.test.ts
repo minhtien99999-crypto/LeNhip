@@ -17,10 +17,10 @@ test("control store mới: ba mô-đun của V1.0.0 tắt khi chưa đặt, ch�
   try {
     const path = join(dir, "control.json");
     const c = new ControlStore(path);
-    assert.deepEqual([...MODULE_NAMES], ["calendar", "home", "robot", "lele", "messaging", "social", "trackers"]);
+    assert.deepEqual([...MODULE_NAMES], ["calendar", "home", "robot", "lele", "messaging", "social", "trackers", "inbox", "sync", "home_hub", "measurements", "sim"]);
     for (const m of LEGACY_MODULES) assert.equal(c.moduleOn(m), true, m);
     for (const m of OPT_IN_MODULES) assert.equal(c.moduleOn(m), false, m);
-    assert.deepEqual(c.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: false });
+    assert.deepEqual(c.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: false, inbox: false, sync: false, home_hub: false, measurements: false, sim: false });
     c.setModule("2026-11-11T02:00:00.000Z", "ops_1", "messaging", true, "mở thử nhắn tin");
     assert.equal(c.moduleOn("messaging"), true);
     assert.equal(c.moduleOn("social"), false);
@@ -29,7 +29,7 @@ test("control store mới: ba mô-đun của V1.0.0 tắt khi chưa đặt, ch�
     // Bền qua khởi động lại.
     c.setModule("2026-11-11T02:02:00.000Z", "ops_1", "trackers", true, "mở thử");
     const again = new ControlStore(path);
-    assert.deepEqual(again.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: true });
+    assert.deepEqual(again.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: true, inbox: false, sync: false, home_hub: false, measurements: false, sim: false });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -42,12 +42,12 @@ test("control.json của 0.1.0 (không có ba khóa mới, hoặc thiếu cả k
     const old = { recovery_epoch: 3, dispatch: { locked: false, reason: null, since: null }, modules: { calendar: true, home: false, robot: true, lele: true }, sites: {}, receivers_allowlist: null, history: [] };
     writeFileSync(path, JSON.stringify(old));
     const c = new ControlStore(path);
-    assert.deepEqual(c.modules(), { calendar: true, home: false, robot: true, lele: true, messaging: false, social: false, trackers: false });
+    assert.deepEqual(c.modules(), { calendar: true, home: false, robot: true, lele: true, messaging: false, social: false, trackers: false, inbox: false, sync: false, home_hub: false, measurements: false, sim: false });
     assert.equal(c.get().recovery_epoch, 3);
     assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), old, "đọc không ghi lại tệp cũ");
     writeFileSync(path, JSON.stringify({ ...old, modules: { home: false } }));
     const sparse = new ControlStore(path);
-    assert.deepEqual(sparse.modules(), { calendar: true, home: false, robot: true, lele: true, messaging: false, social: false, trackers: false });
+    assert.deepEqual(sparse.modules(), { calendar: true, home: false, robot: true, lele: true, messaging: false, social: false, trackers: false, inbox: false, sync: false, home_hub: false, measurements: false, sim: false });
     // Giá trị không phải true (kể cả chuỗi) không bật được mô-đun mới.
     writeFileSync(path, JSON.stringify({ ...old, modules: { ...old.modules, social: "true", messaging: 1, trackers: null } }));
     const odd = new ControlStore(path);
@@ -62,18 +62,18 @@ test("không có dữ liệu mẫu thì ba cờ mới tắt; dữ liệu mẫu c
   try {
     const clock = new ManualClock(T0);
     let app = createApp({ dataDir: dir, clock });
-    assert.deepEqual(app.ctx.control.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: false });
+    assert.deepEqual(app.ctx.control.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: false, inbox: false, sync: false, home_hub: false, measurements: false, sim: false });
     app.close();
     // Cùng thư mục dữ liệu (đã có control.json không có ba khóa mới), nay chạy với dữ liệu mẫu.
     app = createApp({ dataDir: dir, clock, dev: true, seed: true });
-    assert.deepEqual(app.ctx.control.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: true, social: true, trackers: true });
-    assert.equal(app.ctx.control.get().history.filter((x) => x.by === "dev-seed").length, 3);
+    assert.deepEqual(app.ctx.control.modules(), { calendar: true, home: true, robot: true, lele: true, messaging: true, social: true, trackers: true, inbox: true, sync: true, home_hub: true, measurements: true, sim: true });
+    assert.equal(app.ctx.control.get().history.filter((x) => x.by === "dev-seed").length, 8);
     app.ctx.control.setModule(new Date(clock.now()).toISOString(), "ops_1", "social", false, "tắt để kiểm");
     app.close();
     app = createApp({ dataDir: dir, clock, dev: true, seed: true });
     assert.equal(app.ctx.control.moduleOn("social"), false, "cờ vận hành viên đã tắt thì dữ liệu mẫu không bật lại");
     assert.equal(app.ctx.control.moduleOn("messaging"), true);
-    assert.equal(app.ctx.control.get().history.filter((x) => x.by === "dev-seed").length, 3, "không ghi lại ở lần khởi động sau");
+    assert.equal(app.ctx.control.get().history.filter((x) => x.by === "dev-seed").length, 8, "không ghi lại ở lần khởi động sau");
     app.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -85,14 +85,14 @@ test("API: Me.modules và cờ vận hành có đủ bảy mô-đun; bật/tắt
   try {
     const me = await h.call("GET", "/v1/me");
     assert.deepEqual(SCHEMAS.validate("Me", me.body), []);
-    assert.deepEqual(me.body.modules, { calendar: true, home: true, robot: true, lele: true, messaging: true, social: true, trackers: true });
+    assert.deepEqual(me.body.modules, { calendar: true, home: true, robot: true, lele: true, messaging: true, social: true, trackers: true, inbox: true, sync: true, home_hub: true, measurements: true, sim: true });
     for (const m of OPT_IN_MODULES) {
       const off = await h.call("POST", "/v1/ops/flags", { sub: "dev_ops", body: { module: m, enabled: false, reason: "kiểm kill switch" } });
       assert.equal(off.status, 200, m);
       assert.deepEqual(SCHEMAS.validate("Flags", off.body), []);
       assert.equal(off.body.modules[m], false);
     }
-    assert.deepEqual((await h.call("GET", "/v1/me")).body.modules, { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: false });
+    assert.deepEqual((await h.call("GET", "/v1/me")).body.modules, { calendar: true, home: true, robot: true, lele: true, messaging: false, social: false, trackers: false, inbox: false, sync: false, home_hub: false, measurements: false, sim: false });
     const flags = await h.call("GET", "/v1/ops/flags", { sub: "dev_ops" });
     assert.deepEqual(Object.keys(flags.body.modules).sort(), [...MODULE_NAMES].sort(), "vận hành thấy cả cờ chưa từng đặt");
     assert.equal((await h.call("POST", "/v1/ops/flags", { sub: "dev_ops", body: { module: "messaging", enabled: true, reason: "mở lại" } })).body.modules.messaging, true);

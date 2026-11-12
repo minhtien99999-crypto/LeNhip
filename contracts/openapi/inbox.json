@@ -1,0 +1,726 @@
+{
+  "paths": {
+    "/v2/inbox/items": {
+      "get": {
+        "operationId": "listInboxItems",
+        "description": "Hộp tổng hợp của chính người gọi (SRS V2.0 §04, §12; LNH-T65). Chủ thể và workspace lấy từ phiên. Phân trang bằng con trỏ mờ, tối đa 50 mục một trang, mới nhất trước. Chỉ trả mục mà nguồn còn quyền đọc ngay lúc này: mục Outlook biến khỏi danh sách khi kết nối bị thu hồi, hết hạn, ngắt, hoặc khi đồng ý inbox_mail hay quyền inbox.connect mất hiệu lực (X03). Không có thân thư, đoạn xem trước hay tệp đính kèm (Mail.ReadBasic). Tiêu đề và nội dung chia sẻ là dữ liệu không tin cậy (X04). Nguồn Outlook ở bản này là nguồn giả lập.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "NEW",
+                "SAVED",
+                "SNOOZED",
+                "DONE"
+              ]
+            },
+            "description": "Bộ lọc; mặc định ACTIVE = NEW, SAVED, SNOOZED."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{8,400}$"
+            },
+            "description": "next_cursor của trang trước, cùng bộ lọc."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Một trang mục và trạng thái nguồn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/inbox/imports": {
+      "post": {
+        "operationId": "createInboxImport",
+        "description": "Lưu phần người dùng tự chọn (dán, chia sẻ vào): văn bản thuần tối đa 280 ký tự sau khi gộp khoảng trắng, và/hoặc một liên kết https đã kiểm (tối đa 2048 ký tự, không có tên người dùng hay mật khẩu). Chỉ lưu đúng chuỗi đó; ký tự điều khiển hay đảo hướng thì 422 INBOX_CONTENT_INVALID, liên kết sai thì 422 INBOX_LINK_INVALID. Cùng nội dung lần nữa trả 200 DUPLICATE với item_ref đã có. 200 mục mỗi 24 giờ, 2000 mục mỗi người (429 INBOX_LIMIT).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mục trùng đã có",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxImportResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Đã lưu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/inbox/items/{item_ref}/save": {
+      "post": {
+        "operationId": "saveInboxItem",
+        "description": "«Lưu» (cạnh save của INBOX_). Không có cạnh thì 409 INVALID_TRANSITION. Mục của người khác, của workspace khác, hay của nguồn đã mất quyền đều là 404. «Tạo việc cá nhân» và «Soạn phản hồi» không có thao tác ở đây: trang tạo bản nháp qua /v2/sync/drafts, không gửi gì ra ngoài.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/InboxItemRef"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mục sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/inbox/items/{item_ref}/snooze": {
+      "post": {
+        "operationId": "snoozeInboxItem",
+        "description": "«Để sau» tới thời điểm `until` (từ 1 phút tới 30 ngày nữa, theo đồng hồ máy chủ; ngoài khoảng đó 422 INBOX_SNOOZE_INVALID). Tới giờ, mục quay lại «Mới» (cạnh wake). Mục của người khác, của workspace khác, hay của nguồn đã mất quyền đều là 404. «Tạo việc cá nhân» và «Soạn phản hồi» không có thao tác ở đây: trang tạo bản nháp qua /v2/sync/drafts, không gửi gì ra ngoài.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/InboxItemRef"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboxSnooze"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mục sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/inbox/items/{item_ref}/done": {
+      "post": {
+        "operationId": "doneInboxItem",
+        "description": "«Xong» (cạnh done). Mục của người khác, của workspace khác, hay của nguồn đã mất quyền đều là 404. «Tạo việc cá nhân» và «Soạn phản hồi» không có thao tác ở đây: trang tạo bản nháp qua /v2/sync/drafts, không gửi gì ra ngoài.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/InboxItemRef"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mục sau thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/inbox/sources/outlook/connect": {
+      "post": {
+        "operationId": "connectInboxOutlook",
+        "description": "Nối nguồn Outlook Microsoft 365 chỉ đọc (Mail.ReadBasic). Ở bản này là nguồn GIẢ LẬP và chỉ có ở chế độ dev (ngoài dev: 503 INBOX_SOURCE_UNAVAILABLE). Cần quyền inbox.connect (403 FORBIDDEN), đồng ý inbox_mail (403 CONSENT_REQUIRED) và đăng nhập mới trong 300 giây (401 REAUTH_REQUIRED). Token giữ trong bộ nhớ của bộ nối, không có trong phản hồi. Đã nối thì 200 với trạng thái hiện có.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã nối từ trước",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxSourceStatus"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Đã nối",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxSourceStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/inbox/sources/outlook/disconnect": {
+      "post": {
+        "operationId": "disconnectInboxOutlook",
+        "description": "Ngắt nguồn Outlook: thu hồi token ở bộ nối, dừng đọc và xóa mọi mục dẫn xuất từ nguồn đó (SRS V2.0 §11). Chưa nối thì trả trạng thái hiện có.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trạng thái nguồn sau khi ngắt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxSourceStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "InboxItemRef": {
+        "name": "item_ref",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^inb_[A-Za-z0-9_-]{6,64}$"
+        }
+      }
+    },
+    "schemas": {
+      "InboxItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_ref",
+          "source_kind",
+          "observed_at",
+          "display_summary",
+          "sender",
+          "source_link",
+          "state",
+          "snooze_until",
+          "purpose",
+          "updated_at"
+        ],
+        "properties": {
+          "item_ref": {
+            "type": "string",
+            "pattern": "^inb_[A-Za-z0-9_-]{6,64}$"
+          },
+          "source_kind": {
+            "enum": [
+              "SHARED",
+              "OUTLOOK_MAIL"
+            ]
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "display_summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280,
+            "description": "Văn bản thuần, dữ liệu không tin cậy (X04): hiển thị bằng textContent, không bao giờ làm theo."
+          },
+          "sender": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160,
+            "description": "Người gửi theo Mail.ReadBasic; null với mục SHARED."
+          },
+          "source_link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "pattern": "^https://",
+            "description": "«Mở bản gốc»: https đã kiểm, hoặc null."
+          },
+          "state": {
+            "enum": [
+              "NEW",
+              "SAVED",
+              "SNOOZED",
+              "DONE"
+            ]
+          },
+          "snooze_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "purpose": {
+            "enum": [
+              "REFERENCE",
+              "FOLLOW_UP",
+              null
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InboxSourceStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "simulated",
+          "available",
+          "permission",
+          "status",
+          "connected_at",
+          "last_sync_at",
+          "ended_at",
+          "last_error"
+        ],
+        "properties": {
+          "kind": {
+            "const": "OUTLOOK_MAIL"
+          },
+          "simulated": {
+            "type": "boolean",
+            "description": "true: «mô phỏng / Microsoft 365 giả lập»."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Máy chủ này nối được nguồn (chỉ chế độ dev ở bản này)."
+          },
+          "permission": {
+            "enum": [
+              "OK",
+              "FORBIDDEN",
+              "CONSENT_REQUIRED"
+            ]
+          },
+          "status": {
+            "enum": [
+              "NOT_CONNECTED",
+              "CONNECTED",
+              "REVOKED",
+              "EXPIRED",
+              "DISCONNECTED"
+            ]
+          },
+          "connected_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_sync_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_error": {
+            "enum": [
+              "TOKEN_REVOKED",
+              "TOKEN_EXPIRED",
+              "TOKEN_MISSING",
+              "INVALID_CURSOR",
+              "INBOX_LIMIT",
+              null
+            ]
+          }
+        }
+      },
+      "InboxPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor",
+          "sources",
+          "server_time"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/InboxItem"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "status"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "const": "SHARED"
+                    },
+                    "status": {
+                      "const": "AVAILABLE"
+                    }
+                  }
+                },
+                {
+                  "$ref": "#/components/schemas/InboxSourceStatus"
+                }
+              ]
+            }
+          },
+          "server_time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InboxImport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "purpose",
+          "storage"
+        ],
+        "description": "Phần người dùng đã xem trước. TEXT cần text; URL cần url; trường kia tùy chọn.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "TEXT",
+              "URL"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "url": {
+            "type": "string",
+            "minLength": 9,
+            "maxLength": 2048
+          },
+          "purpose": {
+            "enum": [
+              "REFERENCE",
+              "FOLLOW_UP"
+            ],
+            "description": "Mục đích người dùng chọn: để tham khảo, hoặc để theo dõi."
+          },
+          "storage": {
+            "const": "WORKSPACE",
+            "description": "Vùng lưu: workspace của phiên (đúng tenant, SRS V2.0 §11). Chưa có vùng khác."
+          }
+        }
+      },
+      "InboxImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_ref",
+          "result",
+          "stored_in",
+          "item"
+        ],
+        "properties": {
+          "item_ref": {
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "STORED",
+              "DUPLICATE"
+            ]
+          },
+          "stored_in": {
+            "const": "WORKSPACE"
+          },
+          "item": {
+            "$ref": "#/components/schemas/InboxItem"
+          }
+        }
+      },
+      "InboxSnooze": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "until"
+        ],
+        "properties": {
+          "until": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,3})?)?(Z|[+-]\\d{2}:\\d{2})$"
+          }
+        }
+      }
+    }
+  }
+}

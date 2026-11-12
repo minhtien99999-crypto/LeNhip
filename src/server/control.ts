@@ -4,12 +4,13 @@
 import { closeSync, existsSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 
-export type ModuleName = "calendar" | "home" | "robot" | "lele" | "messaging" | "social" | "trackers";
+export type ModuleName = "calendar" | "home" | "robot" | "lele" | "messaging" | "social" | "trackers" | "inbox" | "sync" | "home_hub" | "measurements" | "sim";
 
 /** Bốn mô-đun của 0.1.0: cờ thiếu được đọc là bật, như trước nay (kill switch chỉ tắt khi đặt rõ false). */
 export const LEGACY_MODULES: readonly ModuleName[] = ["calendar", "home", "robot", "lele"];
 /** Mô-đun thêm ở V1.0.0 (LNH-F27): chỉ bật khi cờ được đặt rõ true; cờ thiếu, kể cả trong control.json cũ, là tắt. */
-export const OPT_IN_MODULES: readonly ModuleName[] = ["messaging", "social", "trackers"];
+/** Từ V1.0.1 (SRS V2.0): Hộp tổng hợp, đồng bộ bản nháp đa thiết bị, Le‑NodeHome, Le‑NodeHealth, cổng mô phỏng Le‑ORION. */
+export const OPT_IN_MODULES: readonly ModuleName[] = ["messaging", "social", "trackers", "inbox", "sync", "home_hub", "measurements", "sim"];
 export const MODULE_NAMES: readonly ModuleName[] = [...LEGACY_MODULES, ...OPT_IN_MODULES];
 
 export interface ControlState {

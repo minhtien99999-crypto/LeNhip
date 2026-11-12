@@ -221,7 +221,8 @@ test("validateModules: trùng tên, trùng route, POST thiếu schema/readable, 
   assert.throws(() => validateModules([{ name: "Bad Name" }], core), /tên mô-đun/);
   assert.throws(() => validateModules([{ name: "aa", routes: [{ method: "GET", path: "/v1/me", handler: ok }] }], core), /đã có/);
   assert.throws(() => validateModules([{ name: "aa", routes: [{ method: "GET", path: "/v1/x", handler: ok }] }, { name: "bb", routes: [{ method: "GET", path: "/v1/x", handler: ok }] }], core), /đã có/);
-  assert.throws(() => validateModules([{ name: "aa", routes: [{ method: "GET", path: "/v2/x", handler: ok }] }], core), /\/v1\//);
+  assert.throws(() => validateModules([{ name: "aa", routes: [{ method: "GET", path: "/v3/x", handler: ok }] }], core), /\/v1\/ hoặc \/v2\//);
+  assert.doesNotThrow(() => validateModules([{ name: "aa", routes: [{ method: "GET", path: "/v2/x", handler: ok }] }], core), "SRS V2.0 mục 12: namespace /v2");
   assert.throws(() => validateModules([{ name: "aa", routes: [{ method: "POST", path: "/v1/x", readable, handler: ok }] }], core), /schema hoặc readable/);
   assert.throws(() => validateModules([{ name: "aa", routes: [{ method: "POST", path: "/v1/x", schema: "Empty", handler: ok }] }], core), /schema hoặc readable/);
   assert.throws(() => validateModules([{ name: "aa", kinds: [{ ...fakeKind, kind: "robot.simulate" }] }], core), /đã có/);

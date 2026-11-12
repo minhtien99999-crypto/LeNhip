@@ -64,7 +64,7 @@ export interface Call {
  */
 export interface Route {
   method: "GET" | "POST";
-  /** Bắt đầu bằng /v1/; tham số dạng {ten_tham_so}, chỉ khớp [A-Za-z0-9_-]{1,128}. Route khai trước thắng khi hai mẫu cùng khớp. */
+  /** Bắt đầu bằng /v1/, hoặc /v2/ cho hợp đồng mở rộng của SRS V2.0 mục 12; tham số dạng {ten_tham_so}, chỉ khớp [A-Za-z0-9_-]{1,128}. Route khai trước thắng khi hai mẫu cùng khớp. */
   path: string;
   /** POST: tên schema thân trong OpenAPI (components.schemas). Thân rỗng dùng "Empty" cùng optionalBody. */
   schema?: string;
@@ -495,7 +495,7 @@ export function createHandler(d: ApiDeps) {
         }
         throw new ApiError(404, "NOT_FOUND");
       }
-      if (!url.pathname.startsWith("/v1/")) {
+      if (!url.pathname.startsWith("/v1/") && !url.pathname.startsWith("/v2/")) {
         if (method !== "GET") throw new ApiError(404, "NOT_FOUND");
         const path = url.pathname === "/" ? "/index.html" : url.pathname;
         if (!WEB_FILE.test(path)) throw new ApiError(404, "NOT_FOUND");

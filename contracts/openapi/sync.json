@@ -1,0 +1,1128 @@
+{
+  "paths": {
+    "/v2/devices": {
+      "get": {
+        "operationId": "listSyncDevices",
+        "description": "Phiên của chính người gọi trên các thiết bị (LNH-T64, X02): loại máy người dùng chọn, trạng thái, ngày tạo và ngày thấy gần nhất (chỉ theo ngày). Không tên máy, không user agent. Không cần phiên để xem; phiên đã thu hồi nhận 403 DEVICE_REVOKED.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phiên thiết bị",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDeviceList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "registerSyncDevice",
+        "description": "Đăng ký trình duyệt này làm một phiên. Thiết bị tự tạo bí mật 32 byte và chỉ gửi mã băm SHA-256 (base64url); các yêu cầu sau mang `<device_id>.<bí mật>` ở X-LeNhip-Device (hoặc tham số device). Cần đăng nhập mới trong 300 giây (401 REAUTH_REQUIRED). Tối đa 10 phiên đang dùng (422 DEVICE_LIMIT).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncDeviceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Phiên mới",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDevice"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/devices/{device_id}/revoke": {
+      "post": {
+        "operationId": "revokeSyncDevice",
+        "description": "Thu hồi một phiên của chính người gọi, từ một phiên đang dùng (có thể là chính nó). Mọi yêu cầu /v2 sau đó mang phiên này nhận 403 DEVICE_REVOKED; dòng thu hồi vào sổ thu hồi độc lập (X02, X12). Phiên của người khác: 404.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceId"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phiên sau khi thu hồi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDevice"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/sync/drafts": {
+      "get": {
+        "operationId": "listSyncDrafts",
+        "description": "Bản nháp đang mở của chính người gọi. Cần phiên đang dùng (403 DEVICE_REQUIRED, DEVICE_REVOKED); đồng hồ không đọc được (403 DEVICE_NOT_ALLOWED).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bản nháp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDraftList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSyncDraft",
+        "description": "Tạo bản nháp, với mã do thiết bị tạo (gửi lại khi mất mạng không nhân đôi) hoặc để máy chủ tạo. Mã đã có: 409 REVISION_CONFLICT kèm bản hiện hành. Tối đa 50 bản đang mở (422 DRAFT_LIMIT). Phản hồi không có snapshot.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncDraftCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tham chiếu bản nháp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDraftRef"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/SyncConflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/sync/drafts/{draft_id}": {
+      "get": {
+        "operationId": "getSyncDraft",
+        "description": "Một bản nháp của chính người gọi, kể cả đã bỏ (snapshot null). Của người khác hoặc không có: 404.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDraftId"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bản nháp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDraft"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/sync/drafts/{draft_id}/revisions": {
+      "post": {
+        "operationId": "reviseSyncDraft",
+        "description": "Ghi một revision mới trên base_revision đã đọc (SRS V2.0 §12, X01). Sai revision: 409 REVISION_CONFLICT, `current` mang revision và snapshot hiện hành; không ghi đè âm thầm. Đã bỏ: 409 DRAFT_DISCARDED. Khác mục đích: 422 DRAFT_INVALID.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDraftId"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncDraftRevision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tham chiếu revision mới",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDraftRef"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/SyncConflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/sync/drafts/{draft_id}/discard": {
+      "post": {
+        "operationId": "discardSyncDraft",
+        "description": "Bỏ bản nháp trên base_revision đã đọc; snapshot rời máy chủ ngay, hàng bị xóa sau 30 ngày. Sai revision: 409 REVISION_CONFLICT.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDraftId"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDevice"
+          },
+          {
+            "$ref": "#/components/parameters/SyncDeviceQuery"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncDraftDiscard"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tham chiếu bản nháp đã bỏ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncDraftRef"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/SyncConflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SyncSnapshotCalendar": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title_code",
+          "start",
+          "end",
+          "zone"
+        ],
+        "properties": {
+          "title_code": {
+            "const": "PERSONAL_TIME"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time-utc"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time-utc"
+          },
+          "zone": {
+            "type": "string",
+            "format": "iana-zone"
+          }
+        },
+        "description": "Nháp giữ khung giờ: mã tiêu đề đã duyệt và khung giờ, không lý do, không số liệu sức khỏe. Tối đa 12 giờ (422 DRAFT_INVALID)."
+      },
+      "SyncSnapshotInboxReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_ref",
+          "body"
+        ],
+        "properties": {
+          "item_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{6,128}$"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "description": "Nháp phản hồi một mục của Hộp tổng hợp: mã mục và câu người dùng gõ. Không gửi đi đâu."
+      },
+      "SyncSnapshotTask": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "done",
+          "due"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "due": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "description": "Việc cá nhân: một dòng ghi chú cho chính mình, không tác động ra ngoài."
+      },
+      "SyncSnapshotTaskFromInbox": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "item_ref",
+          "source_kind",
+          "summary",
+          "source_link",
+          "observed_at"
+        ],
+        "properties": {
+          "kind": {
+            "const": "inbox_item"
+          },
+          "item_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{6,128}$"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "SHARED",
+              "OUTLOOK_MAIL"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 280,
+            "description": "Chữ thuần từ nguồn ngoài: dữ liệu không tin cậy, chỉ hiển thị (X04)."
+          },
+          "source_link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^https://",
+            "maxLength": 2048
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "due": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "description": "Việc cá nhân tạo từ một mục của Hộp tổng hợp (hợp đồng của nhánh inbox): mục nguồn, cộng dòng người dùng gõ nếu có."
+      },
+      "SyncSnapshotReplyFromInbox": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "item_ref",
+          "source_kind",
+          "summary",
+          "source_link",
+          "observed_at"
+        ],
+        "properties": {
+          "kind": {
+            "const": "inbox_item"
+          },
+          "item_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{6,128}$"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "SHARED",
+              "OUTLOOK_MAIL"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 280,
+            "description": "Chữ thuần từ nguồn ngoài: dữ liệu không tin cậy, chỉ hiển thị (X04)."
+          },
+          "source_link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^https://",
+            "maxLength": 2048
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "description": "Nháp phản hồi một mục của Hộp tổng hợp (hợp đồng của nhánh inbox): mục nguồn, cộng câu trả lời người dùng gõ nếu có. Không gửi đi đâu."
+      },
+      "SyncSnapshotTaskAny": {
+        "description": "Việc cá nhân: gõ tay hoặc từ Hộp tổng hợp.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SyncSnapshotTask"
+          },
+          {
+            "$ref": "#/components/schemas/SyncSnapshotTaskFromInbox"
+          }
+        ]
+      },
+      "SyncSnapshotInboxReplyAny": {
+        "description": "Nháp phản hồi: dạng gọn hoặc mang mục nguồn của Hộp tổng hợp.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SyncSnapshotInboxReply"
+          },
+          {
+            "$ref": "#/components/schemas/SyncSnapshotReplyFromInbox"
+          }
+        ]
+      },
+      "SyncDraftCreateCalendar": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purpose",
+          "snapshot"
+        ],
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "pattern": "^drf_[A-Za-z0-9_-]{16,64}$"
+          },
+          "purpose": {
+            "const": "calendar_block"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/SyncSnapshotCalendar"
+          }
+        },
+        "description": "draft_id do thiết bị tạo để gửi lại ngoại tuyến không nhân đôi; thiếu thì máy chủ tạo."
+      },
+      "SyncDraftRevisionCalendar": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purpose",
+          "base_revision",
+          "snapshot"
+        ],
+        "properties": {
+          "purpose": {
+            "const": "calendar_block"
+          },
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/SyncSnapshotCalendar"
+          }
+        }
+      },
+      "SyncDraftCreateInboxReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purpose",
+          "snapshot"
+        ],
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "pattern": "^drf_[A-Za-z0-9_-]{16,64}$"
+          },
+          "purpose": {
+            "const": "inbox_reply"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/SyncSnapshotInboxReplyAny"
+          }
+        },
+        "description": "draft_id do thiết bị tạo để gửi lại ngoại tuyến không nhân đôi; thiếu thì máy chủ tạo."
+      },
+      "SyncDraftRevisionInboxReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purpose",
+          "base_revision",
+          "snapshot"
+        ],
+        "properties": {
+          "purpose": {
+            "const": "inbox_reply"
+          },
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/SyncSnapshotInboxReplyAny"
+          }
+        }
+      },
+      "SyncDraftCreateTask": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purpose",
+          "snapshot"
+        ],
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "pattern": "^drf_[A-Za-z0-9_-]{16,64}$"
+          },
+          "purpose": {
+            "const": "personal_task"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/SyncSnapshotTaskAny"
+          }
+        },
+        "description": "draft_id do thiết bị tạo để gửi lại ngoại tuyến không nhân đôi; thiếu thì máy chủ tạo."
+      },
+      "SyncDraftRevisionTask": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purpose",
+          "base_revision",
+          "snapshot"
+        ],
+        "properties": {
+          "purpose": {
+            "const": "personal_task"
+          },
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/SyncSnapshotTaskAny"
+          }
+        }
+      },
+      "SyncDraftCreate": {
+        "description": "Tạo bản nháp theo mục đích (LNH-F35, LNH-T63).",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SyncDraftCreateCalendar"
+          },
+          {
+            "$ref": "#/components/schemas/SyncDraftCreateInboxReply"
+          },
+          {
+            "$ref": "#/components/schemas/SyncDraftCreateTask"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "purpose",
+          "mapping": {
+            "calendar_block": "#/components/schemas/SyncDraftCreateCalendar",
+            "inbox_reply": "#/components/schemas/SyncDraftCreateInboxReply",
+            "personal_task": "#/components/schemas/SyncDraftCreateTask"
+          }
+        }
+      },
+      "SyncDraftRevision": {
+        "description": "Revision mới trên base_revision đã đọc (X01).",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SyncDraftRevisionCalendar"
+          },
+          {
+            "$ref": "#/components/schemas/SyncDraftRevisionInboxReply"
+          },
+          {
+            "$ref": "#/components/schemas/SyncDraftRevisionTask"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "purpose",
+          "mapping": {
+            "calendar_block": "#/components/schemas/SyncDraftRevisionCalendar",
+            "inbox_reply": "#/components/schemas/SyncDraftRevisionInboxReply",
+            "personal_task": "#/components/schemas/SyncDraftRevisionTask"
+          }
+        }
+      },
+      "SyncDraftDiscard": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "base_revision"
+        ],
+        "properties": {
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "SyncDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "draft_id",
+          "purpose",
+          "state",
+          "revision",
+          "snapshot",
+          "created_at",
+          "updated_at",
+          "discarded_at"
+        ],
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "pattern": "^drf_[A-Za-z0-9_-]{16,64}$"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "calendar_block",
+              "inbox_reply",
+              "personal_task"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "DISCARDED"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snapshot": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SyncSnapshotCalendar"
+              },
+              {
+                "$ref": "#/components/schemas/SyncSnapshotInboxReply"
+              },
+              {
+                "$ref": "#/components/schemas/SyncSnapshotTask"
+              },
+              {
+                "$ref": "#/components/schemas/SyncSnapshotTaskFromInbox"
+              },
+              {
+                "$ref": "#/components/schemas/SyncSnapshotReplyFromInbox"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time-utc"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time-utc"
+          },
+          "discarded_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SyncDraftRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "draft_id",
+          "purpose",
+          "state",
+          "revision",
+          "updated_at"
+        ],
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "pattern": "^drf_[A-Za-z0-9_-]{16,64}$"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "calendar_block",
+              "inbox_reply",
+              "personal_task"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "DISCARDED"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time-utc"
+          }
+        },
+        "description": "Phản hồi của POST: không có snapshot, để sổ chống lặp không giữ nội dung nháp."
+      },
+      "SyncDraftList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "drafts",
+          "limit"
+        ],
+        "properties": {
+          "drafts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncDraft"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          }
+        }
+      },
+      "SyncDraftConflict": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "retryable",
+          "current"
+        ],
+        "properties": {
+          "code": {
+            "const": "REVISION_CONFLICT"
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "current": {
+            "$ref": "#/components/schemas/SyncDraft"
+          }
+        },
+        "description": "Thân của 409 REVISION_CONFLICT: bản hiện hành để người dùng đối chiếu và chọn."
+      },
+      "SyncDeviceCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "secret_hash"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PHONE",
+              "TABLET",
+              "LAPTOP",
+              "DESKTOP",
+              "WATCH",
+              "OTHER"
+            ]
+          },
+          "secret_hash": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "description": "SHA-256 (base64url, không đệm) của bí mật 32 byte thiết bị tự tạo."
+          }
+        }
+      },
+      "SyncDevice": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "device_id",
+          "kind",
+          "state",
+          "created_day",
+          "last_seen_day",
+          "revoked_day",
+          "current"
+        ],
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^dvs_[A-Za-z0-9_-]{16,64}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PHONE",
+              "TABLET",
+              "LAPTOP",
+              "DESKTOP",
+              "WATCH",
+              "OTHER"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
+          "created_day": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "last_seen_day": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "revoked_day": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "current": {
+            "type": "boolean",
+            "description": "Đây là phiên đã gửi yêu cầu."
+          }
+        }
+      },
+      "SyncDeviceList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "devices",
+          "limit"
+        ],
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncDevice"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "parameters": {
+      "SyncDevice": {
+        "name": "X-LeNhip-Device",
+        "in": "header",
+        "required": false,
+        "description": "Phiên thiết bị: `<device_id>.<bí mật base64url>` (LNH-T64).",
+        "schema": {
+          "type": "string",
+          "pattern": "^dvs_[A-Za-z0-9_-]{16,64}\\.[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "SyncDeviceQuery": {
+        "name": "device",
+        "in": "query",
+        "required": false,
+        "description": "Cùng giá trị với X-LeNhip-Device. Bản tham chiếu đọc tham số này vì đường xử lý chung chưa chuyển header cho mô-đun.",
+        "schema": {
+          "type": "string",
+          "pattern": "^dvs_[A-Za-z0-9_-]{16,64}\\.[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "SyncDeviceId": {
+        "name": "device_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        }
+      },
+      "SyncDraftId": {
+        "name": "draft_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        }
+      }
+    },
+    "responses": {
+      "SyncConflict": {
+        "description": "REVISION_CONFLICT kèm bản hiện hành (SyncDraftConflict), hoặc lỗi chuẩn khác",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SyncDraftConflict"
+                },
+                {
+                  "$ref": "#/components/schemas/Error"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

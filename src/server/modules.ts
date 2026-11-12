@@ -140,7 +140,7 @@ export function validateModules(modules: readonly ServerModule[], core: { routes
     names.add(m.name);
     for (const r of m.routes ?? []) {
       const k = `${r.method} ${r.path}`;
-      if (!r.path.startsWith("/v1/")) throw new Error(`mô-đun ${m.name}: route ${k} phải nằm dưới /v1/`);
+      if (!/^\/v[12]\//.test(r.path)) throw new Error(`mô-đun ${m.name}: route ${k} phải nằm dưới /v1/ hoặc /v2/`);
       if (routes.has(k)) throw new Error(`mô-đun ${m.name}: route ${k} đã có`);
       if (r.method === "POST" && (!r.schema || !r.readable)) throw new Error(`mô-đun ${m.name}: ${k} thiếu schema hoặc readable`);
       routes.add(k);
@@ -162,10 +162,30 @@ export function validateModules(modules: readonly ServerModule[], core: { routes
 // ── nhắn tin và «Thiết bị của tôi»: dòng import đặt ngay dưới dòng này ──
 import { messaging } from "./messaging.ts";
 // ── mạng xã hội: dòng import đặt ngay dưới dòng này ──
+// ── V1.0.1 đồng bộ bản nháp và phiên thiết bị: dòng import đặt ngay dưới dòng này ──
+import { sync } from "./sync.ts";
+// ── V1.0.1 Hộp tổng hợp: dòng import đặt ngay dưới dòng này ──
+import { inbox } from "./inbox.ts";
+// ── V1.0.1 Le‑NodeHome và HaaS: dòng import đặt ngay dưới dòng này ──
+import { homehub } from "./homehub.ts";
+// ── V1.0.1 Le‑NodeHealth phép đo: dòng import đặt ngay dưới dòng này ──
+import { measurements } from "./measurements.ts";
+// ── V1.0.1 cổng mô phỏng Le‑ORION: dòng import đặt ngay dưới dòng này ──
+import { sim } from "./sim.ts";
 
 /** Thứ tự trong mảng là thứ tự so khớp route (route lõi luôn trước) và thứ tự gọi hook. */
 export const MODULES: ServerModule[] = [
   // ── nhắn tin và «Thiết bị của tôi»: một dòng đặt ngay dưới dòng này ──
   messaging,
   // ── mạng xã hội: một dòng đặt ngay dưới dòng này ──
+  // ── V1.0.1 đồng bộ bản nháp và phiên thiết bị: một dòng đặt ngay dưới dòng này ──
+  sync,
+  // ── V1.0.1 Hộp tổng hợp: một dòng đặt ngay dưới dòng này ──
+  inbox,
+  // ── V1.0.1 Le‑NodeHome và HaaS: một dòng đặt ngay dưới dòng này ──
+  homehub,
+  // ── V1.0.1 Le‑NodeHealth phép đo: một dòng đặt ngay dưới dòng này ──
+  measurements,
+  // ── V1.0.1 cổng mô phỏng Le‑ORION: một dòng đặt ngay dưới dòng này ──
+  sim,
 ];

@@ -1,0 +1,1581 @@
+{
+  "paths": {
+    "/v2/health/observations/import": {
+      "post": {
+        "operationId": "importObservations",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): chỉ danh tính adapter đã duyệt (bản này chỉ có adapter mô phỏng của chế độ dev). Gán người đo theo ánh xạ đã được chính người đó xác nhận; trùng khóa nguồn được đối soát; thiếu người đo hoặc mâu thuẫn thì cách ly (X08, X09). Phản hồi không có giá trị đo.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/observations": {
+      "get": {
+        "operationId": "listObservations",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): phép đo của chính người gọi. Chỉ hiển thị nhật ký và xu hướng; không chẩn đoán, không cảnh báo y tế.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasObservationList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/observations/export": {
+      "get": {
+        "operationId": "exportObservations",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): xuất dữ liệu Le‑NodeHealth của chính người gọi; có nhật ký. Chỉ cần là thành viên và cờ bật.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasExport"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/observations/{observation_id}/delete": {
+      "post": {
+        "operationId": "deleteObservation",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): xóa một phép đo của chính người gọi; để lại mốc chống trùng nên nhập lại không làm nó sống lại.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "observation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasDeleted"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/erase": {
+      "post": {
+        "operationId": "eraseMeasurements",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): xóa toàn bộ phép đo, gỡ ánh xạ và grant của người gọi; cần đăng nhập mới (300 giây).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasErased"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/mappings": {
+      "get": {
+        "operationId": "listMeasMappings",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): ánh xạ máy đo và hồ sơ → chính người gọi.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasMappingList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/mappings/{mapping_id}/confirm": {
+      "post": {
+        "operationId": "confirmMeasMapping",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): người được đề nghị xác nhận ánh xạ; bản ghi chờ chỉ gán khi không ai khác giữ cùng máy và hồ sơ.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "mapping_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasMapping"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/mappings/{mapping_id}/reject": {
+      "post": {
+        "operationId": "rejectMeasMapping",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): từ chối ánh xạ được đề nghị, hoặc gỡ ánh xạ đã xác nhận.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "mapping_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasMapping"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/quarantine": {
+      "get": {
+        "operationId": "listMeasQuarantine",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): bản ghi cách ly mà người gọi là ứng viên; không có giá trị đo.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasQuarantineList"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/quarantine/{record_id}/resolve": {
+      "post": {
+        "operationId": "resolveMeasQuarantine",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): ứng viên trả lời của tôi / không phải của tôi; gán khi mọi ứng viên đã trả lời và đúng một người nhận.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasResolve"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasQuarantineRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/shares": {
+      "get": {
+        "operationId": "listMeasShares",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): grant đã cấp, grant đang nhận, nhật ký truy cập của chủ dữ liệu.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasShareList"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMeasShare",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): cấp grant chia sẻ có mục đích, phạm vi từ ngày, hạn tối đa 90 ngày; chỉ mở phép đo đã nhận trước lúc cấp (X09).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasShareCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đã cấp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasShare"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/shares/{share_id}/revoke": {
+      "post": {
+        "operationId": "revokeMeasShare",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): chủ dữ liệu thu hồi grant; có nhật ký và dòng sổ thu hồi.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "share_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasShare"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/shares/{share_id}/observations": {
+      "get": {
+        "operationId": "readSharedObservations",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): người xem đọc qua grant còn hiệu lực; mỗi lần đọc ghi nhật ký cho chủ dữ liệu.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "name": "share_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,128}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasSharedObservations"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/sim-device/readings": {
+      "post": {
+        "operationId": "simulateMeasReading",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): CHỈ CHẾ ĐỘ DEV (404 ở mọi nơi khác). Máy đo giả lập phát một phép đo tổng hợp, đi đúng đường nhập của adapter mô phỏng; nhãn SIMULATED.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasSimReading"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasSimReadingResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v2/health/support/adapters": {
+      "get": {
+        "operationId": "supportMeasAdapters",
+        "description": "Le‑NodeHealth (SRS V2.0 mục 08, N20‑MEAS, LNH-T67): LeLS và vận hành: tình trạng adapter, không có giá trị đo hay người được đo.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Workspace"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kết quả",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasSupportAdapters"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "MeasObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "subject_ref",
+          "source",
+          "device_ref",
+          "measured_at",
+          "received_at",
+          "systolic",
+          "diastolic",
+          "unit",
+          "quality_status"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string"
+          },
+          "subject_ref": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "device_ref": {
+            "type": "string"
+          },
+          "measured_at": {
+            "type": "string",
+            "description": "Thời điểm gốc của máy đo, giữ nguyên chuỗi đã nhận (có độ lệch nếu nguồn có)."
+          },
+          "received_at": {
+            "type": "string"
+          },
+          "systolic": {
+            "type": "integer"
+          },
+          "diastolic": {
+            "type": "integer"
+          },
+          "unit": {
+            "enum": [
+              "mmHg"
+            ]
+          },
+          "quality_status": {
+            "enum": [
+              "VALID",
+              "QUESTIONABLE"
+            ]
+          }
+        },
+        "description": "Bản ghi huyết áp theo SRS V2.0 mục 08 (N20‑MEAS)."
+      },
+      "MeasImportItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_key",
+          "device_ref",
+          "user_slot",
+          "subject_hint",
+          "measured_at",
+          "zone",
+          "systolic",
+          "diastolic",
+          "unit",
+          "quality_flags"
+        ],
+        "properties": {
+          "source_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:-]{1,80}$"
+          },
+          "device_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:-]{1,64}$"
+          },
+          "user_slot": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8
+          },
+          "subject_hint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Za-z0-9_.:@-]{1,128}$",
+            "description": "Người mà adapter cho là đã ghép hồ sơ này; chỉ là đề nghị, người đó phải tự xác nhận."
+          },
+          "measured_at": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})?$"
+          },
+          "zone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64,
+            "description": "Múi IANA của điện thoại chuyển tiếp; bắt buộc khi measured_at không có độ lệch."
+          },
+          "systolic": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 400
+          },
+          "diastolic": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 400
+          },
+          "unit": {
+            "enum": [
+              "mmHg"
+            ]
+          },
+          "quality_flags": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "enum": [
+                "BODY_MOVEMENT",
+                "CUFF_LOOSE",
+                "IMPROPER_POSITION"
+              ]
+            }
+          }
+        }
+      },
+      "MeasImport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observations"
+        ],
+        "properties": {
+          "observations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/MeasImportItem"
+            }
+          }
+        },
+        "description": "Lô phép đo theo schema N20‑MEAS, chỉ từ adapter đã duyệt."
+      },
+      "MeasImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_key",
+          "result"
+        ],
+        "properties": {
+          "source_key": {
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "ACCEPTED",
+              "QUARANTINED",
+              "DUPLICATE",
+              "REJECTED"
+            ]
+          },
+          "record_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "enum": [
+              "SUBJECT_MISSING",
+              "MAPPING_UNCONFIRMED",
+              "PROFILE_CONFLICT",
+              "AMBIGUOUS_USER",
+              "SOURCE_CONFLICT"
+            ]
+          },
+          "detail_code": {
+            "enum": [
+              "VALUE_OUT_OF_RANGE",
+              "TIME_INVALID",
+              "TIME_ZONE_MISSING",
+              "SOURCE_KEY_REUSED",
+              "SUBJECT_UNAVAILABLE"
+            ]
+          },
+          "adapter_id": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "label": {
+            "const": "SIMULATED"
+          }
+        }
+      },
+      "MeasImportResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "adapter_id",
+          "trust",
+          "results"
+        ],
+        "properties": {
+          "adapter_id": {
+            "type": "string"
+          },
+          "trust": {
+            "enum": [
+              "SIMULATED"
+            ]
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasImportResult"
+            }
+          }
+        }
+      },
+      "MeasSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "adapter_id",
+          "channel",
+          "trust",
+          "status"
+        ],
+        "properties": {
+          "adapter_id": {
+            "type": "string"
+          },
+          "channel": {
+            "enum": [
+              "PHONE_GATEWAY",
+              "PARTNER_CLOUD"
+            ]
+          },
+          "trust": {
+            "enum": [
+              "SIMULATED"
+            ]
+          },
+          "status": {
+            "enum": [
+              "APPROVED",
+              "SUSPENDED"
+            ]
+          }
+        }
+      },
+      "MeasObservationList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observations",
+          "sources",
+          "disclaimer_code"
+        ],
+        "properties": {
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasObservation"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasSource"
+            }
+          },
+          "disclaimer_code": {
+            "const": "NOT_A_DIAGNOSTIC_DEVICE"
+          }
+        }
+      },
+      "MeasMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mapping_id",
+          "device_ref",
+          "user_slot",
+          "state",
+          "proposed_by",
+          "created_at",
+          "decided_at",
+          "pending_records"
+        ],
+        "properties": {
+          "mapping_id": {
+            "type": "string"
+          },
+          "device_ref": {
+            "type": "string"
+          },
+          "user_slot": {
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "MEASMAP_PROPOSED",
+              "MEASMAP_CONFIRMED",
+              "MEASMAP_REJECTED",
+              "MEASMAP_REVOKED"
+            ]
+          },
+          "proposed_by": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "decided_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pending_records": {
+            "type": "integer"
+          },
+          "assigned": {
+            "type": "integer"
+          },
+          "conflicted": {
+            "type": "integer"
+          },
+          "discarded": {
+            "type": "integer"
+          }
+        }
+      },
+      "MeasMappingList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mappings"
+        ],
+        "properties": {
+          "mappings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasMapping"
+            }
+          }
+        }
+      },
+      "MeasQuarantineRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "record_id",
+          "state",
+          "reason",
+          "source",
+          "device_ref",
+          "user_slot",
+          "measured_at",
+          "received_at",
+          "mapping_id",
+          "my_answer",
+          "candidates",
+          "answered"
+        ],
+        "properties": {
+          "record_id": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "MEAS_QUARANTINED",
+              "MEAS_ASSIGNED",
+              "MEAS_DISCARDED",
+              "MEAS_EXPIRED"
+            ]
+          },
+          "reason": {
+            "enum": [
+              "SUBJECT_MISSING",
+              "MAPPING_UNCONFIRMED",
+              "PROFILE_CONFLICT",
+              "AMBIGUOUS_USER",
+              "SOURCE_CONFLICT"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "device_ref": {
+            "type": "string"
+          },
+          "user_slot": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "measured_at": {
+            "type": "string"
+          },
+          "received_at": {
+            "type": "string"
+          },
+          "mapping_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "my_answer": {
+            "enum": [
+              "MINE",
+              "NOT_MINE",
+              null
+            ]
+          },
+          "candidates": {
+            "type": "integer"
+          },
+          "answered": {
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "WAITING",
+              "ASSIGNED",
+              "DISCARDED",
+              "CONTESTED",
+              "RESOLVED"
+            ]
+          }
+        },
+        "description": "Bản ghi cách ly: chỉ siêu dữ liệu, không có giá trị đo."
+      },
+      "MeasQuarantineList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "records",
+          "retention_days"
+        ],
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasQuarantineRecord"
+            }
+          },
+          "retention_days": {
+            "type": "integer"
+          }
+        }
+      },
+      "MeasResolve": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "answer"
+        ],
+        "properties": {
+          "answer": {
+            "enum": [
+              "MINE",
+              "NOT_MINE"
+            ]
+          }
+        }
+      },
+      "MeasShare": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "share_id",
+          "owner",
+          "grantee",
+          "purpose",
+          "scope",
+          "expires_at",
+          "state",
+          "created_at",
+          "ended_at"
+        ],
+        "properties": {
+          "share_id": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "grantee": {
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "FAMILY_CARE",
+              "PROFESSIONAL_REVIEW"
+            ]
+          },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "from_date",
+              "received_until"
+            ],
+            "properties": {
+              "kind": {
+                "const": "blood_pressure"
+              },
+              "from_date": {
+                "type": "string"
+              },
+              "received_until": {
+                "type": "string"
+              }
+            }
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "MEASSHARE_ACTIVE",
+              "MEASSHARE_REVOKED",
+              "MEASSHARE_EXPIRED"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner_name": {
+            "type": "string"
+          }
+        }
+      },
+      "MeasAccessEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "actor",
+          "action",
+          "ref",
+          "at"
+        ],
+        "properties": {
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "SHARE_VIEWED",
+              "EXPORTED",
+              "SHARE_CREATED",
+              "SHARE_REVOKED",
+              "SHARE_ENDED",
+              "MAPPING_CONFIRMED",
+              "MAPPING_REJECTED",
+              "DELETED"
+            ]
+          },
+          "ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "at": {
+            "type": "string"
+          }
+        }
+      },
+      "MeasShareList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "granted",
+          "received",
+          "people",
+          "access_log"
+        ],
+        "properties": {
+          "granted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasShare"
+            }
+          },
+          "received": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasShare"
+            }
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "user_id",
+                "name"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "access_log": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasAccessEntry"
+            }
+          }
+        }
+      },
+      "MeasShareCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grantee_user",
+          "purpose",
+          "from_date",
+          "expires_in_days"
+        ],
+        "properties": {
+          "grantee_user": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:@-]{1,128}$"
+          },
+          "purpose": {
+            "enum": [
+              "FAMILY_CARE",
+              "PROFESSIONAL_REVIEW"
+            ]
+          },
+          "from_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "expires_in_days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          }
+        }
+      },
+      "MeasSharedObservations": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "share",
+          "owner_name",
+          "observations",
+          "disclaimer_code"
+        ],
+        "properties": {
+          "share": {
+            "$ref": "#/components/schemas/MeasShare"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasObservation"
+            }
+          },
+          "disclaimer_code": {
+            "const": "NOT_A_DIAGNOSTIC_DEVICE"
+          }
+        }
+      },
+      "MeasExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format",
+          "exported_at",
+          "observations",
+          "mappings",
+          "shares",
+          "access_log"
+        ],
+        "properties": {
+          "format": {
+            "const": "LNH-MEAS-EXPORT-1"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "exported_at": {
+            "type": "string"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "mappings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "shares": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasShare"
+            }
+          },
+          "access_log": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasAccessEntry"
+            }
+          }
+        }
+      },
+      "MeasDeleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "deleted"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string"
+          },
+          "deleted": {
+            "const": true
+          }
+        }
+      },
+      "MeasErased": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "deleted"
+        ],
+        "properties": {
+          "deleted": {
+            "type": "integer"
+          }
+        }
+      },
+      "MeasSimReading": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "device",
+          "user_slot",
+          "hint_self",
+          "channel",
+          "repeat_last"
+        ],
+        "properties": {
+          "device": {
+            "enum": [
+              "SHARED",
+              "PERSONAL"
+            ]
+          },
+          "user_slot": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "hint_self": {
+            "type": "boolean"
+          },
+          "channel": {
+            "enum": [
+              "PHONE_GATEWAY",
+              "PARTNER_CLOUD",
+              "BOTH"
+            ]
+          },
+          "repeat_last": {
+            "type": "boolean"
+          }
+        },
+        "description": "Chỉ chế độ dev: máy đo giả lập phát một phép đo tổng hợp qua adapter mô phỏng (nhãn SIMULATED)."
+      },
+      "MeasSimReadingResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "results"
+        ],
+        "properties": {
+          "label": {
+            "const": "SIMULATED"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasImportResult"
+            }
+          }
+        }
+      },
+      "MeasSupportAdapters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "adapters",
+          "note_code"
+        ],
+        "properties": {
+          "adapters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "adapter_id",
+                "channel",
+                "trust",
+                "status",
+                "last_seen_at",
+                "quarantined"
+              ],
+              "properties": {
+                "adapter_id": {
+                  "type": "string"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "trust": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "last_seen_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "quarantined": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "note_code": {
+            "const": "SUPPORT_NO_VALUES"
+          }
+        }
+      }
+    }
+  }
+}

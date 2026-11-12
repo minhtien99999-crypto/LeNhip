@@ -128,7 +128,7 @@
       "post": {
         "operationId": "withdrawConsent",
         "description": "Ngắt và chặn phát mới ở phạm vi đã rút, hủy plan chờ duyệt của mục đích đó.",
-        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "purpose_id", "in": "path", "required": true, "schema": { "type": "string", "enum": ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post"] } }, { "$ref": "#/components/parameters/IdempotencyKey" }],
+        "parameters": [{ "$ref": "#/components/parameters/Workspace" }, { "name": "purpose_id", "in": "path", "required": true, "schema": { "type": "string", "enum": ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post", "inbox_mail", "home_hub", "measurements"] } }, { "$ref": "#/components/parameters/IdempotencyKey" }],
         "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Empty" } } } },
         "responses": { "200": { "description": "Đã rút", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentReceipt" } } } }, "404": { "$ref": "#/components/responses/Error" } }
       }
@@ -416,7 +416,7 @@
       "ConsentCreate": {
         "type": "object", "additionalProperties": false, "required": ["purpose_id", "text_version", "text_hash", "choice"],
         "properties": {
-          "purpose_id": { "enum": ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post", "health_local"] }, "text_version": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$" },
+          "purpose_id": { "enum": ["calendar_link", "home_control", "beta_telemetry", "messaging", "social_post", "inbox_mail", "home_hub", "measurements", "health_local"] }, "text_version": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$" },
           "text_hash": { "$ref": "#/components/schemas/Digest" }, "choice": { "enum": ["GRANTED", "DECLINED"] }
         }
       },
@@ -463,11 +463,11 @@
           "user": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } },
           "workspace": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } },
           "roles": { "type": "array", "items": { "type": "string" } },
-          "grants": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "scope", "resource", "status"], "properties": { "id": { "type": "string" }, "scope": { "enum": ["calendar.block", "home.control", "robot.simulate", "messaging.use", "social.post"] }, "resource": { "type": ["string", "null"] }, "status": { "enum": ["ACTIVE", "REVOKED"] } } } },
+          "grants": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "scope", "resource", "status"], "properties": { "id": { "type": "string" }, "scope": { "enum": ["calendar.block", "home.control", "robot.simulate", "messaging.use", "social.post", "inbox.connect", "home.hub", "measurements.record", "sim.run"] }, "resource": { "type": ["string", "null"] }, "status": { "enum": ["ACTIVE", "REVOKED"] } } } },
           "consents": { "type": "array", "items": { "$ref": "#/components/schemas/ConsentReceipt" } },
           "calendar": { "type": "object", "additionalProperties": false, "required": ["linked", "account"], "properties": { "linked": { "type": "boolean" }, "account": { "type": ["string", "null"] } } },
           "sites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } } },
-          "modules": { "type": "object", "additionalProperties": false, "required": ["calendar", "home", "robot", "lele", "messaging", "social", "trackers"], "properties": { "calendar": { "type": "boolean" }, "home": { "type": "boolean" }, "robot": { "type": "boolean" }, "lele": { "type": "boolean" }, "messaging": { "type": "boolean" }, "social": { "type": "boolean" }, "trackers": { "type": "boolean" } } },
+          "modules": { "type": "object", "additionalProperties": false, "required": ["calendar", "home", "robot", "lele", "messaging", "social", "trackers", "inbox", "sync", "home_hub", "measurements", "sim"], "properties": { "calendar": { "type": "boolean" }, "home": { "type": "boolean" }, "robot": { "type": "boolean" }, "lele": { "type": "boolean" }, "messaging": { "type": "boolean" }, "social": { "type": "boolean" }, "trackers": { "type": "boolean" }, "inbox": { "type": "boolean" }, "sync": { "type": "boolean" }, "home_hub": { "type": "boolean" }, "measurements": { "type": "boolean" }, "sim": { "type": "boolean" } } },
           "dispatch_open": { "type": "boolean" }
         }
       },
@@ -505,7 +505,7 @@
       },
       "FlagUpdate": {
         "type": "object", "additionalProperties": false, "required": ["module", "enabled", "reason"],
-        "properties": { "module": { "enum": ["calendar", "home", "robot", "lele", "messaging", "social", "trackers"] }, "site": { "type": "string", "pattern": "^site_[a-z0-9_]{1,40}$" }, "enabled": { "type": "boolean" }, "reason": { "type": "string", "minLength": 3, "maxLength": 300 } }
+        "properties": { "module": { "enum": ["calendar", "home", "robot", "lele", "messaging", "social", "trackers", "inbox", "sync", "home_hub", "measurements", "sim"] }, "site": { "type": "string", "pattern": "^site_[a-z0-9_]{1,40}$" }, "enabled": { "type": "boolean" }, "reason": { "type": "string", "minLength": 3, "maxLength": 300 } }
       },
       "Flags": {
         "type": "object", "additionalProperties": false, "required": ["modules", "sites", "dispatch"],
