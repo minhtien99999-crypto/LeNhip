@@ -1,0 +1,43 @@
+/* services-home: kiểu riêng của phần Le‑NodeHome (V1.0.1). Chỉ dùng token của theme, thuộc tính logic, mục tiêu chạm ≥ 44 px.
+   Bộ chọn dưới .connect-section[data-section=home-hub] hoặc lớp tiền tố homehub-. */
+.connect-section[data-section=home-hub] h3{font-size:1rem;margin:0}
+.connect-section[data-section=home-hub] input:not([type=radio]):not([type=checkbox]),
+.connect-section[data-section=home-hub] select{min-block-size:44px;inline-size:100%;box-sizing:border-box}
+.homehub-assumption{font-size:.85rem;color:var(--muted);border-inline-start:3px solid var(--gold);padding-block:4px;padding-inline:10px 0;margin-block:10px}
+.homehub-assumption strong{color:var(--text)}
+.homehub-box,.homehub-status,.homehub-hub,.homehub-events-box,.homehub-grants,.homehub-sim{border:1px solid var(--line);border-radius:14px;padding:14px;margin-block-start:14px;background:var(--surface);display:grid;gap:10px}
+.homehub-sim{border-style:dashed;background:var(--surface-soft)}
+.homehub-choices{border:0;padding:0;margin:0;display:grid;gap:6px}
+.homehub-choices legend{font-weight:600;margin-block-end:4px}
+.homehub-choice{display:flex;align-items:center;gap:10px;min-block-size:44px}
+.homehub-choice input{inline-size:22px;block-size:22px;flex:none}
+.homehub-error{color:var(--text);background:var(--surface-soft);border-inline-start:3px solid var(--gold);padding-block:6px;padding-inline:10px;margin:0}
+.homehub-note{color:var(--text);background:var(--surface-soft);border-radius:10px;padding-block:8px;padding-inline:12px;margin:0}
+.homehub-steps{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.homehub-step{display:flex;align-items:center;gap:10px;min-block-size:36px;color:var(--muted);flex-wrap:wrap}
+.homehub-step.done,.homehub-step.now{color:var(--text)}
+.homehub-step.now{font-weight:700}
+.homehub-dot{inline-size:12px;block-size:12px;border-radius:50%;border:2px solid var(--line);flex:none}
+.homehub-step.done .homehub-dot{background:var(--accent);border-color:var(--accent)}
+.homehub-step.now .homehub-dot{border-color:var(--accent);box-shadow:0 0 0 3px var(--surface-soft)}
+.homehub-tick{font-size:.75rem;color:var(--muted)}
+.homehub-history summary{min-block-size:44px;display:flex;align-items:center;cursor:pointer}
+.homehub-history ol{margin:0;padding-inline-start:20px;display:grid;gap:6px}
+.homehub-history li{display:grid}
+.homehub-actions{display:grid;gap:6px}
+.homehub-quote{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;background:var(--surface-soft);border-radius:10px;padding-block:10px;padding-inline:12px}
+.homehub-quote strong{font-size:1.2rem}
+.homehub-cameras,.homehub-events,.homehub-grant-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.homehub-cameras li{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;min-block-size:36px}
+.homehub-event{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;border-block-start:1px solid var(--line);padding-block-start:8px}
+.homehub-event:first-child{border-block-start:0;padding-block-start:0}
+.homehub-event-time{display:grid;text-align:start;min-inline-size:56px}
+.homehub-event-time small,.homehub-event-copy small{color:var(--muted)}
+.homehub-event-copy{display:grid;gap:4px;min-inline-size:0}
+.homehub-tags{display:flex;flex-wrap:wrap;gap:6px}
+.homehub-late{border:1px solid var(--gold)}
+.homehub-grant{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.homehub-grant > div{display:grid;min-inline-size:0}
+.homehub-grant-form,.homehub-sim-grid{display:grid;gap:10px}
+body:not(.large-text) .homehub-sim-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.connect-section[data-section=home-hub] .button{min-block-size:44px}

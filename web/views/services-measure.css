@@ -1,0 +1,55 @@
+/* services-measure: kiểu riêng của phần Le‑NodeHealth (V1.0.1, LNH-T67). Chỉ dùng token của theme, thuộc tính logic, mốc
+   700/701, 1180/1181, 1500 px, vùng bấm ≥ 44 px. Bộ chọn đặt dưới .connect-section[data-section=measure] hoặc lớp meas-. */
+.connect-section[data-section=measure]{grid-column:1/-1;min-inline-size:0}
+.connect-section[data-section=measure] .section-heading{flex-wrap:wrap}
+.connect-section[data-section=measure] :is(.fine-print,.tiny-pill,.status-chip.muted,.empty-state,.button.quiet){color:var(--text)}
+.connect-section[data-section=measure] h3{margin-block:14px 8px;font-size:.95rem}
+.connect-section[data-section=measure] h4{margin-block:12px 6px;font-size:.82rem}
+.connect-section[data-section=measure] .privacy-note,.meas-dialog .privacy-note{color:var(--text)}
+.meas-disclaimer{margin-block:10px}
+.meas-grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);align-items:start;margin-block-start:12px}
+@media(min-width:701px){body:not(.large-text) .meas-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1500px){body:not(.large-text) .meas-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.meas-block{min-inline-size:0;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);padding:16px}
+.meas-block > h3:first-child{margin-block-start:0}
+@media(min-width:701px){body:not(.large-text) .meas-wide{grid-column:1/-1}}
+.meas-log{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.meas-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.meas-copy{display:grid;gap:2px;min-inline-size:0;flex:1 1 12rem}
+.meas-copy small{font-size:.74rem;color:var(--text)}
+.meas-tags{display:flex;flex-wrap:wrap;gap:6px}
+.meas-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.connect-section[data-section=measure] .button{min-block-size:44px;min-inline-size:44px;overflow-wrap:break-word}
+.meas-form{display:grid;gap:10px;margin-block:8px 12px}
+.meas-inline{grid-template-columns:minmax(0,1fr) auto;align-items:end}
+.meas-form .field{display:grid;gap:4px;min-inline-size:0}
+.meas-form :is(select,input:not([type=checkbox])){min-block-size:44px;inline-size:100%;box-sizing:border-box}
+.meas-check{display:flex;gap:10px;align-items:flex-start;min-block-size:44px}
+.meas-check input{inline-size:22px;block-size:22px;margin-block-start:2px;flex:none}
+.meas-error{margin:0;color:var(--text);border-inline-start:3px solid var(--gold);padding-inline-start:8px}
+.meas-status{margin:6px 0 0;font-size:.76rem;color:var(--text)}
+.meas-status:empty{display:none}
+.meas-chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.meas-chips li{display:flex;align-items:center;gap:4px;padding-inline-start:12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.meas-access{margin:0;padding-inline-start:18px;display:grid;gap:4px;font-size:.74rem;color:var(--text)}
+.meas-consent{display:grid;gap:10px;border:1px solid var(--line);border-radius:18px;background:var(--surface-soft);padding:16px;margin-block-start:12px}
+.meas-consent h3{margin:0}
+.meas-consent p{margin:0}
+.meas-sim{margin-block-start:14px;border-block-start:1px dashed var(--line);padding-block-start:10px}
+.meas-sim summary{cursor:pointer;min-block-size:44px;display:flex;align-items:center;gap:8px;font-weight:600}
+/* Xu hướng: hai đường cùng một trục mmHg; tâm trương nét đứt để không chỉ phân biệt bằng màu. */
+.meas-trend{margin:0}
+svg.meas-chart{inline-size:100%;block-size:auto;max-block-size:220px;display:block;fill:none;stroke:none}
+.meas-chart .meas-grid{stroke:var(--line);stroke-width:1}
+.meas-chart .meas-axis{fill:var(--text);font-size:10px;stroke:none}
+.meas-chart .meas-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.meas-chart .meas-line.sys{stroke:var(--accent)}
+.meas-chart .meas-line.dia{stroke:var(--gold);stroke-dasharray:5 4}
+.meas-chart .meas-dot{stroke:var(--surface-soft);stroke-width:2}
+.meas-chart .meas-dot.sys{fill:var(--accent)}
+.meas-chart .meas-dot.dia{fill:var(--gold)}
+.meas-trend figcaption{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.74rem;color:var(--text);margin-block-start:6px}
+.meas-key{display:inline-flex;align-items:center;gap:6px}
+.meas-key::before{content:"";inline-size:18px;block-size:0;border-block-start:2px solid var(--accent)}
+.meas-key.dia::before{border-block-start:2px dashed var(--gold)}
+.meas-dialog{display:grid;gap:10px}

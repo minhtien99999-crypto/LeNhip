@@ -42,6 +42,11 @@ import viCore from "./i18n-vi.js";
 import viMsg from "./i18n-vi-msg.js";
 import viSocial from "./i18n-vi-social.js";
 import viDev from "./i18n-vi-dev.js";
+import viBrief from "./i18n-vi-brief.js";
+import viInbox from "./i18n-vi-inbox.js";
+import viHomehub from "./i18n-vi-homehub.js";
+import viMeas from "./i18n-vi-meas.js";
+import viSim from "./i18n-vi-sim.js";
 import { LOADERS as RAW_LOADERS } from "./i18n-loaders.js";
 
 /** @typedef {string | Record<string, string>} Message */
@@ -70,8 +75,12 @@ export const LOCALES = Object.freeze([
   { tag: "de", file: "de", name: "Deutsch", dir: /** @type {const} */ ("ltr"), draft: true },
 ].map((l) => Object.freeze(l)));
 
-/** Các phần catalog theo mô-đun: msg (nhắn tin, thiết bị của tôi), social (mạng xã hội), dev (thiết bị theo dõi). */
-export const PARTS = Object.freeze(["msg", "social", "dev"]);
+/**
+ * Các phần catalog theo mô-đun: msg (nhắn tin, thiết bị của tôi), social (mạng xã hội), dev (thiết bị theo dõi); từ V1.0.1 (SRS V2.0):
+ * brief (Bản tóm tắt buổi sáng, bản nháp, phiên thiết bị), inbox (Hộp tổng hợp), homehub (Le‑NodeHome, HaaS), meas (Le‑NodeHealth),
+ * sim (cổng mô phỏng Le‑ORION).
+ */
+export const PARTS = Object.freeze(["msg", "social", "dev", "brief", "inbox", "homehub", "meas", "sim"]);
 /** Bản gốc: luôn đủ khóa, là chỗ lùi của mọi ngôn ngữ. */
 export const SOURCE_LOCALE = "vi";
 /** Trình duyệt không khớp ngôn ngữ nào thì dùng tiếng Anh (LNH-T29, LNH-Q14). */
@@ -87,7 +96,7 @@ const PLACEHOLDER = /\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 const BY_LANGUAGE = new Map(LOCALES.filter((l) => !l.tag.includes("-")).map((l) => [l.tag, l.tag]));
 
 /** @type {Map<string, Catalog>} */
-const catalogs = new Map([[SOURCE_LOCALE, /** @type {Catalog} */ ({ ...viCore, ...viMsg, ...viSocial, ...viDev })]]);
+const catalogs = new Map([[SOURCE_LOCALE, /** @type {Catalog} */ ({ ...viCore, ...viMsg, ...viSocial, ...viDev, ...viBrief, ...viInbox, ...viHomehub, ...viMeas, ...viSim })]]);
 /** Phần catalog đã nạp được của từng ngôn ngữ ("core", "msg"…); phần thiếu đang lùi về tiếng Việt. @type {Map<string, Set<string>>} */
 const loadedParts = new Map([[SOURCE_LOCALE, new Set(["core", ...PARTS])]]);
 /** @type {Map<string, Promise<void>>} */

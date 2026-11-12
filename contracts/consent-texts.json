@@ -63,5 +63,11 @@
   {"purpose_id":"messaging","locale":"zh-Hant","text_version":"v1-2026-11-11.zh-Hant","sha256":"C5MbX7AurAjtoY3bijbMvSQZNq8Tn7CszM0aSx8ZWpY"},
   {"purpose_id":"messaging","locale":"id","text_version":"v1-2026-11-11.id","sha256":"au_fnJV1hcY3jyUq_i6g0Y3Ig9vvThkIHLG89i7JvEs"},
   {"purpose_id":"messaging","locale":"ru","text_version":"v1-2026-11-11.ru","sha256":"vGBqUOJVzxu4oFIA_5LezGA3e5b-b2UQ9ATv3OA8Bbw"},
-  {"purpose_id":"messaging","locale":"de","text_version":"v1-2026-11-11.de","sha256":"L0wajrAeAwBUau1hCkjeYM_DYCka0LGsG2ftVe09cNM"}
+  {"purpose_id":"messaging","locale":"de","text_version":"v1-2026-11-11.de","sha256":"L0wajrAeAwBUau1hCkjeYM_DYCka0LGsG2ftVe09cNM"},
+  {"purpose_id":"inbox_mail","locale":"vi","text_version":"v1-2026-11-12","sha256":"TJYHNpmjmbNVqBO-zdBxbnDOPDYPLekgKtX7c3NcJGw"},
+  {"purpose_id":"inbox_mail","locale":"en","text_version":"v1-2026-11-12.en","sha256":"SHzTkQVWvRKlwPIg-GVqDwmwlJLv4iImj04wPFByLGE"},
+  {"purpose_id":"home_hub","locale":"vi","text_version":"v1-2026-11-12","sha256":"g2-FZt3LzGBThWQRIap_eRmZhThViq_SK5YaTOA45-0"},
+  {"purpose_id":"home_hub","locale":"en","text_version":"v1-2026-11-12.en","sha256":"3RLhtLwm3KlAMRcp_QtBZHpOO7HgJl51kzwthl0Vwr4"},
+  {"purpose_id":"measurements","locale":"vi","text_version":"v1-2026-11-12","sha256":"PioBmvBAfbZWFT7NzDb3iY4nJAG9pzxu9dpuXMZd8hA"},
+  {"purpose_id":"measurements","locale":"en","text_version":"v1-2026-11-12.en","sha256":"2nlCpGHh6mbjnYmW6zFYkbLWhyLOMx489AIr960Ac6g"}
 ]

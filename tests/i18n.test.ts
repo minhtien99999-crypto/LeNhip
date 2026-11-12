@@ -57,7 +57,16 @@ const CJK = new Set(["zh-Hans", "zh-Hant", "ja", "ko"]);
 const OTHER_SCRIPTS = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Thai}]/u;
 
 const info = (tag: string) => LOCALES.find((l) => l.tag === tag)!;
-const load = (tag: string, part: string) => readCatalog(catalogFile(info(tag).file, part)) as Catalog | null;
+/**
+ * Phần catalog của V1.0.1 chờ dịch: với ngôn ngữ ngoài tiếng Việt và tiếng Anh, tệp `export default {};` của các phần này được
+ * coi như chưa có (runtime lùi về tiếng Việt). Bỏ phần khỏi danh sách ngay khi bản dịch của nó vào repo.
+ */
+const PENDING_PARTS = new Set(["brief", "inbox", "homehub", "meas", "sim"]);
+const load = (tag: string, part: string) => {
+  const data = readCatalog(catalogFile(info(tag).file, part)) as Catalog | null;
+  if (data && PENDING_PARTS.has(part) && tag !== SOURCE_LOCALE && tag !== "en" && Object.keys(data).length === 0) return null;
+  return data;
+};
 const branches = (m: Message) => (typeof m === "string" ? [m] : Object.values(m));
 const names = (text: string) => new Set([...text.matchAll(PLACEHOLDER)].map((m) => m[1]));
 /** Bỏ tham số và tên riêng để xét phần chữ thật sự cần dịch. */
@@ -164,7 +173,7 @@ for (const locale of checked) {
 test("LNH-T28: nhãn điều hướng (khóa nav.<chữ thường>) dài tối đa 12 ký tự với chữ Latin và Kirin, 6 với chữ Hán, kana, Hangul", () => {
   const isLabel = (key: string) => /^nav\.[a-z]+$/.test(key);
   const vi = load("vi", "core")!;
-  assert.deepEqual(Object.keys(vi).filter(isLabel).sort(), ["nav.connect", "nav.health", "nav.home", "nav.house", "nav.messages", "nav.more", "nav.work"]);
+  assert.deepEqual(Object.keys(vi).filter(isLabel).sort(), ["nav.connect", "nav.health", "nav.home", "nav.house", "nav.inbox", "nav.messages", "nav.more", "nav.services", "nav.work"]);
   for (const locale of LOCALES) {
     if (ONLY && locale.tag !== ONLY && locale.tag !== SOURCE_LOCALE) continue;
     const data = load(locale.tag, "core");
@@ -266,7 +275,7 @@ const NOT_KEYS = new Set(["calendar.block", "device.set_power", "robot.simulate"
 /** Họ khóa dựng lúc chạy từ mã của hợp đồng; từng họ có phép kiểm phủ riêng bên dưới. */
 const DYNAMIC = ["state.", "outcome.", "reason.", "grade.", "error.", "lele.answer.", "theme.", "consent."];
 /** Khóa của phần giữ chỗ trong khung giao diện: chỉ các tệp của nhánh tính năng dùng, hết dùng khi nhánh đó thay tệp giữ chỗ. */
-const MAY_BE_UNUSED = new Set(["connect.social.title", "connect.endpoints.title", "connect.trackers.title", "nav.messages"]);
+const MAY_BE_UNUSED = new Set(["connect.sessions.title", "connect.social.title", "connect.endpoints.title", "connect.trackers.title", "nav.messages"]);
 
 test("khóa: mọi khóa mã nguồn lõi nhắc tới đều có trong bản gốc; mọi khóa lõi đều được dùng", () => {
   const core = load("vi", "core")!;

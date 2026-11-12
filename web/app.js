@@ -27,6 +27,7 @@ import { computeHealthDays, sleepMessage } from "./shared/sleep.js";
 import { consentText, consentReceipt } from "./shared/consent-text.js";
 import { healthInputFor, onHealthInputChanged } from "./shared/health-input.js";
 import { localParts, localDate, addDays, zonedToInstant } from "./shared/zone.js";
+import { briefCard } from "./views/brief.js";
 
 const KEY = "lenhip.ui.v2";
 // Số phiên bản và mã đặc tả in ở chân trang: dữ liệu, không dịch. Đổi ở đây khi phát hành.
@@ -77,6 +78,14 @@ const glyphs = {
   refresh: '<path d="M20 11a8 8 0 0 0-14.5-4M4 13a8 8 0 0 0 14.5 4"/><path d="M5 3v4h4m10 14v-4h-4"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',
   people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.5a6 6 0 0 1 3.5 5.5"/>',
+  // Glyph thêm ở V1.0.1 (SRS V2.0): Hộp tổng hợp, Dịch vụ, bản nháp, đồng bộ, camera, máy đo, mô phỏng.
+  inbox: '<path d="M3 13h5l1.5 3h5l1.5-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/>',
+  layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+  draft: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6m-6 4h4"/>',
+  sync: '<path d="M20 8a8 8 0 0 0-14-3L4 7m0 9a8 8 0 0 0 14 3l2-2"/><path d="M4 3v4h4m12 10v4h-4"/>',
+  camera: '<rect x="3" y="7" width="13" height="10" rx="2"/><path d="m16 11 5-3v8l-5-3"/>',
+  gauge: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="m12 17 4-6M7 14h.01M17 14h.01"/>',
+  cube: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
 };
 const icon = (name) => '<svg viewBox="0 0 24 24" aria-hidden="true">' + (glyphs[name] || glyphs.spark) + "</svg>";
 const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -566,6 +575,9 @@ function home() {
   const { name, theme } = settings();
   const work = context === "work";
   let html = '<div class="heading-row"><div><span class="eyebrow">' + safe(dateLine()) + "</span><h1>" + (name ? rich("home.greeting", { name: bdi(name) }) : tSafe("home.greetingAnon")) + '</h1><p class="subtitle">' + tSafe("home.subtitle") + "</p></div></div>";
+  // Bản tóm tắt buổi sáng (V1.0.1, LNH-T62): số liệu sức khỏe trên thiết bị đi thẳng vào hàm vẽ, không qua ctx, không rời trang.
+  const receipt = healthState()?.receipt;
+  html += briefCard(baseCtx, { consent: !receipt ? "none" : receipt.withdrawn_at ? "withdrawn" : receipt.choice === "GRANTED" ? "granted" : "declined", health, synthetic: healthSynthetic() });
   if (theme === "flow") {
     html += '<section class="hero flow-hero"><div class="hero-copy"><span class="eyebrow" style="color:#c9f0ff">' + tSafe("home.flow.eyebrow") + "</span><h2>" + lines("home.flow.title") + "</h2><p>" + tSafe("home.flow.text") + "</p></div>" + orb() + "</section>" + timeline();
   } else if (theme === "titanium") {

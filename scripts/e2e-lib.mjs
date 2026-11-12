@@ -88,13 +88,13 @@ export async function ready(page) {
   await page.waitForSelector("body[data-ready=true]", { state: "attached" });
 }
 
-/** Đặt ba cờ mô-đun mới trong phản hồi /v1/me: cờ không nêu trong `modules` được coi là tắt (seed dev bật sẵn cả ba). */
+/** Đặt cờ của các mô-đun opt-in trong phản hồi /v1/me: cờ không nêu trong `modules` được coi là tắt (seed dev bật sẵn tất cả). */
 export async function withModules(context, modules) {
   await context.route("**/v1/me", async (route) => {
     const response = await route.fetch();
     if (!response.ok()) return route.fulfill({ response });
     const json = await response.json();
-    json.modules = { ...json.modules, messaging: false, social: false, trackers: false, ...modules };
+    json.modules = { ...json.modules, messaging: false, social: false, trackers: false, inbox: false, sync: false, home_hub: false, measurements: false, sim: false, ...modules };
     await route.fulfill({ response, json });
   });
 }

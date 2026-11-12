@@ -1,0 +1,75 @@
+/* Hộp tổng hợp (web/views/inbox.js, SRS V2.0 mục 04). Chỉ token của phong cách (--bg, --surface, --surface-soft, --text, --muted,
+   --line, --accent, --accent-ink, --gold), thuộc tính logic, vùng bấm từ 44 px. Một cột tới 980 px và khi cỡ chữ từ 150 %
+   (.large-text); từ 981 px danh sách và khung Nguồn đặt cạnh nhau. Lưới dùng minmax(0,1fr) để chữ dài không đẩy rộng cột. */
+.inbox-root{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-inline-size:0}
+.inbox-heading{flex-wrap:wrap;gap:12px}
+.inbox-heading h1{margin-block-end:0}
+.inbox-subtitle{margin:0}
+.inbox-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;min-inline-size:0}
+.inbox-main,.inbox-sources{min-inline-size:0;margin:0}
+.inbox-h{margin-block:0 12px;font-size:1rem}
+@media (min-width:981px){
+  body:not(.large-text) .inbox-layout{grid-template-columns:minmax(0,1fr) minmax(260px,340px)}
+  body:not(.large-text) .inbox-sources{position:sticky;inset-block-start:16px}
+}
+
+/* Vùng bấm 44 px trong màn hình này, kể cả nút nhỏ. */
+.inbox-root .button.small,.inbox-dialog .button.small,.inbox-brief .button.small{min-block-size:44px;margin-block-start:0}
+.inbox-root .button,.inbox-dialog .button{overflow-wrap:break-word;text-align:center}
+
+.inbox-filters{display:flex;flex-wrap:wrap;gap:8px;margin-block-end:4px}
+.inbox-filter[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.inbox-untrusted{margin-block:10px 4px}
+
+.inbox-items{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.inbox-item{border:1px solid var(--line);border-radius:16px;background:var(--surface-soft);padding:12px 14px;display:grid;gap:6px;min-inline-size:0}
+.inbox-item-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.72rem;color:var(--muted)}
+.inbox-source{display:inline-flex;align-items:center;gap:6px}
+.inbox-source svg{inline-size:14px;block-size:14px}
+.inbox-time{font-variant-numeric:tabular-nums}
+.inbox-item-head .status-chip{margin-inline-start:auto}
+.inbox-summary{margin:0;font-size:.9rem;line-height:1.5;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;text-align:start}
+.inbox-sender{margin:0;font-size:.74rem;color:var(--muted);overflow-wrap:anywhere}
+.inbox-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-block-start:4px}
+.inbox-open{min-block-size:44px}
+.inbox-nolink{margin:0}
+.inbox-error{margin-block:10px;padding-inline-start:10px;border-inline-start:3px solid var(--gold);font-size:.8rem;color:var(--text)}
+.inbox-note{margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-soft);color:var(--text);font-size:.78rem;line-height:1.5}
+.inbox-note.warn{border-style:dashed;border-color:var(--gold)}
+
+/* Nguồn */
+.inbox-srcs{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.inbox-src{display:grid;gap:6px;padding-block-end:14px;border-block-end:1px solid var(--line);min-inline-size:0}
+.inbox-src:last-child{border-block-end:0;padding-block-end:0}
+.inbox-src-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.inbox-src-head>svg{color:var(--accent);flex-shrink:0}
+.inbox-src-name{display:grid;gap:4px;flex:1 1 12ch;min-inline-size:0}
+.inbox-src-name small{justify-self:start;overflow-wrap:break-word}
+.inbox-src p{margin:0}
+.inbox-src .button{justify-self:start}
+.inbox-consent{display:grid;gap:8px;margin-block-start:6px}
+.inbox-consent h3{margin:0;font-size:.85rem}
+.inbox-consent-text{font-size:.78rem;line-height:1.6;color:var(--text)}
+.inbox-consent .consent-row{border-block-end:0;min-block-size:44px}
+
+/* Hộp thoại thêm mục và để sau (nằm trong #action-body dùng chung) */
+.inbox-dialog{display:grid;gap:4px;min-inline-size:0}
+.inbox-dialog .field{margin-block:8px}
+.inbox-dialog textarea{inline-size:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid var(--line);color:var(--text);background:var(--surface-soft);font:inherit;min-block-size:96px;resize:vertical}
+.inbox-dialog [hidden]{display:none}
+.inbox-choices{border:1px solid var(--line);border-radius:14px;padding:6px 14px 8px;margin:8px 0;display:grid;gap:2px;min-inline-size:0}
+.inbox-choices legend{font-size:.8rem;font-weight:600;padding-inline:6px}
+.inbox-row{grid-template-columns:repeat(auto-fit,minmax(min(100%,10ch),1fr))}
+.inbox-choice{display:flex;align-items:center;gap:12px;min-block-size:44px;font-size:.85rem;cursor:pointer}
+.inbox-choice input{inline-size:22px;block-size:22px;margin:0;accent-color:var(--accent);flex-shrink:0}
+.inbox-custom{margin-block:4px 6px}
+.inbox-preview{border:1px dashed var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);margin-block:8px}
+.inbox-preview h3{margin:0 0 6px;font-size:.78rem;color:var(--muted)}
+.inbox-preview .empty-state{padding:8px;text-align:start}
+.inbox-preview-link{display:flex;align-items:flex-start;gap:6px;margin:6px 0 0;overflow-wrap:anywhere}
+.inbox-preview-link svg{inline-size:16px;block-size:16px;flex-shrink:0}
+.inbox-dialog-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-block-start:8px}
+
+/* Dòng trong Bản tóm tắt buổi sáng */
+.inbox-brief{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.inbox-brief .event-copy{flex:1 1 16ch;min-inline-size:0}

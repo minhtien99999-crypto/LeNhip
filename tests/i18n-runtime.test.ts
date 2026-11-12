@@ -36,7 +36,7 @@ test("LNH-T21: 13 ngôn ngữ, tiếng Việt là bản gốc, các bản khác 
     assert.equal(l.draft, l.tag !== "vi", l.tag);
     assert.ok(l.name.length > 0 && Intl.getCanonicalLocales(l.tag)[0] === l.tag, l.tag);
   }
-  assert.deepEqual([...PARTS], ["msg", "social", "dev"]);
+  assert.deepEqual([...PARTS], ["msg", "social", "dev", "brief", "inbox", "homehub", "meas", "sim"]);
   assert.equal(SOURCE_LOCALE, "vi");
   assert.equal(DEFAULT_LOCALE, "en");
   assert.ok(isLocale("pt-BR") && !isLocale("pt") && !isLocale("auto") && !isLocale(null));
@@ -239,7 +239,7 @@ test("ngôn ngữ chưa có tệp catalog: không ném lỗi, lùi về tiếng 
   await loadLocale("ko", memory("ko", { "nav.messages": "메시지" }));
   const afterFirst = warn.mock.callCount();
   assert.equal(afterFirst, 1, "một dòng cảnh báo cho cả ngôn ngữ");
-  assert.match(String(warn.mock.calls[0].arguments[0]), /i18n-ko-dev\.js, i18n-ko-msg\.js, i18n-ko-social\.js/);
+  assert.match(String(warn.mock.calls[0].arguments[0]), /i18n-ko-brief\.js, i18n-ko-dev\.js, i18n-ko-homehub\.js, i18n-ko-inbox\.js, i18n-ko-meas\.js, i18n-ko-msg\.js, i18n-ko-sim\.js, i18n-ko-social\.js/);
   await loadLocale("ko", memory("ko", { "nav.messages": "메시지" }));
   assert.equal(warn.mock.callCount(), afterFirst, "nạp lại không cảnh báo lần nữa");
   await setLocale("ko");

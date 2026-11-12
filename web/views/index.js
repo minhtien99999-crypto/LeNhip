@@ -69,6 +69,9 @@
 import { coreViews } from "./core.js";
 import messages from "./messages.js";
 import connect from "./connect.js";
+// ── V1.0.1 (SRS V2.0): Hộp tổng hợp và màn hình Dịch vụ ──
+import inbox from "./inbox.js";
+import services from "./services.js";
 
 /** Số mục tối đa trên thanh dưới của điện thoại (LNH-T51). */
 export const BAR_LIMIT = 5;
@@ -95,7 +98,7 @@ function validate(list) {
  * @param {{ home: () => string, health: () => string, work: () => string, house: () => string }} coreRenderers
  */
 export function buildViews(coreRenderers) {
-  const list = [...coreViews(coreRenderers), messages, connect];
+  const list = [...coreViews(coreRenderers), messages, inbox, services, connect];
   validate(list);
   return list.sort((a, b) => a.order - b.order);
 }

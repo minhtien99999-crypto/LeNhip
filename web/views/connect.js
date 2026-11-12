@@ -13,8 +13,10 @@
 import social from "./connect-social.js";
 import endpoints from "./connect-endpoints.js";
 import trackers from "./connect-trackers.js";
+// ── V1.0.1 phiên trên các thiết bị (N20‑SYNC) ──
+import sessions from "./connect-sessions.js";
 
-const SECTIONS = [social, endpoints, trackers].sort((a, b) => a.order - b.order);
+const SECTIONS = [social, endpoints, sessions, trackers].sort((a, b) => a.order - b.order);
 
 /** @type {HTMLElement | null} */
 let grid = null;
