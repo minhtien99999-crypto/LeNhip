@@ -161,8 +161,8 @@ else {
     }
     for (const a of list) {
       const id = String(a?.id);
-      if (typeof a !== "object" || a === null || !/^V1-[A-Z][A-Z0-9]{1,5}\d{2}$/.test(id)) {
-        fail(`truy vết: additions.${group} có hàng sai mã (cần dạng V1-<MÃ><nn>, ví dụ V1-MSG01): ${id}`);
+      if (typeof a !== "object" || a === null || !/^V[12]-[A-Z][A-Z0-9]{1,5}\d{2}$/.test(id)) {
+        fail(`truy vết: additions.${group} có hàng sai mã (cần dạng V1-<MÃ><nn> hoặc V2-<MÃ><nn>, ví dụ V1-MSG01, V2-INB01): ${id}`);
         continue;
       }
       if (additionIds.has(id)) fail(`hàng ngoài SRS ${id} có hai lần`);
@@ -189,9 +189,9 @@ for (const s of trace.sources) {
 const listed = new Set<string>(trace.sources.map((s: { path: string }) => s.path));
 for (const f of readdirSync(new URL("docs/source/", root))) if (!listed.has(`docs/source/${f}`)) fail(`tài liệu nguồn docs/source/${f} chưa có mã băm trong traceability.json`);
 
-// 6. Mã LNH-* nhắc trong mã và hợp đồng đều được định nghĩa (một hàng bảng `| LNH-Xnn |`) ở bản rà soát SRS V1.1 hoặc bản thiết
-// kế V1.0.0, và mỗi mã chỉ được định nghĩa một lần (hai nhánh làm song song không được lấy cùng một số).
-const DEFINING_DOCS = ["docs/RA_SOAT_LENHIP_V1_1.md", "docs/THIET_KE_V1_0_0.md"];
+// 6. Mã LNH-* nhắc trong mã và hợp đồng đều được định nghĩa (một hàng bảng `| LNH-Xnn |`) ở bản rà soát SRS V1.1, bản thiết
+// kế V1.0.0 hoặc bản rà soát SRS V2.0, và mỗi mã chỉ được định nghĩa một lần (hai nhánh làm song song không được lấy cùng một số).
+const DEFINING_DOCS = ["docs/RA_SOAT_LENHIP_V1_1.md", "docs/THIET_KE_V1_0_0.md", "docs/RA_SOAT_LENHIP_V2_0.md"];
 const defined = new Map<string, string>();
 for (const doc of DEFINING_DOCS) {
   for (const m of read(doc).matchAll(/^\|\s*LNH-([TQDF]\d{2})\s*\|/gm)) {

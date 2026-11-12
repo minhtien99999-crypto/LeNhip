@@ -5,7 +5,8 @@
   "sources": [
     { "path": "docs/source/LeNhip_Dac_Ta_Ky_Thuat_LeDB_V1_1.docx", "sha256": "51783c43a4ea55e9b685e548cf0ade386042b3d826048a2f1eeb8d65ae9d3501" },
     { "path": "docs/source/LeNhip_UI_5_Phuong_An_V1_0.zip", "sha256": "588c0dfe7fb26281f71c757bc2416477b16cc18865c06f1582bf301f9f3f2ec5" },
-    { "path": "docs/source/LeNhip_05_Logo_05_Icon.zip", "sha256": "0208ce12f5410f287f324fb1870daedb3b9568be8f3732cb11035098410cba39" }
+    { "path": "docs/source/LeNhip_05_Logo_05_Icon.zip", "sha256": "0208ce12f5410f287f324fb1870daedb3b9568be8f3732cb11035098410cba39" },
+    { "path": "docs/source/LeNhip_Dac_Ta_Ky_Thuat_LeDB_V2_0.docx", "sha256": "ed001ea7a907fd01a1e2da4b51d4835ce083fe6cef3ab081cf1083ce9632e2e1" }
   ],
   "requirements": [
     { "req": "OWN01", "srs": "04", "status": "G0_DECISION", "code": ["src/server/app.ts"], "tests": [], "remaining": "CEO LeDB giao Product Owner và Tech Lead; feature flag theo mô-đun đã có trong control store." },
